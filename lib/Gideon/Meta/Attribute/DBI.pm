@@ -1,10 +1,9 @@
 
-package Gideon::Meta::Attribute::Gideon;
+package Gideon::Meta::Attribute::DBI;
  
 use Mouse;
- 
 our $VERSION = '0.02';
- 
+
 extends 'Mouse::Meta::Attribute';
 
 has 'column' => (
@@ -14,6 +13,6 @@ has 'column' => (
 );
 
 package Mouse::Meta::Attribute::Custom::Gideon;
-sub register_implementation {'Gideon::Meta::Attribute::Gideon'}
+sub register_implementation {'Gideon::Meta::Attribute::DBI'}
 
 1;

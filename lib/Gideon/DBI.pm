@@ -5,9 +5,10 @@ use strict;
 use warnings;
 use base 'Gideon';
 use Class::Accessor::Fast qw(moose-like);
-use Gideon::Error;
+use Gideon::Error::Simple;
 use SQL::Abstract;
 use Try::Tiny;
+use DBI;
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
 
@@ -15,6 +16,59 @@ has '__dbh'    => ( is => 'rw' );
 has '__stored' => ( is => 'rw' );
 
 my $_custom_handler;
+
+sub from_store_dbh {
+
+    my $self = shift;
+
+    if ( $self->__dbh() ) { return $self->__dbh() }
+
+    my $dbh;
+    my $args = $self->get_store_args();
+
+    if ( ref( $args->[0] ) eq 'DBI::db') {
+        $dbh = $args->[0];
+        $self->__dbh($dbh);
+        return $dbh;
+    }
+
+    my $dbi_string = $args->[0];
+    my $user       = $args->[1];
+    my $pw         = $args->[2];
+
+    unless ( $dbh = DBI->connect( $dbi_string, $user, $pw, { RaiseError => 1 } ) ) {
+        Gideon::Error::Simple->throw($DBI::errstr);
+    }
+
+    $self->__dbh($dbh);
+    return $dbh;
+}
+
+sub save {
+
+    my $self = shift;
+
+    die unless ref($self);
+
+    try {
+
+        my $dbh   = $self->from_store_dbh;
+        my $sql   = SQL::Abstract->new;
+        my $table = $self->get_store_destination();
+        my %data  = ( id => 1 );
+        my ( $stmt, @bind ) = $sql->insert( $table, \%data );
+
+        my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
+        my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
+        $sth->finish;
+
+    }
+    catch {
+        warn 'oh no!! ' . $_;
+
+    };
+
+}
 
 sub find {
 
@@ -114,14 +168,7 @@ sub dbh {
         return $self->__dbh;
     }
 
-    if ($_custom_handler) {
-        my $dbh = &$_custom_handler;
-        return $dbh;
-    }
-
-    my $dbh = $self->handler;
-    $self->__dbh($dbh);
-    return $dbh;
+    return $self->from_store_dbh();
 
 }
 

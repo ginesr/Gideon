@@ -8,9 +8,17 @@ use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Gideon::Error;
 
-my $__meta = {};
+my $__meta  = {};
+my $__store = '';
+our %stores = ();
 
-our @EXPORT = ('meta');
+sub register_store {
+    my $class      = shift;
+    my $store_name = shift;
+    my @args       = @_;
+    die if ref $class;
+    $stores{$store_name} = \@args;
+}
 
 sub new {
 
@@ -105,7 +113,29 @@ sub trans_filters {
 
 }
 
-sub meta {
+sub get_store_destination {
+    my $self  = shift;
+    my $store = $__store;
+    my ( $id, $dest ) = split( /:/, $store );
+    die 'invalid store' unless $stores{$id};
+    return $dest;    
+}
+
+sub get_store_args {
+    my $self  = shift;
+    my $store = $__store;
+    my ( $id, $table ) = split( /:/, $store );
+    die 'invalid store' unless $stores{$id};
+    return $stores{$id};
+}
+
+sub store($) {
+    my $store = shift || return undef;
+    $__store = $store;
+    my ( $id, $table ) = split( /:/, $store );
+}
+
+sub meta($) {
 
     my $meta = shift || return undef;
 
@@ -218,10 +248,10 @@ sub get_columns_from_meta {
 }
 
 sub is_dirty {
-    
-    my $self  = shift;
+
+    my $self = shift;
     return $self->{dirty_flag};
-    
+
 }
 
 sub set {
@@ -235,7 +265,7 @@ sub set {
     } else {
         die "Wrong number of arguments received";
     }
-    $self->{dirty_flag} ++;
+    $self->{dirty_flag}++;
 }
 
 sub get {
@@ -273,7 +303,8 @@ sub import {
     my ($class) = @_;
     my $caller = caller;
 
-    *{"${caller}::meta"} = \&meta;
+    *{"${caller}::meta"}  = \&meta;
+    *{"${caller}::store"} = \&store;
 
 }
 
@@ -290,7 +321,7 @@ sub _init {
     if ( exists $self->{dbh} ) {
         $self->__dbh( $self->{dbh} );
     }
-    
+
     $self->{dirty_flag} = 0;
 
     $self->_check_required();
