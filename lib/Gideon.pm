@@ -7,10 +7,52 @@ use Exporter qw(import);
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Gideon::Error;
+use Mouse;
 
-my $__meta  = {};
+my $__meta  = undef;
 my $__store = '';
+
 our %stores = ();
+
+after 'new' => sub {
+
+    my $self = shift;
+    my $meta = $self->meta;
+
+    for my $attribute (
+        map { $meta->get_attribute($_) }
+        sort $meta->get_attribute_list
+      ) {
+
+        my $name = $attribute->name;
+
+        $meta->add_before_method_modifier(
+            $name,
+            sub {
+                my $self      = shift;
+                my $new_value = shift;
+                if ( defined $new_value ) {
+                    my $meta      = $self->meta;
+                    my $attribute = $meta->get_attribute($name);
+                    my $reader    = $attribute->get_read_method;
+                    my $value     = $self->$reader;
+                    if ( defined $value and $value ne $new_value ) {
+                        $self->_modified(1);
+                    }
+                }
+            }
+        );
+    }
+    $meta->add_attribute(
+        '_modified' => (
+            is        => 'rw',
+            isa       => 'Bool',
+            default   => 0,
+            predicate => 'is_modified'
+        )
+    );
+
+};
 
 sub register_store {
     my $class      = shift;
@@ -46,6 +88,12 @@ sub find {
 }
 
 sub find_all {
+    my $class = shift;
+
+    # overload in subclass
+}
+
+sub save {
     my $class = shift;
 
     # overload in subclass
@@ -118,7 +166,7 @@ sub get_store_destination {
     my $store = $__store;
     my ( $id, $dest ) = split( /:/, $store );
     die 'invalid store' unless $stores{$id};
-    return $dest;    
+    return $dest;
 }
 
 sub get_store_args {
@@ -135,32 +183,17 @@ sub store($) {
     my ( $id, $table ) = split( /:/, $store );
 }
 
-sub meta($) {
-
-    my $meta = shift || return undef;
-
-    $__meta = $meta;
-
-    foreach my $attr ( keys %{ $meta->{attributes} } ) {
-        __PACKAGE__->add_accessor($attr);
-    }
-
-}
-
 sub check_meta {
 
     my $class     = shift;
-    my $meta      = $__meta || {};
+    my $meta      = $__meta || $class->get_all_meta;
     my $attribute = shift;
 
-    if ( exists $meta->{attributes}->{$attribute} ) {
-        if ( exists $meta->{attributes}->{$attribute}->{isa} ) {
-
-            #check class type
-        }
-    } else {
+    unless ( exists $meta->{attributes}->{$attribute} ) {
         Gideon::Error->throw('invalid meta data');
     }
+
+    return $meta->{attributes}->{$attribute};
 
 }
 
@@ -230,11 +263,30 @@ sub get_colum_for_attribute {
     return undef;
 }
 
+sub get_all_meta {
+
+    my $class = shift;
+
+    my $meta       = $class->meta;
+    my $cache_meta = {};
+
+    for my $attribute (
+        map { $meta->get_attribute($_) }
+        sort $meta->get_attribute_list
+      ) {
+        my $name = $attribute->name;
+        my $col  = $attribute->column;
+        $cache_meta->{attributes}->{$name}->{column} = $col;
+    }
+
+    $__meta = $cache_meta;
+}
+
 sub get_columns_from_meta {
 
     my $class = shift;
 
-    my $meta = $__meta || {};
+    my $meta = $__meta || $class->get_all_meta;
     my @columns = ();
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
@@ -247,63 +299,14 @@ sub get_columns_from_meta {
 
 }
 
-sub is_dirty {
-
-    my $self = shift;
-    return $self->{dirty_flag};
-
-}
-
-sub set {
-    my $self  = shift;
-    my $field = shift;
-
-    if ( @_ == 1 ) {
-        $self->{$field} = $_[0];
-    } elsif ( @_ > 1 ) {
-        $self->{$field} = [@_];
-    } else {
-        die "Wrong number of arguments received";
-    }
-    $self->{dirty_flag}++;
-}
-
-sub get {
-    my $self = shift;
-    if ( @_ == 1 ) {
-        return $self->{ $_[0] };
-    } elsif ( @_ > 1 ) {
-        return @{$self}{@_};
-    } else {
-        die "Wrong number of arguments received";
-    }
-}
-
 no strict 'refs';
 no warnings 'redefine';
-
-sub add_accessor {
-    my ( $class, $field ) = @_;
-
-    my $fullname = "${class}::$field";
-
-    *{$fullname} = sub {
-        my $self = shift;
-
-        if (@_) {
-            return $self->set( $field, @_ );
-        } else {
-            return $self->get($field);
-        }
-    };
-}
 
 sub import {
 
     my ($class) = @_;
     my $caller = caller;
 
-    *{"${caller}::meta"}  = \&meta;
     *{"${caller}::store"} = \&store;
 
 }
@@ -318,45 +321,6 @@ sub _init {
     my $self = shift;
     my $args = {@_};
 
-    if ( exists $self->{dbh} ) {
-        $self->__dbh( $self->{dbh} );
-    }
-
-    $self->{dirty_flag} = 0;
-
-    $self->_check_required();
-    $self->_init_defaults();
-}
-
-sub _check_required {
-
-    my $self = shift;
-    my $meta = $__meta;
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( exists $meta->{attributes}->{$attribute}->{required} and $meta->{attributes}->{$attribute}->{required} == 1 ) {
-            my $value = $self->$attribute();
-            unless ($value) {
-                Gideon::Error->throw( $attribute . ' is required' );
-            }
-        }
-    }
-}
-
-sub _init_defaults {
-
-    my $self = shift;
-    my $meta = $__meta;
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( exists $meta->{attributes}->{$attribute}->{default} ) {
-            unless ( defined $self->$attribute ) {
-                my $default = $meta->{attributes}->{$attribute}->{default};
-                $self->$attribute($default);
-                $self->{dirty_flag} = 0;
-            }
-        }
-    }
 }
 
 1;

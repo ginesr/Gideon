@@ -3,20 +3,17 @@ package Example::Person;
 
 use strict;
 use warnings;
-use Collections::Ordered;
-use Example::Storage::DBI;
-use base qw(Example::Storage::DBI);
+use Gideon::DBI;
+use Gideon::Meta::Attribute::DBI;
+use Mouse;
 
-meta {
-    table      => 'person',
-    attributes => {
-        'id' => { isa => 'Num', required => 1, column => 'person_id' },
-        'name'    => { isa => 'Str', column => 'person_name' },
-        'city'    => { isa => 'Str', column => 'person_city' },
-        'country' => { isa => 'Str', column => 'person_country', default => 'US' },
-        'type'    => { isa => 'Str', column => 'person_type' },
-    },
-    has => { 'contacts' => { isa => 'Collections::Ordered' }, }
-};
+extends 'Gideon::DBI';
+store 'master:person';
+
+has 'id'      => ( is => 'rw', isa => 'Num', column => 'person_id',      metaclass => 'Gideon' );
+has 'name'    => ( is => 'rw', required => 1, isa => 'Str', column => 'person_name',    metaclass => 'Gideon' );
+has 'city'    => ( is => 'rw', isa => 'Str', column => 'person_city',    metaclass => 'Gideon' );
+has 'country' => ( is => 'rw', isa => 'Str', column => 'person_country', metaclass => 'Gideon' );
+has 'type'    => ( is => 'rw', isa => 'Num', column => 'person_type',    metaclass => 'Gideon' );
 
 1;

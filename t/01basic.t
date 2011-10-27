@@ -24,9 +24,8 @@ $dbh->{mock_session} = $mock_session;
 
 # END Mock --------------------------------------------------------------------
 
-Gideon->register_store('master','DBI:mysql:database=test;host=127.0.0.1;port=3306;mysql_enable_utf8=1;mysql_auto_reconnect=1');
-Example::Person->register_handler( sub { return $dbh } );
-warn %Example::Person::stores;
+Gideon->register_store( 'master', $dbh );
+
 my @persons = Example::Person->find_all( country => 'US', name => { like => 'joe' }, { order_by => { desc => 'name' }, limit => 10 } );
 
 is( $persons[0]->name,    'Joe Something', 'Person 1 name using find' );
