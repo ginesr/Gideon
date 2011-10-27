@@ -108,7 +108,7 @@ sub save {
     # overload in subclass
 }
 
-sub insert {
+sub remove {
     my $class = shift;
 
     # overload in subclass
@@ -232,6 +232,17 @@ sub get_columns_hash {
     return $hash;
 }
 
+sub get_key_columns_hash {
+    my $class  = shift;
+    my $meta   = $__meta || $class->get_all_meta;
+    my $hash   = {};
+    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        next unless defined $meta->{attributes}->{$attribute}->{key};
+        $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
+    }
+    return $hash;
+}
+
 sub get_attribute_for_column {
 
     my $class  = shift;
@@ -293,10 +304,14 @@ sub get_all_meta {
         map { $meta->get_attribute($_) }
         sort $meta->get_attribute_list
       ) {
+        
         my $name = $attribute->name;
         next unless $attribute->isa('Gideon::Meta::Attribute::DBI');
         my $col = $attribute->column;
+        my $key = $attribute->primary_key;
+        
         $cache_meta->{attributes}->{$name}->{column} = $col;
+        $cache_meta->{attributes}->{$name}->{key} = $key;
     }
 
     $__meta = $cache_meta;

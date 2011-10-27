@@ -19,6 +19,43 @@ extends 'Gideon';
 
 has '__dbh' => ( is => 'rw' );
 
+sub remove {
+
+    my $self = shift;
+
+    unless ( ref($self) ) {
+        Gideon::Error->throw('save() is not a static method');
+    }
+
+    return undef unless $self->is_stored;
+
+    try {
+
+        my $dbh    = $self->dbh;
+        my $sql    = SQL::Abstract->new;
+        my $table  = $self->get_store_destination();
+        my $fields = $self->get_key_columns_hash();
+        my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
+
+        my ( $stmt, @bind ) = $sql->delete( $table, \%where );
+
+        my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
+        my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
+        $sth->finish;
+
+        $self->is_stored(0);
+        $self->is_modified(0);
+
+        return;
+
+    }
+    catch {
+        warn 'oh no!! ' . $_;
+        return $_;
+    };
+
+}
+
 sub save {
 
     my $self = shift;
@@ -31,13 +68,13 @@ sub save {
 
     try {
 
-        my $dbh   = $self->dbh;
-        my $sql   = SQL::Abstract->new;
-        my $table = $self->get_store_destination();
+        my $dbh    = $self->dbh;
+        my $sql    = SQL::Abstract->new;
+        my $table  = $self->get_store_destination();
         my $fields = $self->get_columns_hash();
-        my %data  = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
-        my $stmt  = '';
-        my @bind  = ();
+        my %data   = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
+        my $stmt   = '';
+        my @bind   = ();
 
         if ( $self->is_stored ) {
             ( $stmt, @bind ) = $sql->update( $table, \%data );
@@ -51,7 +88,7 @@ sub save {
 
         $self->is_stored(1);
         $self->is_modified(0);
-        
+
         return;
 
     }
@@ -92,7 +129,9 @@ sub find {
 
         my $args_map       = $class->map_meta_with_row( \%row );
         my @construct_args = $class->args_with_db_values( $args_map, \%row );
-        my $obj            = $class->new( __stored => 1, @construct_args );
+        my $obj            = $class->new(@construct_args);
+        $obj->is_stored(1);
+        return $obj;
 
     }
     catch {
@@ -135,7 +174,8 @@ sub find_all {
 
         while ( $sth->fetch ) {
             my @construct_args = $class->args_with_db_values( $args_map, \%row );
-            my $obj = $class->new( __stored => 1, @construct_args );
+            my $obj = $class->new(@construct_args);
+            $obj->is_stored(1);
             $results->add($obj);
         }
         $sth->finish;
@@ -149,8 +189,6 @@ sub find_all {
     };
 
 }
-
-sub insert { }
 
 sub dbh {
 

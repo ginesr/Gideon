@@ -12,6 +12,12 @@ has 'column' => (
     predicate => 'has_column',
 );
 
+has 'primary_key' => (
+    is => 'rw',
+    isa => 'Int',
+    predicate => 'has_key',
+);
+
 package Mouse::Meta::Attribute::Custom::Gideon;
 sub register_implementation {'Gideon::Meta::Attribute::DBI'}
 
