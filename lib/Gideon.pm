@@ -9,6 +9,8 @@ use Carp qw(cluck);
 use Gideon::Error;
 use Mouse;
 
+our $VERSION = '0.02';
+
 my $__meta  = undef;
 my $__store = '';
 
@@ -37,18 +39,25 @@ after 'new' => sub {
                     my $reader    = $attribute->get_read_method;
                     my $value     = $self->$reader;
                     if ( defined $value and $value ne $new_value ) {
-                        $self->_modified(1);
+                        $self->is_modified(1);
                     }
                 }
             }
         );
     }
     $meta->add_attribute(
-        '_modified' => (
-            is        => 'rw',
-            isa       => 'Bool',
-            default   => 0,
-            predicate => 'is_modified'
+        'is_modified' => (
+            is      => 'rw',
+            isa     => 'Bool',
+            default => 0,
+        )
+    );
+    $meta->add_attribute(
+        'is_stored' => (
+            is      => 'rw',
+            isa     => 'Bool',
+            default => 0,
+            lazy    => 1,
         )
     );
 
@@ -213,6 +222,16 @@ sub map_meta_with_row {
 
 }
 
+sub get_columns_hash {
+    my $class  = shift;
+    my $meta   = $__meta || $class->get_all_meta;
+    my $hash   = {};
+    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
+    }
+    return $hash;
+}
+
 sub get_attribute_for_column {
 
     my $class  = shift;
@@ -275,7 +294,8 @@ sub get_all_meta {
         sort $meta->get_attribute_list
       ) {
         my $name = $attribute->name;
-        my $col  = $attribute->column;
+        next unless $attribute->isa('Gideon::Meta::Attribute::DBI');
+        my $col = $attribute->column;
         $cache_meta->{attributes}->{$name}->{column} = $col;
     }
 
@@ -284,9 +304,8 @@ sub get_all_meta {
 
 sub get_columns_from_meta {
 
-    my $class = shift;
-
-    my $meta = $__meta || $class->get_all_meta;
+    my $class   = shift;
+    my $meta    = $__meta || $class->get_all_meta;
     my @columns = ();
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {

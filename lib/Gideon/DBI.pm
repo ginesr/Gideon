@@ -13,33 +13,51 @@ use Gideon::Results;
 use Mouse;
 use Collections::Ordered;
 
+our $VERSION = '0.02';
+
 extends 'Gideon';
 
-has '__dbh'    => ( is => 'rw' );
-has '__stored' => ( is => 'rw' );
+has '__dbh' => ( is => 'rw' );
 
 sub save {
 
     my $self = shift;
 
-    die unless ref($self);
+    unless ( ref($self) ) {
+        Gideon::Error->throw('save() is not a static method');
+    }
+
+    return undef unless $self->is_modified;
 
     try {
 
         my $dbh   = $self->dbh;
         my $sql   = SQL::Abstract->new;
         my $table = $self->get_store_destination();
-        my %data  = ( id => 1 );
-        my ( $stmt, @bind ) = $sql->insert( $table, \%data );
+        my $fields = $self->get_columns_hash();
+        my %data  = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
+        my $stmt  = '';
+        my @bind  = ();
+
+        if ( $self->is_stored ) {
+            ( $stmt, @bind ) = $sql->update( $table, \%data );
+        } else {
+            ( $stmt, @bind ) = $sql->insert( $table, \%data );
+        }
 
         my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
         my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
         $sth->finish;
 
+        $self->is_stored(1);
+        $self->is_modified(0);
+        
+        return;
+
     }
     catch {
         warn 'oh no!! ' . $_;
-
+        return $_;
     };
 
 }
@@ -79,7 +97,7 @@ sub find {
     }
     catch {
         warn "oh no! " . $_;
-        return undef;
+        return $_;
     };
 
 }
@@ -127,7 +145,7 @@ sub find_all {
     }
     catch {
         warn "oh no! " . $_;
-        return undef;
+        return $_;
     };
 
 }
@@ -157,7 +175,7 @@ sub _from_store_dbh {
     my $dbh;
     my $args = $self->get_store_args();
 
-    if ( ref( $args->[0] ) eq 'DBI::db') {
+    if ( ref( $args->[0] ) eq 'DBI::db' ) {
         $dbh = $args->[0];
         return $dbh;
     }

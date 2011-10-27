@@ -1,2 +1,10 @@
 Don't try to use Gideo just yet, is not even an alpha version
 Thanks
+
+DEPENDENCIES
+
+SQL::Abstract
+Mouse
+Try::Tiny
+Collections::Ordered
+DBI

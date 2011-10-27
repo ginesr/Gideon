@@ -6,10 +6,11 @@ use warnings;
 use Carp qw(cluck carp croak);
 
 our $ERROR_DEBUG = 0;
+our $VERSION = '0.02';
 
 sub throw {
     
-    my $self = shift;
+    my $class = shift;
     my $msg = shift;
     
     my ( $pkg, $file, $line ) = caller(1);
@@ -20,8 +21,11 @@ sub throw {
         cluck 'STACKTRACE';
 
     }
+
+    my $self = { pkg => $pkg, msg => $msg  };
+    bless $self, $class;
     
-    croak "Exception: " . $pkg . " - " . $msg;
+    croak $self;
     
 }
 
