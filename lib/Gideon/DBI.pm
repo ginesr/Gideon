@@ -35,6 +35,11 @@ sub remove {
         my $sql    = SQL::Abstract->new;
         my $table  = $self->get_store_destination();
         my $fields = $self->get_key_columns_hash();
+        
+        if (scalar (keys %{$fields}) == 0) {
+            Gideon::Error->throw('can\'t delete without table primary key');
+        }
+        
         my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
 
         my ( $stmt, @bind ) = $sql->delete( $table, \%where );
@@ -50,8 +55,10 @@ sub remove {
 
     }
     catch {
-        warn 'oh no!! ' . $_;
-        return $_;
+        if (ref $_ eq 'Gideon::Error') {
+            die $_;
+        }
+        warn 'oh no!! ' . Dumper($_);
     };
 
 }

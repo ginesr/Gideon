@@ -29,4 +29,8 @@ sub throw {
     
 }
 
+sub msg {
+    return shift->{msg}
+}
+
 1;

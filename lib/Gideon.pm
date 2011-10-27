@@ -12,7 +12,7 @@ use Mouse;
 our $VERSION = '0.02';
 
 my $__meta  = undef;
-my $__store = '';
+my $__store = {};
 
 our %stores = ();
 
@@ -80,14 +80,6 @@ sub new {
     $self->_init(@args);
     return $self;
 
-}
-
-sub create {
-    my $class = shift;
-    my @args  = @_;
-    my $self  = {@args};
-    bless $self, $class;
-    return $self;
 }
 
 sub find {
@@ -172,7 +164,8 @@ sub trans_filters {
 
 sub get_store_destination {
     my $self  = shift;
-    my $store = $__store;
+    my $pkg   = ref($self) ? ref($self) : $self;
+    my $store = $__store->{$pkg};
     my ( $id, $dest ) = split( /:/, $store );
     die 'invalid store' unless $stores{$id};
     return $dest;
@@ -180,7 +173,8 @@ sub get_store_destination {
 
 sub get_store_args {
     my $self  = shift;
-    my $store = $__store;
+    my $pkg   = ref($self) ? ref($self) : $self;
+    my $store = $__store->{$pkg};
     my ( $id, $table ) = split( /:/, $store );
     die 'invalid store' unless $stores{$id};
     return $stores{$id};
@@ -188,14 +182,15 @@ sub get_store_args {
 
 sub store($) {
     my $store = shift || return undef;
-    $__store = $store;
-    my ( $id, $table ) = split( /:/, $store );
+    my $caller = caller;
+    $__store->{$caller} = $store;
 }
 
 sub check_meta {
 
     my $class     = shift;
-    my $meta      = $__meta || $class->get_all_meta;
+    my $pkg       = ref($class) ? ref($class) : $class;
+    my $meta      = $__meta->{$pkg} || $class->get_all_meta;
     my $attribute = shift;
 
     unless ( exists $meta->{attributes}->{$attribute} ) {
@@ -223,31 +218,33 @@ sub map_meta_with_row {
 }
 
 sub get_columns_hash {
-    my $class  = shift;
-    my $meta   = $__meta || $class->get_all_meta;
-    my $hash   = {};
+
+    my $class      = shift;
+    my $filter_key = shift || 0;
+    my $pkg        = ref($class) ? ref($class) : $class;
+    my $meta       = $__meta->{$pkg} || $class->get_all_meta;
+    my $hash       = {};
+
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        if ($filter_key) {
+            next unless defined $meta->{attributes}->{$attribute}->{key};
+        }
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
     }
     return $hash;
 }
 
 sub get_key_columns_hash {
-    my $class  = shift;
-    my $meta   = $__meta || $class->get_all_meta;
-    my $hash   = {};
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        next unless defined $meta->{attributes}->{$attribute}->{key};
-        $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
-    }
-    return $hash;
+    my $class = shift;
+    return $class->get_columns_hash(1);
 }
 
 sub get_attribute_for_column {
 
     my $class  = shift;
     my $column = shift;
-    my $meta   = $__meta || {};
+    my $pkg    = ref($class) ? ref($class) : $class;
+    my $meta   = $__meta->{$pkg} || $class->get_all_meta;
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
         if ( $class->get_colum_for_attribute($attribute) eq $column ) {
@@ -273,19 +270,11 @@ sub map_args_with_meta {
 
 }
 
-sub get_table_from_meta {
-
-    my $class = shift;
-    my $meta = $__meta || {};
-
-    return $meta->{table};
-}
-
 sub get_colum_for_attribute {
 
     my $class     = shift;
     my $attribute = shift;
-    my $meta      = $__meta || {};
+    my $meta      = $__meta->{$class} || $class->get_all_meta;
 
     if ( exists $meta->{attributes}->{$attribute}->{column} ) {
         return $meta->{attributes}->{$attribute}->{column};
@@ -304,23 +293,26 @@ sub get_all_meta {
         map { $meta->get_attribute($_) }
         sort $meta->get_attribute_list
       ) {
-        
+
         my $name = $attribute->name;
         next unless $attribute->isa('Gideon::Meta::Attribute::DBI');
         my $col = $attribute->column;
         my $key = $attribute->primary_key;
-        
-        $cache_meta->{attributes}->{$name}->{column} = $col;
-        $cache_meta->{attributes}->{$name}->{key} = $key;
+
+        $cache_meta->{$class}->{attributes}->{$name}->{column} = $col;
+        $cache_meta->{$class}->{attributes}->{$name}->{key}    = $key;
     }
 
     $__meta = $cache_meta;
+
+    return $cache_meta->{$class};
 }
 
 sub get_columns_from_meta {
 
-    my $class   = shift;
-    my $meta    = $__meta || $class->get_all_meta;
+    my $class = shift;
+
+    my $meta = $__meta->{$class} || $class->get_all_meta;
     my @columns = ();
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
