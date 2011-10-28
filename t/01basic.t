@@ -10,7 +10,7 @@ use DBD::Mock;
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
-        statement => 'SELECT person_country, person_city, person_name, person_type, person_id FROM person WHERE ( ( person_country = ? AND person_name = ? ) )',
+        statement => 'SELECT person_country, person_city, person_name, person_type, person_id FROM person WHERE ( ( person_country = ? AND person_name LIKE ? ) )',
         bound_params => [ 'US', '%joe%' ],
         results => [ [ 'person_id', 'person_country', 'person_name' ], [ 1, 'AR', 'Joe Something' ], [ 2, 'UY', 'Joe That' ], [ 3, 'AR', 'Joe' ], ]
     },

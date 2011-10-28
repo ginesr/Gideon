@@ -8,6 +8,7 @@ use Gideon::Error::Simple;
 use SQL::Abstract;
 use Try::Tiny;
 use DBI;
+use Carp qw(cluck);
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
@@ -170,7 +171,7 @@ sub find {
 
     }
     catch {
-        warn "oh no! " . $_;
+        cluck "oh no! " . $_;
         return $_;
     };
 
@@ -219,7 +220,7 @@ sub find_all {
 
     }
     catch {
-        warn "oh no! " . $_;
+        cluck $_;
         return $_;
     };
 
@@ -235,6 +236,12 @@ sub dbh {
 
     return $self->_from_store_dbh();
 
+}
+
+sub gte {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
 }
 
 # Private ----------------------------------------------------------------------

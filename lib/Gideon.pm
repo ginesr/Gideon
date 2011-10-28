@@ -127,13 +127,18 @@ sub like {
     return '%' . $string . '%';
 }
 
+sub gte {
+    my $class = shift;
+    my $string = shift || "";
+    return '>=' . $string;
+}
+
 sub decode_params {
 
     my $class  = shift;
     my @args   = @_;
     my $config = {};
-
-    if ( ref( $args[-1] ) eq 'HASH' ) {
+    if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
         $config = pop @args;
     }
 
@@ -146,19 +151,36 @@ sub trans_filters {
     my $class  = shift;
     my $filter = shift;
 
+    my @filters = ();
+    my %map     = (
+        'like' => '-like',
+        'gt'   => '>',
+        'lt'   => '<',
+        'not'  => '!',
+        'gte'  => '>=',
+        'lte'  => '<=',
+    );
+
     unless ( ref($filter) ) {
         return $filter;
     }
     if ( ref($filter) eq 'HASH' ) {
 
-        my $filter_type = ( map { $_ } keys %{$filter} )[0];
-
-        if ( $filter_type eq 'like' or $filter_type eq 'gt' or $filter_type eq 'lt' or $filter_type eq 'not' ) {
-            return $class->$filter_type( $filter->{$filter_type} );
-        } else {
-            Gideon::Error->throw( $filter_type . ' is not a valid filter' );
+        foreach my $filter_type ( keys %{$filter} ) {
+            if (   $filter_type eq 'like'
+                or $filter_type eq 'gt'
+                or $filter_type eq 'lt'
+                or $filter_type eq 'not'
+                or $filter_type eq 'gte'
+                or $filter_type = 'lte' ) {
+                push @filters, { $map{$filter_type} => $class->$filter_type( $filter->{$filter_type} ) };
+            } else {
+                Gideon::Error->throw( $filter_type . ' is not a valid filter' );
+            }
         }
+
     }
+    return scalar @filters == 1 ? $filters[0] : \@filters;
 
 }
 
@@ -167,7 +189,7 @@ sub get_store_destination {
     my $pkg   = ref($self) ? ref($self) : $self;
     my $store = $__store->{$pkg};
     my ( $id, $dest ) = split( /:/, $store );
-    die 'invalid store' unless $stores{$id};
+    die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
     return $dest;
 }
 
@@ -219,16 +241,16 @@ sub map_meta_with_row {
 
 sub get_serial_columns_hash {
 
-    my $class      = shift;
-    my $pkg        = ref($class) ? ref($class) : $class;
-    my $meta       = $__meta->{$pkg} || $class->get_all_meta;
-    my $hash       = {};
+    my $class = shift;
+    my $pkg   = ref($class) ? ref($class) : $class;
+    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
+    my $hash  = {};
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
         next unless defined $meta->{attributes}->{$attribute}->{serial};
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
     }
-    return scalar keys %{$hash} == 1 ? $hash: undef;
+    return scalar keys %{$hash} == 1 ? $hash : undef;
 }
 
 sub get_columns_hash {
