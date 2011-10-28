@@ -164,6 +164,7 @@ sub trans_filters {
     unless ( ref($filter) ) {
         return $filter;
     }
+    
     if ( ref($filter) eq 'HASH' ) {
 
         foreach my $filter_type ( keys %{$filter} ) {
@@ -173,7 +174,9 @@ sub trans_filters {
                 or $filter_type eq 'not'
                 or $filter_type eq 'gte'
                 or $filter_type = 'lte' ) {
-                push @filters, { $map{$filter_type} => $class->$filter_type( $filter->{$filter_type} ) };
+
+                push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
+
             } else {
                 Gideon::Error->throw( $filter_type . ' is not a valid filter' );
             }
@@ -182,6 +185,25 @@ sub trans_filters {
     }
     return scalar @filters == 1 ? $filters[0] : \@filters;
 
+}
+
+sub transform_filter_values {
+
+    my $class  = shift;
+    my $type   = shift;
+    my $values = shift;
+
+    my @values = ();
+
+    if ( ref $values eq 'ARRAY' ) {
+        foreach my $filter_value ( @{$values} ) {
+            push @values, $class->$type($filter_value);
+        }
+    } else {
+        push @values, $class->$type($values);
+    }
+
+    return scalar @values == 1 ? $values[0] : \@values;
 }
 
 sub get_store_destination {
