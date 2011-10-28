@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 10;
+use Test::More tests => 2;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Example::Person;
