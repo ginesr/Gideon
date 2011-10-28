@@ -217,6 +217,20 @@ sub map_meta_with_row {
 
 }
 
+sub get_serial_columns_hash {
+
+    my $class      = shift;
+    my $pkg        = ref($class) ? ref($class) : $class;
+    my $meta       = $__meta->{$pkg} || $class->get_all_meta;
+    my $hash       = {};
+
+    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        next unless defined $meta->{attributes}->{$attribute}->{serial};
+        $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
+    }
+    return scalar keys %{$hash} == 1 ? $hash: undef;
+}
+
 sub get_columns_hash {
 
     my $class      = shift;
@@ -296,11 +310,10 @@ sub get_all_meta {
 
         my $name = $attribute->name;
         next unless $attribute->isa('Gideon::Meta::Attribute::DBI');
-        my $col = $attribute->column;
-        my $key = $attribute->primary_key;
 
-        $cache_meta->{$class}->{attributes}->{$name}->{column} = $col;
-        $cache_meta->{$class}->{attributes}->{$name}->{key}    = $key;
+        $cache_meta->{$class}->{attributes}->{$name}->{column} = $attribute->column;
+        $cache_meta->{$class}->{attributes}->{$name}->{key}    = $attribute->primary_key;
+        $cache_meta->{$class}->{attributes}->{$name}->{serial} = $attribute->serial;
     }
 
     $__meta = $cache_meta;

@@ -12,6 +12,12 @@ has 'column' => (
     predicate => 'has_column',
 );
 
+has 'serial' => (
+    is => 'rw',
+    isa => 'Bool',
+    predicate => 'has_serial',
+);
+
 has 'primary_key' => (
     is => 'rw',
     isa => 'Int',

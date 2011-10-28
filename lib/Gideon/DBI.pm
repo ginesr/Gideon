@@ -35,11 +35,11 @@ sub remove {
         my $sql    = SQL::Abstract->new;
         my $table  = $self->get_store_destination();
         my $fields = $self->get_key_columns_hash();
-        
-        if (scalar (keys %{$fields}) == 0) {
+
+        if ( scalar( keys %{$fields} ) == 0 ) {
             Gideon::Error->throw('can\'t delete without table primary key');
         }
-        
+
         my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
 
         my ( $stmt, @bind ) = $sql->delete( $table, \%where );
@@ -55,7 +55,7 @@ sub remove {
 
     }
     catch {
-        if (ref $_ eq 'Gideon::Error') {
+        if ( ref $_ eq 'Gideon::Error' ) {
             die $_;
         }
         warn 'oh no!! ' . Dumper($_);
@@ -71,7 +71,7 @@ sub save {
         Gideon::Error->throw('save() is not a static method');
     }
 
-    return undef unless $self->is_modified;
+    return undef if ( $self->is_stored and not $self->is_modified );
 
     try {
 
@@ -79,9 +79,16 @@ sub save {
         my $sql    = SQL::Abstract->new;
         my $table  = $self->get_store_destination();
         my $fields = $self->get_columns_hash();
-        my %data   = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
-        my $stmt   = '';
-        my @bind   = ();
+
+        unless ( $self->is_stored ) {
+
+            # remove auto increment columns for insert
+            $self->remove_auto_columns_for_insert($fields);
+        }
+
+        my %data = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
+        my $stmt = '';
+        my @bind = ();
 
         if ( $self->is_stored ) {
             ( $stmt, @bind ) = $sql->update( $table, \%data );
@@ -93,6 +100,12 @@ sub save {
         my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
         $sth->finish;
 
+        if( my $serial = $self->get_serial_columns_hash ) {
+            my $last_id = $self->last_inserted_id;
+            my $serial_attribute = (map {$_} keys %{$serial})[0];
+            $self->$serial_attribute($last_id);
+        }
+
         $self->is_stored(1);
         $self->is_modified(0);
 
@@ -103,6 +116,21 @@ sub save {
         warn 'oh no!! ' . $_;
         return $_;
     };
+
+}
+
+sub last_inserted_id {
+
+    my $self = shift;
+    my $sth  = $self->dbh->prepare('select last_insert_id() as last') or die $self->dbh->errstr;
+    my $rows = $sth->execute or die $self->dbh->errstr;
+    my %row;
+
+    $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
+    $sth->fetch;
+    $sth->finish;
+    
+    return $row{'last'};
 
 }
 
@@ -235,6 +263,19 @@ sub _from_store_dbh {
 
     $self->__dbh($dbh);
     return $dbh;
+}
+
+sub remove_auto_columns_for_insert {
+
+    my $self  = shift;
+    my $field = shift;
+
+    my $serial = $self->get_serial_columns_hash;
+
+    foreach ( keys %{$serial} ) {
+        delete $field->{$_};
+    }
+
 }
 
 sub args_with_db_values {

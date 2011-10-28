@@ -14,6 +14,7 @@ has 'id' => (
     is          => 'rw',
     isa         => 'Num',
     column      => 'person_id',
+    serial      => 1,
     primary_key => 1,
     metaclass   => 'Gideon'
 );
