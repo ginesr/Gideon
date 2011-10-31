@@ -12,7 +12,7 @@ use Carp qw(cluck);
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
-use Collections::Ordered;
+use Set::Array;
 
 our $VERSION = '0.02';
 
@@ -205,18 +205,18 @@ sub find_all {
 
         $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
 
-        my $results  = Collections::Ordered->new;
+        my $results  = Set::Array->new;
         my $args_map = $class->map_meta_with_row( \%row );
 
         while ( $sth->fetch ) {
             my @construct_args = $class->args_with_db_values( $args_map, \%row );
             my $obj = $class->new(@construct_args);
             $obj->is_stored(1);
-            $results->add($obj);
+            $results->push($obj);
         }
         $sth->finish;
 
-        return wantarray ? $results->to_array() : $results;
+        return wantarray ? $results->flatten() : $results;
 
     }
     catch {
