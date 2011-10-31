@@ -2,7 +2,7 @@
 
 use lib '.lib/';
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Gideon;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
@@ -47,6 +47,13 @@ my $mock_session = DBD::Mock::Session->new(
           'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name <= ? OR country.country_name > ? ) )',
         bound_params => [ 1, 20 ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
+    },
+    {
+        statement =>
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? AND country.country_name <= ? ) OR country.country_name > ? ) )',
+        bound_params => [ '%Afr%', 1, 20 ],
+        results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AF', 'Africa' ] ]
+
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -96,4 +103,11 @@ lives_ok(
         $record = Example::Country->find_all( name => { lte => 1 }, name => { gt => 20 } );
     },
     'lt + gt filter with multi filter'
+);
+
+lives_ok(
+    sub {
+        $record = Example::Country->find_all( name => { like => 'Afr', lte => 1 }, name => { gt => 20 } );
+    },
+    'like with lt + nested gt with multi filter on same column'
 );
