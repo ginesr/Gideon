@@ -14,7 +14,6 @@ our $VERSION = '0.02';
 
 my $__meta  = undef;
 my $__store = {};
-
 our %stores = ();
 
 after 'new' => sub {
@@ -183,7 +182,7 @@ sub decode_params {
         }
     }
 
-    return $args, $config;
+    return wantarray ? ($args, $config) : $args;
 
 }
 
@@ -208,8 +207,7 @@ sub trans_filters {
                     push @pairs, ( $h, $f->{$h} );
                 }
             }
-            my %pairs = @pairs;
-            push @multi, \%pairs;
+            push @multi, {@pairs};
         }
         @filters = @multi;
     }
@@ -220,39 +218,6 @@ sub trans_filters {
 
     return scalar @filters == 1 ? $filters[0] : \@filters;
 
-}
-
-sub _transform_filter {
-
-    my $class   = shift;
-    my $filter  = shift;
-    my @filters = @_;
-
-    my %map = (
-        'like' => '-like',
-        'gt'   => '>',
-        'lt'   => '<',
-        'not'  => '!',
-        'gte'  => '>=',
-        'lte'  => '<=',
-    );
-
-    foreach my $filter_type ( keys %{$filter} ) {
-        if (   $filter_type eq 'like'
-            or $filter_type eq 'gt'
-            or $filter_type eq 'lt'
-            or $filter_type eq 'not'
-            or $filter_type eq 'gte'
-            or $filter_type = 'lte' ) {
-
-            push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
-
-        } else {
-            Gideon::Error->throw( $filter_type . ' is not a valid filter' );
-        }
-    }
-
-    return @filters;
 }
 
 sub transform_filter_values {
@@ -330,14 +295,14 @@ sub get_serial_columns_hash {
 
 sub get_columns_hash {
 
-    my $class      = shift;
-    my $filter_key = shift || 0;
-    my $pkg        = ref($class) ? ref($class) : $class;
-    my $meta       = $__meta->{$pkg} || $class->get_all_meta;
-    my $hash       = {};
+    my $class   = shift;
+    my $options = shift || '';
+    my $pkg     = ref($class) ? ref($class) : $class;
+    my $meta    = $__meta->{$pkg} || $class->get_all_meta;
+    my $hash    = {};
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ($filter_key) {
+        if ( $options =~ /filter_keys/ ) {
             next unless defined $meta->{attributes}->{$attribute}->{key};
         }
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
@@ -348,7 +313,7 @@ sub get_columns_hash {
 
 sub get_key_columns_hash {
     my $class = shift;
-    return $class->get_columns_hash(1);
+    return $class->get_columns_hash('filter_keys');
 }
 
 sub get_attribute_for_column {
@@ -437,6 +402,8 @@ sub get_columns_from_meta {
 
 }
 
+# Imports ----------------------------------------------------------------------
+
 no strict 'refs';
 no warnings 'redefine';
 
@@ -459,6 +426,39 @@ sub _init {
     my $self = shift;
     my $args = {@_};
 
+}
+
+sub _transform_filter {
+
+    my $class   = shift;
+    my $filter  = shift;
+    my @filters = @_;
+
+    my %map = (
+        'like' => '-like',
+        'gt'   => '>',
+        'lt'   => '<',
+        'not'  => '!',
+        'gte'  => '>=',
+        'lte'  => '<=',
+    );
+
+    foreach my $filter_type ( keys %{$filter} ) {
+        if (   $filter_type eq 'like'
+            or $filter_type eq 'gt'
+            or $filter_type eq 'lt'
+            or $filter_type eq 'not'
+            or $filter_type eq 'gte'
+            or $filter_type = 'lte' ) {
+
+            push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
+
+        } else {
+            Gideon::Error->throw( $filter_type . ' is not a valid filter' );
+        }
+    }
+
+    return @filters;
 }
 
 1;
