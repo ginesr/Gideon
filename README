@@ -6,5 +6,5 @@ DEPENDENCIES
 SQL::Abstract
 Mouse
 Try::Tiny
-Collections::Ordered
+Set::Array
 DBI
