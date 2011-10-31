@@ -8,6 +8,7 @@ use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Gideon::Error;
 use Mouse;
+use Hash::MultiValue;
 
 our $VERSION = '0.02';
 
@@ -108,11 +109,12 @@ sub remove {
 
 sub filter_rules {
 
-    my $class = shift;
-    my $args  = shift;
+    my $class   = shift;
+    my $args    = shift;
+    my $options = shift || '';
 
     foreach ( keys %{$args} ) {
-        $class->check_meta($_);
+        $class->check_meta($_) unless $options =~ /skip_meta_check/;
         my $value_filtered = $class->trans_filters( $args->{$_} );
         $args->{$_} = $value_filtered;
     }
@@ -133,16 +135,55 @@ sub gte {
     return '>=' . $string;
 }
 
+sub lte {
+    my $class = shift;
+    my $string = shift || "";
+    return '<=' . $string;
+}
+
+sub not {
+    my $class = shift;
+    my $string = shift || "";
+    return '<>' . $string;
+
+}
+
+sub gt {
+    my $class = shift;
+    my $string = shift || "";
+    return '>' . $string;
+
+}
+
+sub lt {
+    my $class = shift;
+    my $string = shift || "";
+    return '<' . $string;
+
+}
+
 sub decode_params {
 
     my $class  = shift;
     my @args   = @_;
+    my $args   = {};
     my $config = {};
+
     if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
         $config = pop @args;
     }
 
-    return {@args}, $config;
+    my $hash = Hash::MultiValue->new(@args);
+    $args = {@args};
+
+    foreach ( keys %{$args} ) {
+        my @all = $hash->get_all($_);
+        if ( scalar(@all) > 1 ) {
+            $args->{$_} = \@all;
+        }
+    }
+
+    return $args, $config;
 
 }
 
@@ -152,7 +193,42 @@ sub trans_filters {
     my $filter = shift;
 
     my @filters = ();
-    my %map     = (
+
+    unless ( ref($filter) ) {
+        return $filter;
+    }
+
+    if ( ref($filter) eq 'ARRAY' ) {
+        my @multi = ();
+        foreach ( @{$filter} ) {
+            my @filters = $class->_transform_filter( $_, @filters );
+            my @pairs = ();
+            foreach my $f (@filters) {
+                foreach my $h ( keys %{$f} ) {
+                    push @pairs, ( $h, $f->{$h} );
+                }
+            }
+            my %pairs = @pairs;
+            push @multi, \%pairs;
+        }
+        @filters = @multi;
+    }
+
+    if ( ref($filter) eq 'HASH' ) {
+        @filters = $class->_transform_filter( $filter, @filters );
+    }
+
+    return scalar @filters == 1 ? $filters[0] : \@filters;
+
+}
+
+sub _transform_filter {
+
+    my $class   = shift;
+    my $filter  = shift;
+    my @filters = @_;
+
+    my %map = (
         'like' => '-like',
         'gt'   => '>',
         'lt'   => '<',
@@ -161,30 +237,22 @@ sub trans_filters {
         'lte'  => '<=',
     );
 
-    unless ( ref($filter) ) {
-        return $filter;
-    }
-    
-    if ( ref($filter) eq 'HASH' ) {
+    foreach my $filter_type ( keys %{$filter} ) {
+        if (   $filter_type eq 'like'
+            or $filter_type eq 'gt'
+            or $filter_type eq 'lt'
+            or $filter_type eq 'not'
+            or $filter_type eq 'gte'
+            or $filter_type = 'lte' ) {
 
-        foreach my $filter_type ( keys %{$filter} ) {
-            if (   $filter_type eq 'like'
-                or $filter_type eq 'gt'
-                or $filter_type eq 'lt'
-                or $filter_type eq 'not'
-                or $filter_type eq 'gte'
-                or $filter_type = 'lte' ) {
+            push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
 
-                push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
-
-            } else {
-                Gideon::Error->throw( $filter_type . ' is not a valid filter' );
-            }
+        } else {
+            Gideon::Error->throw( $filter_type . ' is not a valid filter' );
         }
-
     }
-    return scalar @filters == 1 ? $filters[0] : \@filters;
 
+    return @filters;
 }
 
 sub transform_filter_values {
@@ -220,7 +288,7 @@ sub get_store_args {
     my $pkg   = ref($self) ? ref($self) : $self;
     my $store = $__store->{$pkg};
     my ( $id, $table ) = split( /:/, $store );
-    die 'invalid store' unless $stores{$id};
+    die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
     return $stores{$id};
 }
 
@@ -256,6 +324,7 @@ sub get_serial_columns_hash {
         next unless defined $meta->{attributes}->{$attribute}->{serial};
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
     }
+
     return scalar keys %{$hash} == 1 ? $hash : undef;
 }
 
@@ -273,6 +342,7 @@ sub get_columns_hash {
         }
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
     }
+
     return $hash;
 }
 
@@ -293,6 +363,7 @@ sub get_attribute_for_column {
             return $attribute;
         }
     }
+
     return undef;
 }
 

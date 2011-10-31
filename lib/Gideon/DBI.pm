@@ -17,7 +17,6 @@ use Set::Array;
 our $VERSION = '0.02';
 
 extends 'Gideon';
-
 has '__dbh' => ( is => 'rw' );
 
 sub remove {
@@ -227,6 +226,7 @@ sub find_all {
 }
 
 sub add_table_to_where {
+    
     my $class = shift;
     my $table = $class->get_store_destination();
     my %where = @_;
@@ -273,7 +273,26 @@ sub dbh {
 
 }
 
+sub lt {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+}
+
+sub gt {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+}
+
+
 sub gte {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+}
+
+sub lte {
     my $class = shift;
     my $string = shift || "";
     return $string;
