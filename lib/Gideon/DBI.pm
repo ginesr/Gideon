@@ -101,9 +101,9 @@ sub save {
         my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
         $sth->finish;
 
-        if( my $serial = $self->get_serial_columns_hash ) {
+        if ( my $serial = $self->get_serial_columns_hash ) {
             my $last_id = $self->last_inserted_id;
-            my $serial_attribute = (map {$_} keys %{$serial})[0];
+            my $serial_attribute = ( map { $_ } keys %{$serial} )[0];
             $self->$serial_attribute($last_id);
         }
 
@@ -130,7 +130,7 @@ sub last_inserted_id {
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
     $sth->fetch;
     $sth->finish;
-    
+
     return $row{'last'};
 
 }
@@ -150,7 +150,7 @@ sub find {
 
         my $fields = $class->get_columns_from_meta();
         my $map    = $class->map_args_with_meta($args);
-        my %where  = ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) );
+        my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my @order  = ();
 
         my ( $stmt, @bind ) = $sql->select( $class->get_store_destination(), $fields, \%where, \@order );
@@ -171,7 +171,7 @@ sub find {
 
     }
     catch {
-        cluck "oh no! " . $_;
+        cluck $_;
         return $_;
     };
 
@@ -194,7 +194,7 @@ sub find_all {
 
         my $fields = $class->get_columns_from_meta();
         my $map    = $class->map_args_with_meta($args);
-        my %where  = ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) );
+        my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my @order  = ();
 
         my ( $stmt, @bind ) = $sql->select( $class->get_store_destination(), $fields, \%where, \@order );
@@ -223,6 +223,41 @@ sub find_all {
         cluck $_;
         return $_;
     };
+
+}
+
+sub add_table_to_where {
+    my $class = shift;
+    my $table = $class->get_store_destination();
+    my %where = @_;
+
+    return map { $table . '.' . $_ => $where{$_} } sort keys %where;
+}
+
+sub get_columns_from_meta {
+
+    my $class = shift;
+    my $table = $class->get_store_destination();
+
+    my $columns = $class->SUPER::get_columns_from_meta();
+    my @columns = map { $table . '.' . $_ . ' as `' . $table . '.' . $_ . '`' } @{$columns};
+
+    return wantarray ? @columns : \@columns;
+}
+
+sub map_meta_with_row {
+
+    my $class = shift;
+    my $row   = shift;
+    my $map   = {};
+
+    foreach my $r ( keys %{$row} ) {
+        my ($table,$col) = split(/\./, $r);
+        my $attribute = $class->get_attribute_for_column($col);
+        $map->{$attribute} = $r;
+    }
+
+    return $map;
 
 }
 

@@ -245,22 +245,6 @@ sub check_meta {
 
 }
 
-sub map_meta_with_row {
-
-    my $class = shift;
-    my $row   = shift;
-
-    my $map = {};
-
-    foreach my $r ( keys %{$row} ) {
-        my $attribute = $class->get_attribute_for_column($r);
-        $map->{$attribute} = $r;
-    }
-
-    return $map;
-
-}
-
 sub get_serial_columns_hash {
 
     my $class = shift;

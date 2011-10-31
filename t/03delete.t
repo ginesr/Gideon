@@ -11,25 +11,23 @@ use Test::Exception;
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
-        statement => 'SELECT person_country, person_city, person_name, person_type, person_id FROM person WHERE ( ( person_country = ? AND person_id = ? ) )',
+        statement =>
+          'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( ( person.person_country = ? AND person.person_id = ? ) )',
         bound_params => [ 'AR', 123 ],
         results      => [
-            [ 'person_id', 'person_name', 'person_city', 'person_country', 'person_type' ],
-            [ 123,         'Foo',         'Vegas',       'AR',             300 ]
+            [ 'person.person_id', 'person.person_name', 'person.person_city', 'person.person_country', 'person.person_type' ],
+            [ 123, 'Foo', 'Vegas', 'AR', 300 ]
         ]
     },
     {
         statement    => 'DELETE FROM person WHERE ( person_id = ? )',
-        bound_params => [ 123 ],
+        bound_params => [123],
         results      => []
     },
     {
-        statement    => 'SELECT country_iso, country_name FROM country WHERE ( country_iso = ? )',
-        bound_params => [ 'UY' ],
-        results      => [
-            [ 'country_iso','country_name' ],
-            [ 'UY', 'Uruguay' ]
-        ]
+        statement    => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_iso = ? )',
+        bound_params => ['UY'],
+        results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'UY', 'Uruguay' ] ]
     }
 );
 $dbh->{mock_session} = $mock_session;

@@ -13,24 +13,24 @@ use Test::Exception;
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
-        statement    => 'SELECT country_iso, country_name FROM country WHERE ( country_name = ? )',
+        statement    => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? )',
         bound_params => ['arg'],
-        results      => [ [ 'country_iso', 'country_name' ], [ 'AR', 'Argentina' ] ]
+        results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
-        statement    => 'SELECT country_iso, country_name FROM country WHERE ( country_name LIKE ? )',
+        statement    => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name LIKE ? )',
         bound_params => ['%arg%'],
-        results      => [ [ 'country_iso', 'country_name' ], [ 'AR', 'Argentina' ] ]
+        results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
-        statement    => 'SELECT country_iso, country_name FROM country WHERE ( ( country_name LIKE ? OR country_name >= ? ) )',
+        statement    => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name LIKE ? OR country.country_name >= ? ) )',
         bound_params => [ '%arg%', 'AR' ],
-        results      => [ [ 'country_iso', 'country_name' ], [ 'AR', 'Argentina' ] ]
+        results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
-        statement    => 'SELECT country_iso, country_name FROM country WHERE ( ( ( country_name LIKE ? OR country_name LIKE ? ) OR country_name >= ? ) )',
+        statement    => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? OR country.country_name LIKE ? ) OR country.country_name >= ? ) )',
         bound_params => [ '%arg%', '%ent%', 'AR' ],
-        results      => [ [ 'country_iso', 'country_name' ], [ 'AR', 'Argentina' ] ]
+        results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     }
 );
 $dbh->{mock_session} = $mock_session;
