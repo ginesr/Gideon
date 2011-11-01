@@ -167,37 +167,62 @@ sub _transform_sort_by_from_array {
     my $config    = shift;
     my $options   = shift;
     my $flattened = [];
-    
-    foreach my $clause ( @{ $config } ) {
-        $class->check_meta($clause) unless $options =~ /skip_meta_check/;
-        push @{$flattened}, $class->get_colum_for_attribute($clause);
+
+    foreach my $clause ( @{$config} ) {
+        if ( ref($clause) eq 'HASH' ) {
+            my $flat = $class->_transform_sort_by_from_hash($clause,$options);
+            push @{$flattened}, $flat;
+        }
+        else {
+            $class->check_meta($clause) unless $options =~ /skip_meta_check/;
+            push @{$flattened}, $class->get_colum_for_attribute($clause);
+        }
     }
-    
+
     return $flattened;
 
 }
 
 sub _transform_sort_by_from_hash {
 
-    my $class     = shift;
-    my $config    = shift;
-    my $options   = shift;
+    my $class   = shift;
+    my $config  = shift;
+    my $options = shift;
+
     my $flattened = [];
 
-    foreach my $clause ( keys %{ $config } ) {
-
-        my $attr = $config->{$clause};
-        $class->check_meta($attr) unless $options =~ /skip_meta_check/;
-        my $column = $class->get_colum_for_attribute($attr);
+    foreach my $clause ( keys %{$config} ) {
 
         my $direction = '';
+        
         if ( $clause eq 'desc' ) {
             $direction = '-desc';
         }
         if ( $clause eq 'asc' ) {
             $direction = '-asc';
         }
-        push @{$flattened}, { $direction => $column };
+
+        if ( ref( $config->{$clause} ) eq 'ARRAY' ) {
+
+            my $columns = [];
+
+            foreach ( @{ $config->{$clause} } ) {
+                my $attr = $_;
+                $class->check_meta($attr) unless $options =~ /skip_meta_check/;
+                my $column = $class->get_colum_for_attribute($attr);
+                push @{$columns}, $column;
+            }
+
+            push @{$flattened}, { $direction => $columns };
+
+        } else {
+
+            my $attr = $config->{$clause};
+            $class->check_meta($attr) unless $options =~ /skip_meta_check/;
+            my $column = $class->get_colum_for_attribute($attr);
+            push @{$flattened}, { $direction => $column };
+
+        }
     }
 
     return $flattened;

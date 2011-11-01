@@ -234,11 +234,15 @@ sub add_table_to_order {
     if ( ref($sort) eq 'ARRAY' ) {
         foreach my $clauses ( @{$sort} ) {
             if ( ref($clauses) eq 'HASH' ) {
-                foreach ( keys %{$clauses} ) {
-                    $clauses->{$_} = $table . '.' . $clauses->{$_};
-                }
+                $class->_loop_sort_conditions($clauses,$table);
             }
-            else {
+            elsif ( ref($clauses) eq 'ARRAY' ) {
+                my $converted = [];
+                foreach my $dirs ( @{ $clauses } ) {
+                    push @{$converted}, $class->_loop_sort_conditions($dirs,$table);
+                }
+                $clauses = $converted; 
+            } else {
                 $clauses = $table . '.' . $clauses;
             }
         }
@@ -376,6 +380,26 @@ sub args_with_db_values {
 
     return map { $_ => $row->{ $construct_args->{$_} } } ( keys %{$construct_args} );
 
+}
+
+sub _loop_sort_conditions {
+    
+    my $class = shift;
+    my $clauses = shift;
+    my $table = shift;
+    
+    foreach my $dirs ( keys %{$clauses} ) {
+        if ( ref( $clauses->{$dirs} ) eq 'ARRAY' ) {
+            foreach ( @{ $clauses->{$dirs} } ) {
+                $_ = $table . '.' . $_;
+            }
+        } else {
+            $clauses->{$dirs} = $table . '.' . $clauses->{$dirs};
+        }
+    }
+    
+    return $clauses;
+    
 }
 
 1;
