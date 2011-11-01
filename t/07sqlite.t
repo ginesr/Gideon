@@ -42,4 +42,4 @@ my $first = $persons->first;
 
 is( $persons->is_empty, 0,          'Not empty!' );
 is( $persons->length,   2,          'Total results' );
-is( $first->name,       'John Doe', 'Results as object' );
+is( $first->name,       'John John', 'Results as object' );

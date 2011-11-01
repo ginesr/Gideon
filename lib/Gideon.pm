@@ -161,6 +161,74 @@ sub lt {
 
 }
 
+sub _transform_sort_by_from_array {
+
+    my $class     = shift;
+    my $config    = shift;
+    my $options   = shift;
+    my $flattened = [];
+    
+    foreach my $clause ( @{ $config } ) {
+        $class->check_meta($clause) unless $options =~ /skip_meta_check/;
+        push @{$flattened}, $class->get_colum_for_attribute($clause);
+    }
+    
+    return $flattened;
+
+}
+
+sub _transform_sort_by_from_hash {
+
+    my $class     = shift;
+    my $config    = shift;
+    my $options   = shift;
+    my $flattened = [];
+
+    foreach my $clause ( keys %{ $config } ) {
+
+        my $attr = $config->{$clause};
+        $class->check_meta($attr) unless $options =~ /skip_meta_check/;
+        my $column = $class->get_colum_for_attribute($attr);
+
+        my $direction = '';
+        if ( $clause eq 'desc' ) {
+            $direction = '-desc';
+        }
+        if ( $clause eq 'asc' ) {
+            $direction = '-asc';
+        }
+        push @{$flattened}, { $direction => $column };
+    }
+
+    return $flattened;
+
+}
+
+sub validate_order_by {
+
+    my $class   = shift;
+    my $config  = shift;
+    my $options = shift || '';
+
+    if ( exists $config->{order_by} ) {
+
+        if ( ref( $config->{order_by} ) eq 'ARRAY' ) {
+            $config->{order_by} = $class->_transform_sort_by_from_array( $config->{order_by}, $options );
+        }
+        if ( ref( $config->{order_by} ) eq 'HASH' ) {
+            $config->{order_by} = $class->_transform_sort_by_from_hash( $config->{order_by}, $options );
+        }
+        unless ( ref( $config->{order_by} ) ) {
+            $class->check_meta( $config->{order_by} ) unless $options =~ /skip_meta_check/;
+            $config->{order_by} = $class->get_colum_for_attribute( $config->{order_by} );
+        }
+
+    }
+
+    return $config;
+
+}
+
 sub decode_params {
 
     my $class  = shift;
@@ -170,6 +238,7 @@ sub decode_params {
 
     if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
         $config = pop @args;
+        $config = $class->validate_order_by($config);
     }
 
     my $hash = Hash::MultiValue->new(@args);
@@ -182,7 +251,7 @@ sub decode_params {
         }
     }
 
-    return wantarray ? ($args, $config) : $args;
+    return wantarray ? ( $args, $config ) : $args;
 
 }
 
