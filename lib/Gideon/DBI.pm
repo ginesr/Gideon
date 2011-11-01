@@ -313,6 +313,11 @@ sub _from_store_dbh {
         $dbh = $args->[0];
         return $dbh;
     }
+    
+    if ( ref( $args->[0] ) and $args->[0]->can('connect') ) {
+        my $dbh = $args->[0]->connect();
+        return $dbh;
+    }
 
     my $dbi_string = $args->[0];
     my $user       = $args->[1];
