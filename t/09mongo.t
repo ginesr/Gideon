@@ -2,9 +2,16 @@
 
 use lib '.lib/';
 use strict;
-use Test::More tests => 3;
-use Mongo::Person;
+use Test::More;
 use Data::Dumper qw(Dumper);
+
+if ( mongo_installed() ) {
+    plan skip_all => 'MongoDB module not installed';
+} else {
+    plan tests => 3;
+}
+
+use Mongo::Person;
 use MongoDB;
 
 # Prepare test data ------------------------------------------------------------
@@ -26,3 +33,10 @@ my $first = $persons->first;
 is( $persons->is_empty, 0,     'Not empty!' );
 is( $persons->length,   1,     'Total results' );
 is( $first->name,       'Joe', 'Results as object' );
+
+sub mongo_installed {
+
+    try { use MongoDB; return undef }
+    catch { return 1 };
+
+}
