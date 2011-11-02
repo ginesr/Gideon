@@ -11,6 +11,6 @@ extends 'Gideon::DBI';
 store 'master:country';
 
 has 'name' => ( is => 'rw', isa => 'Str', column => 'country_name', metaclass => 'Gideon' );
-has 'iso'  => ( is => 'rw', isa => 'Str', column => 'country_iso',  metaclass => 'Gideon' );
+has 'iso'  => ( is => 'rw', isa => 'Maybe[Str]', column => 'country_iso',  metaclass => 'Gideon' );
 
 1;
