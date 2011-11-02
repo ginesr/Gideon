@@ -335,21 +335,21 @@ sub _from_store_dbh {
     if ( ref($self) and defined $self->__dbh() ) { return $self->__dbh() }
 
     my $dbh;
-    my $args = $self->get_store_args();
+    my $store = $self->get_store_args();
 
-    if ( ref( $args->[0] ) eq 'DBI::db' ) {
-        $dbh = $args->[0];
+    if ( ref( $store ) eq 'DBI::db' ) {
+        $dbh = $store;
         return $dbh;
     }
 
-    if ( ref( $args->[0] ) and $args->[0]->can('connect') ) {
-        my $dbh = $args->[0]->connect();
+    if ( ref( $store ) and $store->can('connect') ) {
+        my $dbh = $store->connect();
         return $dbh;
     }
 
-    my $dbi_string = $args->[0];
-    my $user       = $args->[1];
-    my $pw         = $args->[2];
+    my $dbi_string = $store;
+    my $user       = '';
+    my $pw         = '';
 
     unless ( $dbh = DBI->connect( $dbi_string, $user, $pw, { RaiseError => 1 } ) ) {
         Gideon::Error::Simple->throw($DBI::errstr);

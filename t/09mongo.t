@@ -11,6 +11,7 @@ if ( mongo_installed() ) {
     plan tests => 3;
 }
 
+use Example::Driver::Mongo;
 use Mongo::Person;
 use MongoDB;
 
@@ -25,7 +26,7 @@ $persons->insert( { id => 1, name => 'Joe', city => 'Dallas', country => 'US', t
 
 # END Prepare test data --------------------------------------------------------
 
-Gideon->register_store( 'gideon', MongoDB::Connection->new );
+Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
 
 my $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;

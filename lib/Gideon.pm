@@ -34,7 +34,7 @@ sub register_store {
     my $store_name = shift;
     my @args       = @_;
     die 'register store is a class method' if ref $class;
-    $stores{$store_name} = \@args;
+    $stores{$store_name} = $args[0];
 }
 
 sub new {

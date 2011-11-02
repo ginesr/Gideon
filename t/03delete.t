@@ -37,7 +37,7 @@ $dbh->{mock_session} = $mock_session;
 Gideon->register_store( 'master', $dbh );
 
 #using real db w/dbi compatible driver
-#Gideon->register_store('master','DBI:mysql:database=test;host=127.0.0.1;port=3306;mysql_enable_utf8=1;mysql_auto_reconnect=1','root','secret');
+#Gideon->register_store('master','DBI:mysql:database=test;host=127.0.0.1;port=3306;mysql_enable_utf8=1;mysql_auto_reconnect=1');
 
 my $record = Example::Person->find( id => 123, country => 'AR' );
 

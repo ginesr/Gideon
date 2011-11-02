@@ -28,23 +28,19 @@ sub find_all {
 
     try {
 
-        my $db    = $class->get_store_id();
-        my $table = $class->get_store_destination();
-
-        my $db_conn = $class->from_store_conn()->$db;
-        my $obj     = $db_conn->$table;
-
+        my $obj     = $class->mongo_conn( $class->get_store_destination() );
         my $results = Set::Array->new;
         my $all     = $obj->find;
 
         while ( my $doc = $all->next ) {
+            
             my $mongo_id = $doc->{_id};
 
-            my @construct_args = map { $_, $doc->{$_} } keys %{ $doc };
+            my @construct_args = map { $_, $doc->{$_} } keys %{$doc};
             my $obj = $class->new(@construct_args);
             $obj->is_stored(1);
             $obj->_mongo_id($mongo_id);
-            
+
             $results->push($obj);
         }
 
@@ -57,11 +53,18 @@ sub find_all {
     };
 }
 
-sub from_store_conn {
+sub mongo_conn {
 
-    my $class = shift;
-    my $store = $class->get_store_args();
-    return $store->[0];
+    my $class   = shift;
+    my $table   = shift;
+    my $db      = $class->get_store_id();
+    my $db_conn = $class->_from_store_conn()->$db;
+
+    if ($table) {
+        return $db_conn->$table;
+    }
+
+    return $db_conn;
 
 }
 
@@ -87,6 +90,25 @@ sub lte {
     my $class = shift;
     my $string = shift || "";
     return $string;
+}
+
+# Private ----------------------------------------------------------------------
+
+sub _from_store_conn {
+
+    my $class = shift;
+    my $store = $class->get_store_args();
+
+    if ( ref( $store ) eq 'MongoDB::Connection' ) {
+        return $store;
+    }
+
+    if ( ref( $store ) and $store->can('connect') ) {
+        return $store->connect();
+    }
+
+    return $store;
+
 }
 
 1;
