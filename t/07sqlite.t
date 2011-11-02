@@ -4,17 +4,17 @@ use lib '.lib/';
 use strict;
 use Try::Tiny;
 use Test::More;
-use Example::Person;
 use Data::Dumper qw(Dumper);
 use Cwd;
 
-if ( sqlite_installed() ) {
+if ( sqlite_not_installed() ) {
     plan skip_all => 'SQLite driver not installed';
 } else {
     plan tests => 3;
 }
 
 use Example::Driver::SQLite;
+use Example::Person;
 
 my $dir = getcwd;
 if ( $dir !~ /\/t/ ) { chdir('t') }
@@ -51,7 +51,7 @@ is( $persons->is_empty, 0,           'Not empty!' );
 is( $persons->length,   2,           'Total results' );
 is( $first->name,       'John John', 'Results as object' );
 
-sub sqlite_installed {
+sub sqlite_not_installed {
 
     try { use DBD::Sqlite; return undef }
     catch { return 1 };

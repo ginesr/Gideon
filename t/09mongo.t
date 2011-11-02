@@ -2,11 +2,15 @@
 
 use lib '.lib/';
 use strict;
+use Try::Tiny;
 use Test::More;
 use Data::Dumper qw(Dumper);
 
-if ( mongo_installed() ) {
+if ( mongo_not_installed() ) {
     plan skip_all => 'MongoDB module not installed';
+}
+elsif ( mongo_not_running() ) {
+    plan skip_all => 'Mongo daemon not running on localhost';
 } else {
     plan tests => 3;
 }
@@ -35,7 +39,11 @@ is( $persons->is_empty, 0,     'Not empty!' );
 is( $persons->length,   1,     'Total results' );
 is( $first->name,       'Joe', 'Results as object' );
 
-sub mongo_installed {
+sub mongo_not_running {
+    try { Example::Driver::Mongo->connect(); return undef } catch { return 1 }
+}
+
+sub mongo_not_installed {
 
     try { use MongoDB; return undef }
     catch { return 1 };
