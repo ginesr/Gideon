@@ -67,7 +67,7 @@ sub register_store {
     my $class      = shift;
     my $store_name = shift;
     my @args       = @_;
-    die if ref $class;
+    die 'register store is a class method' if ref $class;
     $stores{$store_name} = \@args;
 }
 
@@ -161,93 +161,21 @@ sub lt {
 
 }
 
-sub _transform_sort_by_from_array {
-
-    my $class     = shift;
-    my $config    = shift;
-    my $options   = shift;
-    my $flattened = [];
-
-    foreach my $clause ( @{$config} ) {
-        if ( ref($clause) eq 'HASH' ) {
-            my $flat = $class->_transform_sort_by_from_hash($clause,$options);
-            push @{$flattened}, $flat;
-        }
-        else {
-            $class->check_meta($clause) unless $options =~ /skip_meta_check/;
-            push @{$flattened}, $class->get_colum_for_attribute($clause);
-        }
-    }
-
-    return $flattened;
-
-}
-
-sub _transform_sort_by_from_hash {
-
-    my $class   = shift;
-    my $config  = shift;
-    my $options = shift;
-
-    my $flattened = [];
-
-    foreach my $clause ( keys %{$config} ) {
-
-        my $direction = '';
-        
-        if ( $clause eq 'desc' ) {
-            $direction = '-desc';
-        }
-        if ( $clause eq 'asc' ) {
-            $direction = '-asc';
-        }
-
-        if ( ref( $config->{$clause} ) eq 'ARRAY' ) {
-
-            my $columns = [];
-
-            foreach ( @{ $config->{$clause} } ) {
-                my $attr = $_;
-                $class->check_meta($attr) unless $options =~ /skip_meta_check/;
-                my $column = $class->get_colum_for_attribute($attr);
-                push @{$columns}, $column;
-            }
-
-            push @{$flattened}, { $direction => $columns };
-
-        } else {
-
-            my $attr = $config->{$clause};
-            $class->check_meta($attr) unless $options =~ /skip_meta_check/;
-            my $column = $class->get_colum_for_attribute($attr);
-            push @{$flattened}, { $direction => $column };
-
-        }
-    }
-
-    return $flattened;
-
-}
-
 sub validate_order_by {
 
     my $class   = shift;
     my $config  = shift;
     my $options = shift || '';
 
-    if ( exists $config->{order_by} ) {
-
-        if ( ref( $config->{order_by} ) eq 'ARRAY' ) {
-            $config->{order_by} = $class->_transform_sort_by_from_array( $config->{order_by}, $options );
-        }
-        if ( ref( $config->{order_by} ) eq 'HASH' ) {
-            $config->{order_by} = $class->_transform_sort_by_from_hash( $config->{order_by}, $options );
-        }
-        unless ( ref( $config->{order_by} ) ) {
-            $class->check_meta( $config->{order_by} ) unless $options =~ /skip_meta_check/;
-            $config->{order_by} = $class->get_colum_for_attribute( $config->{order_by} );
-        }
-
+    if ( ref( $config ) eq 'ARRAY' ) {
+        $config = $class->_transform_sort_by_from_array( $config, $options );
+    }
+    if ( ref( $config ) eq 'HASH' ) {
+        $config = $class->_transform_sort_by_from_hash( $config, $options );
+    }
+    unless ( ref( $config ) ) {
+        $class->check_meta( $config ) unless $options =~ /skip_meta_check/;
+        $config = $class->get_colum_for_attribute( $config );
     }
 
     return $config;
@@ -263,7 +191,9 @@ sub decode_params {
 
     if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
         $config = pop @args;
-        $config = $class->validate_order_by($config);
+        if ( exists $config->{order_by} ) {
+            $config->{order_by} = $class->validate_order_by( $config->{order_by} );
+        }
     }
 
     my $hash = Hash::MultiValue->new(@args);
@@ -519,6 +449,73 @@ sub _init {
 
     my $self = shift;
     my $args = {@_};
+
+}
+
+sub _transform_sort_by_from_array {
+
+    my $class     = shift;
+    my $config    = shift;
+    my $options   = shift;
+    my $flattened = [];
+
+    foreach my $clause ( @{$config} ) {
+        if ( ref($clause) eq 'HASH' ) {
+            my $flat = $class->_transform_sort_by_from_hash( $clause, $options );
+            push @{$flattened}, $flat;
+        } else {
+            $class->check_meta($clause) unless $options =~ /skip_meta_check/;
+            push @{$flattened}, $class->get_colum_for_attribute($clause);
+        }
+    }
+
+    return $flattened;
+
+}
+
+sub _transform_sort_by_from_hash {
+
+    my $class   = shift;
+    my $config  = shift;
+    my $options = shift;
+
+    my $flattened = [];
+
+    foreach my $clause ( keys %{$config} ) {
+
+        my $direction = '';
+
+        if ( $clause eq 'desc' ) {
+            $direction = '-desc';
+        }
+        if ( $clause eq 'asc' ) {
+            $direction = '-asc';
+        }
+
+        if ( ref( $config->{$clause} ) eq 'ARRAY' ) {
+
+            my $columns = [];
+
+            foreach ( @{ $config->{$clause} } ) {
+                my $attr = $_;
+                $class->check_meta($attr) unless $options =~ /skip_meta_check/;
+                my $column = $class->get_colum_for_attribute($attr);
+                push @{$columns}, $column;
+            }
+
+            push @{$flattened}, { $direction => $columns };
+
+        } else {
+
+            my $attr = $config->{$clause};
+            $class->check_meta($attr) unless $options =~ /skip_meta_check/;
+            my $column = $class->get_colum_for_attribute($attr);
+            push @{$flattened}, { $direction => $column };
+
+        }
+    }
+
+    return $flattened;
 
 }
 
