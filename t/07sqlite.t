@@ -2,11 +2,18 @@
 
 use lib '.lib/';
 use strict;
-use Test::More tests => 3;
+use Try::Tiny;
+use Test::More;
 use Example::Person;
 use Data::Dumper qw(Dumper);
-use DBD::Sqlite;
 use Cwd;
+
+if ( sqlite_installed() ) {
+    plan skip_all => 'SQLite driver not installed';
+} else {
+    plan tests => 3;
+}
+
 use Example::Driver::SQLite;
 
 my $dir = getcwd;
@@ -40,6 +47,13 @@ Gideon->register_store( 'master', Example::Driver::SQLite->new( db => 'test.db' 
 my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
-is( $persons->is_empty, 0,          'Not empty!' );
-is( $persons->length,   2,          'Total results' );
+is( $persons->is_empty, 0,           'Not empty!' );
+is( $persons->length,   2,           'Total results' );
 is( $first->name,       'John John', 'Results as object' );
+
+sub sqlite_installed {
+
+    try { use DBD::Sqlite; return undef }
+    catch { return 1 };
+
+}

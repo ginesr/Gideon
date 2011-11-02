@@ -263,6 +263,14 @@ sub transform_filter_values {
     return scalar @values == 1 ? $values[0] : \@values;
 }
 
+sub get_store_id {
+    my $self  = shift;
+    my $pkg   = ref($self) ? ref($self) : $self;
+    my $store = $__store->{$pkg};
+    my ( $id, $dest ) = split( /:/, $store );
+    return $id;
+}
+
 sub get_store_destination {
     my $self  = shift;
     my $pkg   = ref($self) ? ref($self) : $self;
