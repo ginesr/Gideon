@@ -16,52 +16,18 @@ my $__meta  = undef;
 my $__store = {};
 our %stores = ();
 
-after 'new' => sub {
+has 'is_modified' => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+);
 
-    my $self = shift;
-    my $meta = $self->meta;
-
-    for my $attribute (
-        map { $meta->get_attribute($_) }
-        sort $meta->get_attribute_list
-      ) {
-
-        my $name = $attribute->name;
-
-        $meta->add_before_method_modifier(
-            $name,
-            sub {
-                my $self      = shift;
-                my $new_value = shift;
-                if ( defined $new_value ) {
-                    my $meta      = $self->meta;
-                    my $attribute = $meta->get_attribute($name);
-                    my $reader    = $attribute->get_read_method;
-                    my $value     = $self->$reader;
-                    if ( defined $value and $value ne $new_value ) {
-                        $self->is_modified(1);
-                    }
-                }
-            }
-        );
-    }
-    $meta->add_attribute(
-        'is_modified' => (
-            is      => 'rw',
-            isa     => 'Bool',
-            default => 0,
-        )
-    );
-    $meta->add_attribute(
-        'is_stored' => (
-            is      => 'rw',
-            isa     => 'Bool',
-            default => 0,
-            lazy    => 1,
-        )
-    );
-
-};
+has 'is_stored' => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+    lazy    => 1,
+);
 
 sub register_store {
     my $class      = shift;
