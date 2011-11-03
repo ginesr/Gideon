@@ -48,6 +48,7 @@ sub save {
             if (!$self->_mongo_id) {
                 Gideon::Error::Simple->throw('Can\'t update record without object ID');
             }
+            $obj->update( { "_id" => $self->_mongo_id }, { '$set' => \%map } );
             
         }
         else {
@@ -119,7 +120,7 @@ sub find_all {
     }
     catch {
         cluck $_;
-        return $_;
+        croak $_;
     };
 }
 
