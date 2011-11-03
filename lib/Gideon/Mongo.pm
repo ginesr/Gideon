@@ -43,17 +43,25 @@ sub save {
 
         my %map = map { $_, $self->$_ } @{$fields};
         
-        if ( my $serial = $self->get_serial_attr() ) {
-            my $next_id = $self->increment_serial($table);
-            $map{$serial} = $next_id;
-        }
-        
         if ( $self->is_stored ) {
+            
+            if (!$self->_mongo_id) {
+                Gideon::Error::Simple->throw('Can\'t update record without object ID');
+            }
+            
         }
         else {
+            
+            if ( my $serial = $self->get_serial_attr() ) {
+                my $next_id = $self->increment_serial($table);
+                $map{$serial} = $next_id;
+            }
+            
             my $id = $obj->insert( \%map );
             $self->_mongo_id($id);
         }
+        
+        return;
 
     }
     catch {
