@@ -7,7 +7,7 @@ use Gideon::Error;
 use Gideon::Error::Simple;
 use MongoDB;
 use Try::Tiny;
-use Carp qw(cluck);
+use Carp qw(cluck croak);
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
@@ -19,8 +19,70 @@ extends 'Gideon';
 has '_mongo_id' => ( is => 'rw', isa => 'MongoDB::OID' );
 
 sub remove { }
-sub save   { }
-sub find   { }
+
+sub save {
+
+    my $self = shift;
+
+    unless ( ref($self) ) {
+        Gideon::Error->throw('save() is not a static method');
+    }
+
+    return undef if ( $self->is_stored and not $self->is_modified );
+
+    try {
+
+        my $table  = $self->get_store_destination();
+        my $obj    = $self->mongo_conn($table);
+        my $fields = $self->get_attributes_from_meta();
+
+        unless ( $self->is_stored ) {
+            # remove auto increment columns for insert
+            $fields = $self->remove_auto_columns_for_insert($fields);
+        }
+
+        my %map = map { $_, $self->$_ } @{$fields};
+        
+        if ( my $serial = $self->get_serial_attr() ) {
+            my $next_id = $self->increment_serial($table);
+            $map{$serial} = $next_id;
+        }
+        
+        if ( $self->is_stored ) {
+        }
+        else {
+            my $id = $obj->insert( \%map );
+            $self->_mongo_id($id);
+        }
+
+    }
+    catch {
+        cluck $_;
+        croak $_;
+    }
+
+}
+
+sub increment_serial {
+    
+    my $self = shift;
+    my $table = shift || die;
+    
+    my $serial_data = $self->mongo_conn('gideon_serial');
+    my $data        = $serial_data->find( { 'table' => $table } )->next;
+    
+    if ($data) {
+        my $id = $data->{id} + 1;
+        $serial_data->update( { "_id" => $data->{_id} }, { '$set' => { 'id' => $id } } );
+        return $id;
+    }
+
+    my $id = $serial_data->insert( {'table' => $table, 'id' => 1 } );
+    return 1;
+    
+}
+
+sub find { }
 
 sub find_all {
 
@@ -33,7 +95,7 @@ sub find_all {
         my $all     = $obj->find;
 
         while ( my $doc = $all->next ) {
-            
+
             my $mongo_id = $doc->{_id};
 
             my @construct_args = map { $_, $doc->{$_} } keys %{$doc};
@@ -92,6 +154,24 @@ sub lte {
     return $string;
 }
 
+sub remove_auto_columns_for_insert {
+
+    my $self  = shift;
+    my $field = shift;
+
+    my $serial = $self->get_serial_columns_hash;
+    my $filter = [];
+
+    foreach ( @{$field} ) {
+        unless ( exists $serial->{$_} ) {
+            push @{$filter}, $_;
+        }
+    }
+    $field = $filter;
+    return $field;
+
+}
+
 # Private ----------------------------------------------------------------------
 
 sub _from_store_conn {
@@ -99,11 +179,11 @@ sub _from_store_conn {
     my $class = shift;
     my $store = $class->get_store_args();
 
-    if ( ref( $store ) eq 'MongoDB::Connection' ) {
+    if ( ref($store) eq 'MongoDB::Connection' ) {
         return $store;
     }
 
-    if ( ref( $store ) and $store->can('connect') ) {
+    if ( ref($store) and $store->can('connect') ) {
         return $store->connect();
     }
 

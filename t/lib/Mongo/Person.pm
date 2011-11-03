@@ -13,6 +13,7 @@ store 'gideon:person';
 has 'id' => (
     is          => 'rw',
     isa         => 'Num',
+    serial      => 1,
     primary_key => 1,
     metaclass   => 'Gideon'
 );

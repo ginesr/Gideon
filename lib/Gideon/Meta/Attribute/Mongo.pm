@@ -6,6 +6,12 @@ our $VERSION = '0.02';
 
 extends 'Mouse::Meta::Attribute';
 
+has 'serial' => (
+    is => 'rw',
+    isa => 'Bool',
+    predicate => 'has_serial',
+);
+
 has 'primary_key' => (
     is => 'rw',
     isa => 'Int',

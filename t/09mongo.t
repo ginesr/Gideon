@@ -39,6 +39,9 @@ is( $persons->is_empty, 0,     'Not empty!' );
 is( $persons->length,   1,     'Total results' );
 is( $first->name,       'Joe', 'Results as object' );
 
+my $new_person = Mongo::Person->new( name => 'Foo', city => 'Vegas', country => 'US', type => 11 );
+$new_person->save;
+
 sub mongo_not_running {
     try { Example::Driver::Mongo->connect(); return undef } catch { return 1 }
 }
