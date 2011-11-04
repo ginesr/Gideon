@@ -12,7 +12,7 @@ if ( mongo_not_installed() ) {
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 7;
+    plan tests => 14;
 }
 
 use Example::Driver::Mongo;
@@ -59,6 +59,34 @@ lives_ok(
     },
     'Insert record'
 );
+
+my $new_delete = Mongo::Person->new( name => 'Bar', city => 'Miami', country => 'US', type => 10 );
+lives_ok(
+    sub {
+        $new_delete->save;
+    },
+    'Insert for deletion'
+);
+
+my $stored = Mongo::Person->find( name => 'Bar' );
+
+is( $stored->name,        'Bar',   'Using find() name' );
+is( $stored->city,        'Miami', 'Using find() city' );
+is( $stored->is_stored,   1,       'Using find() is stored' );
+is( $stored->is_modified, undef,   'Using find() was changed' );
+
+lives_ok(
+    sub {
+        $stored->remove;
+    },
+    'Remove stored object'
+);
+
+my $not_existent = Mongo::Person->find( name => 'Bar' );
+
+is($not_existent, undef, 'No results using find()');
+
+# Prerequisites for running tests ----------------------------------------------
 
 sub mongo_not_running {
 

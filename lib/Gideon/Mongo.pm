@@ -18,7 +18,38 @@ our $VERSION = '0.02';
 extends 'Gideon';
 has '_mongo_id' => ( is => 'rw', isa => 'MongoDB::OID' );
 
-sub remove { }
+sub remove {
+
+    my $self = shift;
+
+    unless ( ref($self) ) {
+        Gideon::Error->throw('remove() is not a static method');
+    }
+
+    return undef unless $self->is_stored;
+
+    try {
+        
+        unless ( $self->_mongo_id ) {
+            Gideon::Error::Simple->throw('can\'t remove() without mongo unique id');    
+        }
+
+        my $obj = $self->mongo_conn( $self->get_store_destination() );
+
+        $obj->remove( { "_id" => $self->_mongo_id } );
+
+        $self->is_stored(0);
+        $self->is_modified(0);
+
+        return;
+
+    }
+    catch {
+        cluck $_;
+        croak $_;
+    }
+
+}
 
 sub save {
 
@@ -37,31 +68,31 @@ sub save {
         my $fields = $self->get_attributes_from_meta();
 
         unless ( $self->is_stored ) {
+
             # remove auto increment columns for insert
             $fields = $self->remove_auto_columns_for_insert($fields);
         }
 
         my %map = map { $_, $self->$_ } @{$fields};
-        
+
         if ( $self->is_stored ) {
-            
-            if (!$self->_mongo_id) {
+
+            if ( !$self->_mongo_id ) {
                 Gideon::Error::Simple->throw('Can\'t update record without object ID');
             }
             $obj->update( { "_id" => $self->_mongo_id }, { '$set' => \%map } );
-            
-        }
-        else {
-            
+
+        } else {
+
             if ( my $serial = $self->get_serial_attr() ) {
                 my $next_id = $self->increment_serial($table);
                 $map{$serial} = $next_id;
             }
-            
+
             my $id = $obj->insert( \%map );
             $self->_mongo_id($id);
         }
-        
+
         return;
 
     }
@@ -72,26 +103,42 @@ sub save {
 
 }
 
-sub increment_serial {
-    
-    my $self = shift;
-    my $table = shift || die;
-    
-    my $serial_data = $self->mongo_conn('gideon_serial');
-    my $data        = $serial_data->find( { 'table' => $table } )->next;
-    
-    if ($data) {
-        my $id = $data->{id} + 1;
-        $serial_data->update( { "_id" => $data->{_id} }, { '$set' => { 'id' => $id } } );
-        return $id;
+sub find {
+
+    my $class = shift;
+    my ( $args, $config ) = $class->decode_params(@_);
+
+    if ( ref($class) ) {
+        Gideon::Error->throw('find() is a static method');
     }
-
-    my $id = $serial_data->insert( {'table' => $table, 'id' => 1 } );
-    return 1;
     
-}
+    try {
 
-sub find { }
+        my $table  = $class->get_store_destination();
+        my $db     = $class->mongo_conn($table);
+        my $fields = $class->get_attributes_from_meta();
+        
+        if ( my $data = $db->find( $args )->next ) {
+
+            my $mongo_id = $data->{_id};
+            my @construct_args = map { $_, $data->{$_} } keys %{$data};
+
+            my $obj = $class->new(@construct_args);
+            $obj->is_stored(1);
+            $obj->_mongo_id($mongo_id);
+
+            return $obj;
+        }
+        
+        return;
+
+    }
+    catch {
+        cluck $_;
+        croak $_;
+    };
+
+}
 
 sub find_all {
 
@@ -136,6 +183,25 @@ sub mongo_conn {
     }
 
     return $db_conn;
+
+}
+
+sub increment_serial {
+
+    my $self = shift;
+    my $table = shift || die;
+
+    my $serial_data = $self->mongo_conn('gideon_serial');
+    my $data = $serial_data->find( { 'table' => $table } )->next;
+
+    if ($data) {
+        my $id = $data->{id} + 1;
+        $serial_data->update( { "_id" => $data->{_id} }, { '$set' => { 'id' => $id } } );
+        return $id;
+    }
+
+    my $id = $serial_data->insert( { 'table' => $table, 'id' => 1 } );
+    return 1;
 
 }
 
