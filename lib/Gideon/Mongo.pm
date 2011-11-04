@@ -113,6 +113,8 @@ sub find {
         Gideon::Error->throw('find() is a static method');
     }
     
+    $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
+    
     try {
 
         my $table  = $class->get_store_destination();
@@ -152,7 +154,7 @@ sub find_all {
     }
 
     $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
-
+    
     try {
 
         my $obj     = $class->mongo_conn( $class->get_store_destination() );
@@ -171,7 +173,7 @@ sub find_all {
             $results->push($obj);
         }
 
-        return $results;
+        return wantarray ? $results->flatten() : $results;
 
     }
     catch {

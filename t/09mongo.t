@@ -12,7 +12,7 @@ if ( mongo_not_installed() ) {
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 16;
+    plan tests => 18;
 }
 
 use Example::Driver::Mongo;
@@ -27,9 +27,9 @@ my $persons = $db->person;
 
 $persons->drop;
 
-$persons->insert( { id => 1, name => 'Joe', city => 'Dallas', country => 'US', type => '20' } );
-$persons->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => '20' } );
-$persons->insert( { id => 3, name => 'Don', city => 'New York', country => 'US', type => '20' } );
+$persons->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US', type => 10 } );
+$persons->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
+$persons->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
 
 # END Prepare test data --------------------------------------------------------
 
@@ -86,13 +86,19 @@ lives_ok(
 );
 
 my $not_existent = Mongo::Person->find( name => 'Bar' );
-
-is($not_existent, undef, 'No results using find()');
+is( $not_existent, undef, 'No results using find()' );
 
 my $list = Mongo::Person->find_all( city => { like => 'york' } );
 
-is( $list->is_empty, 0,     'Not empty!' );
-is( $list->length,   2,     'Total results using like' );
+is( $list->is_empty, 0, 'Not empty!' );
+is( $list->length,   2, 'Total results using like' );
+
+my $greater = Mongo::Person->find_all( type => { gt => 20 } );
+is( $greater->length,   1, 'Total results using gt' );
+
+my $greatereq = Mongo::Person->find_all( type => { gte => 20 } );
+is( $greatereq->length,   2, 'Total results using gte' );
+
 
 # Prerequisites for running tests ----------------------------------------------
 
