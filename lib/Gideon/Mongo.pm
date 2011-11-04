@@ -12,6 +12,7 @@ use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
 use Set::Array;
+use Gideon::Filters::Mongo;
 
 our $VERSION = '0.02';
 
@@ -143,12 +144,20 @@ sub find {
 sub find_all {
 
     my $class = shift;
+    
+    my ( $args, $config ) = $class->decode_params(@_);
+
+    if ( ref($class) ) {
+        Gideon::Error->throw('find() is a static method');
+    }
+
+    $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
 
     try {
 
         my $obj     = $class->mongo_conn( $class->get_store_destination() );
         my $results = Set::Array->new;
-        my $all     = $obj->find;
+        my $all     = $obj->find($args);
 
         while ( my $doc = $all->next ) {
 
@@ -203,6 +212,12 @@ sub increment_serial {
     my $id = $serial_data->insert( { 'table' => $table, 'id' => 1 } );
     return 1;
 
+}
+
+sub like {
+    my $class = shift;
+    my $string = shift || "";
+    return qr/$string/i;
 }
 
 sub lt {
