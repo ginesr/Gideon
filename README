@@ -8,3 +8,6 @@ Mouse
 Try::Tiny
 Set::Array
 DBI
+Test::Exception
+Test::More
+Data::Dumper
