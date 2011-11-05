@@ -5,10 +5,10 @@ use strict;
 use warnings;
 use Gideon::Error;
 use Gideon::Error::Simple;
-use SQL::Abstract;
+use Gideon::Filters::DBI;
 use Try::Tiny;
 use DBI;
-use Carp qw(cluck);
+use Carp qw(cluck carp);
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
@@ -31,9 +31,6 @@ sub remove {
 
     try {
 
-        my $dbh    = $self->dbh;
-        my $sql    = SQL::Abstract->new;
-        my $table  = $self->get_store_destination();
         my $fields = $self->get_key_columns_hash();
 
         if ( scalar( keys %{$fields} ) == 0 ) {
@@ -41,8 +38,7 @@ sub remove {
         }
 
         my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
-
-        my ( $stmt, @bind ) = $sql->delete( $table, \%where );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), undef, \%where );
 
         my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
         my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
@@ -75,9 +71,6 @@ sub save {
 
     try {
 
-        my $dbh    = $self->dbh;
-        my $sql    = SQL::Abstract->new;
-        my $table  = $self->get_store_destination();
         my $fields = $self->get_columns_hash();
 
         unless ( $self->is_stored ) {
@@ -91,9 +84,9 @@ sub save {
         my @bind = ();
 
         if ( $self->is_stored ) {
-            ( $stmt, @bind ) = $sql->update( $table, \%data );
+            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $self->get_store_destination(), undef, \%data );
         } else {
-            ( $stmt, @bind ) = $sql->insert( $table, \%data );
+            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), undef, \%data );
         }
 
         my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
@@ -113,8 +106,8 @@ sub save {
 
     }
     catch {
-        warn 'oh no!! ' . $_;
-        return $_;
+        cluck $_;
+        croak $_;
     };
 
 }
@@ -145,14 +138,12 @@ sub find {
 
     try {
 
-        my $sql = SQL::Abstract->new;
-
         my $fields = $class->get_columns_from_meta();
         my $map    = $class->map_args_with_meta($args);
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my $order  = $config->{order_by} || [];
 
-        my ( $stmt, @bind ) = $sql->select( $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order) );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order) );
 
         my $sth  = $class->dbh->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
@@ -171,7 +162,7 @@ sub find {
     }
     catch {
         cluck $_;
-        return $_;
+        croak $_;
     };
 
 }
@@ -189,14 +180,12 @@ sub find_all {
 
     try {
 
-        my $sql = SQL::Abstract->new;
-
         my $fields = $class->get_columns_from_meta();
         my $map    = $class->map_args_with_meta($args);
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my $order  = $config->{order_by} || [];
 
-        my ( $stmt, @bind ) = $sql->select( $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order) );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order) );
 
         my $sth  = $class->dbh->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
@@ -220,7 +209,7 @@ sub find_all {
     }
     catch {
         cluck $_;
-        return $_;
+        croak $_;
     };
 
 }
@@ -297,7 +286,6 @@ sub dbh {
     if ( ref($self) and defined $self->__dbh() ) {
         return $self->__dbh;
     }
-
     return $self->_from_store_dbh();
 
 }

@@ -21,20 +21,17 @@ if ( $dir !~ /\/t/ ) { chdir('t') }
 
 # Prepare test data ------------------------------------------------------------
 
-my $dbh = DBI->connect( "dbi:SQLite:dbname=test.db", "", "" );
+my $dbh = DBI->connect( "dbi:SQLite:dbname=db/test.db", "", "" );
 
-$dbh->do("drop table person");
+$dbh->do("drop table IF EXISTS person");
 $dbh->do(
-    "CREATE TABLE person
-(
+    "CREATE TABLE person (
        person_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
        person_name VARCHAR(150) NOT NULL,
        person_city TEXT,
        person_country TEXT,
        person_type INTEGER
-)
-"
-);
+)");
 
 $dbh->do("insert into person (person_name,person_city,person_country,person_type) values ('John Doe','Las Vegas','US',10)");
 $dbh->do("insert into person (person_name,person_city,person_country,person_type) values ('John John','San Francisco','US',10)");
@@ -42,7 +39,7 @@ $dbh->do("insert into person (person_name,person_city,person_country,person_type
 
 # END Prepare test data --------------------------------------------------------
 
-Gideon->register_store( 'master', Example::Driver::SQLite->new( db => 'test.db' ) );
+Gideon->register_store( 'master', Example::Driver::SQLite->new( db => 'db/test.db' ) );
 
 my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;

@@ -5,14 +5,14 @@ use strict;
 use Try::Tiny;
 use Test::More;
 use Data::Dumper qw(Dumper);
+use Test::Exception;
 
 if ( mongo_not_installed() ) {
     plan skip_all => 'MongoDB module not installed';
-}
-elsif ( mongo_not_running() ) {
+} elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 3;
+    plan tests => 18;
 }
 
 use Example::Driver::Mongo;
@@ -26,7 +26,10 @@ my $db      = $conn->gideon;
 my $persons = $db->person;
 
 $persons->drop;
-$persons->insert( { id => 1, name => 'Joe', city => 'Dallas', country => 'US', type => '20' } );
+
+$persons->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US', type => 10 } );
+$persons->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
+$persons->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
 
 # END Prepare test data --------------------------------------------------------
 
@@ -36,16 +39,77 @@ my $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 
 my $first = $persons->first;
 
 is( $persons->is_empty, 0,     'Not empty!' );
-is( $persons->length,   1,     'Total results' );
+is( $persons->length,   3,     'Total results' );
 is( $first->name,       'Joe', 'Results as object' );
 
+$first->name('John');
+
+is( $first->is_stored,   1, 'Object is stored' );
+is( $first->is_modified, 1, 'Object was changed' );
+
+lives_ok(
+    sub {
+        $first->save;
+    },
+    'Update record'
+);
+
+my $new_person = Mongo::Person->new( name => 'Foo', city => 'Vegas', country => 'US', type => 11 );
+
+lives_ok(
+    sub {
+        $new_person->save;
+    },
+    'Insert record'
+);
+
+my $new_delete = Mongo::Person->new( name => 'Bar', city => 'Miami', country => 'US', type => 10 );
+lives_ok(
+    sub {
+        $new_delete->save;
+    },
+    'Insert for deletion'
+);
+
+my $stored = Mongo::Person->find( name => 'Bar' );
+
+is( $stored->name,        'Bar',   'Using find() name' );
+is( $stored->city,        'Miami', 'Using find() city' );
+is( $stored->is_stored,   1,       'Using find() is stored' );
+is( $stored->is_modified, undef,   'Using find() was changed' );
+
+lives_ok(
+    sub {
+        $stored->remove;
+    },
+    'Remove stored object'
+);
+
+my $not_existent = Mongo::Person->find( name => 'Bar' );
+is( $not_existent, undef, 'No results using find()' );
+
+my $list = Mongo::Person->find_all( city => { like => 'york' } );
+
+is( $list->is_empty, 0, 'Not empty!' );
+is( $list->length,   2, 'Total results using like' );
+
+my $greater = Mongo::Person->find_all( type => { gt => 20 } );
+is( $greater->length,   1, 'Total results using gt' );
+
+my $greatereq = Mongo::Person->find_all( type => { gte => 20 } );
+is( $greatereq->length,   2, 'Total results using gte' );
+
+
+# Prerequisites for running tests ----------------------------------------------
+
 sub mongo_not_running {
+
     try { Example::Driver::Mongo->connect(); return undef } catch { return 1 }
+
 }
 
 sub mongo_not_installed {
 
-    try { use MongoDB; return undef }
-    catch { return 1 };
+    try { use MongoDB; return undef } catch { return 1 };
 
 }

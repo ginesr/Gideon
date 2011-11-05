@@ -1,4 +1,14 @@
 
+=head1 NAME
+
+Gideon - Datamapper written in Perl
+
+=head1 DESCRIPTION
+
+Gideon is intended to be an ORM completly written in Perl
+
+=cut 
+
 package Gideon;
 
 use strict;
@@ -9,25 +19,17 @@ use Carp qw(cluck);
 use Gideon::Error;
 use Mouse;
 use Hash::MultiValue;
+use 5.008_001;
 
 our $VERSION = '0.02';
+$VERSION = eval $VERSION;
 
 my $__meta  = undef;
 my $__store = {};
 our %stores = ();
 
-has 'is_modified' => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-);
-
-has 'is_stored' => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-    lazy    => 1,
-);
+has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
+has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
 
 sub register_store {
     my $class      = shift;
@@ -133,15 +135,15 @@ sub validate_order_by {
     my $config  = shift;
     my $options = shift || '';
 
-    if ( ref( $config ) eq 'ARRAY' ) {
+    if ( ref($config) eq 'ARRAY' ) {
         $config = $class->_transform_sort_by_from_array( $config, $options );
     }
-    if ( ref( $config ) eq 'HASH' ) {
+    if ( ref($config) eq 'HASH' ) {
         $config = $class->_transform_sort_by_from_hash( $config, $options );
     }
-    unless ( ref( $config ) ) {
-        $class->check_meta( $config ) unless $options =~ /skip_meta_check/;
-        $config = $class->get_colum_for_attribute( $config );
+    unless ( ref($config) ) {
+        $class->check_meta($config) unless $options =~ /skip_meta_check/;
+        $config = $class->get_colum_for_attribute($config);
     }
 
     return $config;
@@ -276,6 +278,34 @@ sub check_meta {
 
 }
 
+sub get_serial_attr {
+    my $class = shift;
+    if (my $serials = $class->get_serial_attr_hash) {
+        my $attr;
+        foreach (sort keys %{ $serials }) {
+            $attr = $_;
+            last;
+        }
+        return $attr;
+    }
+}
+
+sub get_serial_attr_hash {
+
+    my $class = shift;
+    my $pkg   = ref($class) ? ref($class) : $class;
+    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
+    my $hash  = {};
+
+    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        next unless defined $meta->{attributes}->{$attribute}->{serial};
+        $hash->{$attribute} = $attribute;
+    }
+
+    return scalar keys %{$hash} == 1 ? $hash : undef;
+    
+}
+
 sub get_serial_columns_hash {
 
     my $class = shift;
@@ -312,6 +342,16 @@ sub get_columns_hash {
 sub get_key_columns_hash {
     my $class = shift;
     return $class->get_columns_hash('filter_keys');
+}
+
+sub get_attributes_from_meta {
+
+    my $class = shift;
+    my $pkg   = ref($class) ? ref($class) : $class;
+    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
+
+    my @map = map { $_ } ( keys %{ $meta->{attributes} } );
+    return \@map;
 }
 
 sub get_attribute_for_column {
@@ -371,11 +411,13 @@ sub get_all_meta {
       ) {
 
         my $name = $attribute->name;
-        next unless $attribute->isa('Gideon::Meta::Attribute::DBI');
+        if ( ref($attribute) =~ /Mouse::Meta::Attribute/ ) {
+            next;
+        }
 
-        $cache_meta->{$class}->{attributes}->{$name}->{column} = $attribute->column;
         $cache_meta->{$class}->{attributes}->{$name}->{key}    = $attribute->primary_key;
-        $cache_meta->{$class}->{attributes}->{$name}->{serial} = $attribute->serial;
+        $cache_meta->{$class}->{attributes}->{$name}->{column} = $attribute->column if ( $attribute->can('column') );
+        $cache_meta->{$class}->{attributes}->{$name}->{serial} = $attribute->serial if ( $attribute->can('serial') );
     }
 
     $__meta = $cache_meta;
@@ -527,3 +569,32 @@ sub _transform_filter {
 }
 
 1;
+
+__END__
+
+=head1 AUTHOR
+
+Gines Razanov
+
+=head1 COPYRIGHT
+
+The following copyright notice applies to all the files provided in
+this distribution, including binary files, unless explicitly noted
+otherwise.
+
+Copyright 2011 Gines Razanov
+
+=head1 CONTRIBUTORS
+
+Mariano Wahlmann (bluescreen10)
+
+=head1 SEE ALSO
+
+GitHub: L<https://github.com/ginesr/Gideon>
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
