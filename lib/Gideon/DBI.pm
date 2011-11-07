@@ -51,10 +51,8 @@ sub remove {
 
     }
     catch {
-        if ( ref $_ eq 'Gideon::Error' ) {
-            die $_;
-        }
-        warn 'oh no!! ' . Dumper($_);
+        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
+        croak $_;
     };
 
 }
@@ -106,7 +104,7 @@ sub save {
 
     }
     catch {
-        cluck $_;
+        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
         croak $_;
     };
 
@@ -161,7 +159,7 @@ sub find {
 
     }
     catch {
-        cluck $_;
+        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
         croak $_;
     };
 
@@ -208,7 +206,7 @@ sub find_all {
 
     }
     catch {
-        cluck $_;
+        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
         croak $_;
     };
 

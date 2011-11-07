@@ -24,6 +24,8 @@ use 5.008_001;
 our $VERSION = '0.02';
 $VERSION = eval $VERSION;
 
+our $EXCEPTION_DEBUG = 0;
+
 my $__meta  = undef;
 my $__store = {};
 our %stores = ();
