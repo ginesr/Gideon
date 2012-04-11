@@ -50,7 +50,7 @@ is( $first->name,       'John John', 'Results as object' );
 
 sub sqlite_not_installed {
 
-    try { use DBD::Sqlite; return undef }
+    try { use DBD::SQLite; return undef }
     catch { return 1 };
 
 }

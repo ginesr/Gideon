@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib '.lib/';
+use lib './lib/';
 use strict;
 use Test::More tests => 5;
 use Data::Dumper qw(Dumper);

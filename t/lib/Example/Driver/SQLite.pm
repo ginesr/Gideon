@@ -6,7 +6,7 @@ use warnings;
 use DBI;
 use Example::Error::Simple;
 use Mouse;
-use DBD::Sqlite;
+use DBD::SQLite;
 
 extends 'Gideon::DB::Driver';
 
