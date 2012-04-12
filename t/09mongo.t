@@ -35,7 +35,7 @@ $persons->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US'
 
 Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
 
-my $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
+$persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
 is( $persons->is_empty, 0,     'Not empty!' );
