@@ -2,8 +2,8 @@
 
 use lib './lib/';
 use strict;
-use Try::Tiny;
 use Test::More;
+use Try::Tiny;
 use Data::Dumper qw(Dumper);
 use Test::Exception;
 
@@ -12,12 +12,12 @@ if ( mongo_not_installed() ) {
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 18;
+    plan tests => 19;
 }
 
 use Example::Driver::Mongo;
 use Mongo::Person;
-use MongoDB;
+use_ok( 'MongoDB' );
 
 # Prepare test data ------------------------------------------------------------
 
