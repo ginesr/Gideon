@@ -31,6 +31,8 @@ $persons->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US'
 $persons->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
 $persons->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
 
+sleep(2); # i know this is stupid, sorry
+
 # END Prepare test data --------------------------------------------------------
 
 Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
