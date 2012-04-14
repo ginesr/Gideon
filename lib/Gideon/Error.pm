@@ -4,9 +4,14 @@ package Gideon::Error;
 use strict;
 use warnings;
 use Carp qw(cluck carp croak);
+use Class::Accessor::Fast qw(antlers);
+use overload '""' => \&stringify, fallback => 1;
 
 our $ERROR_DEBUG = 0;
 our $VERSION = '0.02';
+
+has 'msg' => ( is => 'rw', isa => 'Str' );
+has 'pkg' => ( is => 'rw', isa => 'Str' );
 
 sub throw {
     
@@ -31,6 +36,12 @@ sub throw {
 
 sub msg {
     return shift->{msg}
+}
+
+sub stringify {
+    my $self = shift;
+    my $text = $self->msg;
+    return $text . "\n" . '';
 }
 
 1;
