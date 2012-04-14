@@ -140,8 +140,9 @@ sub find {
         my $map    = $class->map_args_with_meta($args);
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my $order  = $config->{order_by} || [];
+        my $limit  = $config->{limit} || '';
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order) );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
 
         my $sth  = $class->dbh->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
@@ -182,8 +183,9 @@ sub find_all {
         my $map    = $class->map_args_with_meta($args);
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my $order  = $config->{order_by} || [];
+        my $limit  = $config->{limit} || '';
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order) );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
 
         my $sth  = $class->dbh->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
