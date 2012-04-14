@@ -17,12 +17,18 @@ has 'host'     => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'port'     => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'type'     => ( is => 'ro', isa => 'Str', default  => 'MYSQL' );
 
+my $cache_dbh;
+
 sub connect {
     my $self = shift;
-    my $dsn  = $self->connect_string;
-    unless ( my $dbh = DBI->connect( $dsn, $self->username, $self->password ) ) {
-        Example::Error::Simple->throw($DBI::errstr);
+
+    return $cache_dbh if $cache_dbh;
+
+    if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password ) ) {
+        $cache_dbh = $dbh;
+        return $dbh;
     }
+    Example::Error::Simple->throw($DBI::errstr);
 }
 
 sub connect_string {
