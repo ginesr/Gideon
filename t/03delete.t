@@ -1,6 +1,8 @@
-#!/usr/bin/perl
+#!perl
 
 use strict;
+use warnings;
+use lib './lib';
 use Test::More tests => 5;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
