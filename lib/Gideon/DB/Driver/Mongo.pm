@@ -1,5 +1,5 @@
 
-package Gideon::DB::Mongo;
+package Gideon::DB::Driver::Mongo;
 
 use strict;
 use warnings;

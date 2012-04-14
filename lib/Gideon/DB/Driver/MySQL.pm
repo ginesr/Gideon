@@ -1,12 +1,12 @@
 
-package Example::Driver::MySQL;
+package Gideon::DB::Driver::MySQL;
 
 use strict;
 use warnings;
+use Gideon::Error;
 use DBI;
-use Example::Error::Simple;
 use Mouse;
-use DBD::mysql;
+use Mouse;
 
 extends 'Gideon::DB::Driver';
 
@@ -26,10 +26,12 @@ sub connect {
         return $dbh;
     }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password ) ) {
+        $dbh->{'mysql_auto_reconnect'} = 1;
+        $dbh->{'mysql_enable_utf8'} = 1;
         $_mysql_cache_dbh->{$self->cache_key} = $dbh;
         return $dbh;
     }
-    Example::Error::Simple->throw($DBI::errstr);
+    Gideon::Error->throw($DBI::errstr);
 }
 
 sub is_cached {
@@ -47,7 +49,7 @@ sub connect_string {
     my $host = $self->host || '';
     my $port = $self->port || '';
     
-    my $string = sprintf 'DBI:mysql:database=%s;host=%s;port=%s;mysql_auto_reconnect=1', $self->db, $host, $port;
+    my $string = sprintf 'DBI:mysql:database=%s;host=%s;port=%s', $self->db, $host, $port;
     return $string;
 }
 
