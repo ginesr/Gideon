@@ -258,45 +258,51 @@ sub transform_filter_values {
 
 sub get_store_id {
     my $self  = shift;
-    my $pkg   = ref($self) ? ref($self) : $self;
-    my $store = $__store->{$pkg};
-    my ( $id, $dest ) = split( /:/, $store );
+    my $id = $self->_store_info;
     return $id;
 }
 
 sub get_store_destination {
     my $self  = shift;
-    my $pkg   = ref($self) ? ref($self) : $self;
-    my $store = $__store->{$pkg};
-    my ( $id, $dest ) = split( /:/, $store );
+    my ( $id, $dest ) = $self->_store_info;
     die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
     return $dest;
 }
 
 sub get_store_args {
     my $self  = shift;
-    my $pkg   = ref($self) ? ref($self) : $self;
-    my $store = $__store->{$pkg};
-    my ( $id, $table ) = split( /:/, $store );
+    my $id = $self->_store_info;
     die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
     if ( ref($stores{$id}) eq 'Gideon::Connection::Pool' ) {
-        return $self->get_store_from_pool();
+        return $self->get_store_from_pool($stores{$id});
     }
     return $stores{$id};
 }
 
 sub get_store_from_pool {
+    
     my $self  = shift;
-    my $pkg   = ref($self) ? ref($self) : $self;
+    my $pool  = shift;
+    my $node  = shift;
+    
     die 'use select() to switch/choose from pool' unless defined $__pool;
-    die 'invalid pool name, use push() to add connections';
+    return $pool->get($__pool);
+    
 }
 
 sub select {
     my $self = shift;
     my $node = shift;
-    unless ( ref($self) eq __PACKAGE__ ) {
+    if ( $self eq __PACKAGE__ ) {
         Gideon::Error->throw('use select() from your class');
+    }
+    my $id = $self->_store_info;
+    my $pool = $stores{$id};
+    unless ( ref($pool) eq 'Gideon::Connection::Pool' ) {
+        Gideon::Error->throw('not a valid pool class defined');
+    }
+    unless ($pool->detect($node)) {
+        Gideon::Error->throw('invalid identifier ' .$node . 'is not in the pool');
     }
     $__pool = $node;
     return 1;
@@ -311,7 +317,7 @@ sub store($) {
 sub check_meta {
 
     my $class     = shift;
-    my $pkg       = ref($class) ? ref($class) : $class;
+    my $pkg       = $class->_get_pkg_name;
     my $meta      = $__meta->{$pkg} || $class->get_all_meta;
     my $attribute = shift;
 
@@ -338,7 +344,7 @@ sub get_serial_attr {
 sub get_serial_attr_hash {
 
     my $class = shift;
-    my $pkg   = ref($class) ? ref($class) : $class;
+    my $pkg   = $class->_get_pkg_name;
     my $meta  = $__meta->{$pkg} || $class->get_all_meta;
     my $hash  = {};
 
@@ -354,7 +360,7 @@ sub get_serial_attr_hash {
 sub get_serial_columns_hash {
 
     my $class = shift;
-    my $pkg   = ref($class) ? ref($class) : $class;
+    my $pkg   = $class->_get_pkg_name;
     my $meta  = $__meta->{$pkg} || $class->get_all_meta;
     my $hash  = {};
 
@@ -370,7 +376,7 @@ sub get_columns_hash {
 
     my $class   = shift;
     my $options = shift || '';
-    my $pkg     = ref($class) ? ref($class) : $class;
+    my $pkg     = $class->_get_pkg_name;
     my $meta    = $__meta->{$pkg} || $class->get_all_meta;
     my $hash    = {};
 
@@ -392,7 +398,7 @@ sub get_key_columns_hash {
 sub get_attributes_from_meta {
 
     my $class = shift;
-    my $pkg   = ref($class) ? ref($class) : $class;
+    my $pkg   = $class->_get_pkg_name;
     my $meta  = $__meta->{$pkg} || $class->get_all_meta;
 
     my @map = map { $_ } ( keys %{ $meta->{attributes} } );
@@ -403,7 +409,7 @@ sub get_attribute_for_column {
 
     my $class  = shift;
     my $column = shift;
-    my $pkg    = ref($class) ? ref($class) : $class;
+    my $pkg    = $class->_get_pkg_name;
     my $meta   = $__meta->{$pkg} || $class->get_all_meta;
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
@@ -611,6 +617,18 @@ sub _transform_filter {
     }
 
     return @filters;
+}
+
+sub _get_pkg_name {
+    my $self  = shift;
+    my $pkg   = ref($self) ? ref($self) : $self;
+    return $pkg;    
+}
+
+sub _store_info {
+    my $self = shift;
+    my ( $id, $dest ) = split( /:/, $__store->{$self->_get_pkg_name} );
+    return wantarray ? ( $id, $dest ) : $id; 
 }
 
 1;
