@@ -17,18 +17,28 @@ has 'host'     => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'port'     => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'type'     => ( is => 'ro', isa => 'Str', default  => 'MYSQL' );
 
-my $cache_dbh;
+my $cache_dbh = {};
 
 sub connect {
     my $self = shift;
 
-    return $cache_dbh if $cache_dbh;
-
+    if ( my $dbh = $self->is_cached ) {
+        return $dbh;
+    }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password ) ) {
-        $cache_dbh = $dbh;
+        $cache_dbh->{$self->cache_key} = $dbh;
         return $dbh;
     }
     Example::Error::Simple->throw($DBI::errstr);
+}
+
+sub is_cached {
+    my $self = shift;
+    my $key = $self->cache_key;
+    if ( exists $cache_dbh->{$key} ) {
+        return  $cache_dbh->{$key};
+    }
+    return;
 }
 
 sub connect_string {
@@ -38,6 +48,16 @@ sub connect_string {
     my $port = $self->port || '';
     
     my $string = sprintf 'DBI:mysql:database=%s;host=%s;port=%s', $self->db, $host, $port;
+    return $string;
+}
+
+sub cache_key {
+
+    my $self = shift;
+    my $host = $self->host || '';
+    my $port = $self->port || '';
+
+    my $string = sprintf 'user:%s_db:%s_host:%s_port:%s', $self->username, $self->db, $host, $port;
     return $string;
 }
 
