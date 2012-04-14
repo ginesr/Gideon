@@ -29,6 +29,7 @@ our $EXCEPTION_DEBUG = 0;
 my $__meta  = undef;
 my $__store = {};
 our %stores = ();
+my $__pool  = undef;
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
@@ -157,11 +158,15 @@ sub check_for_config_in_params {
     my $class = shift;
     my @args  = @_;
     
-    if ( ( ( scalar(@args) % 2 ) != 0 or scalar(@args) == 2)
-        and ref( $args[-1] ) eq 'HASH' )
-    {
+    # func( one => 1, { options => 1 } )
+    if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
         return 1;
     }
+    # func( undef, {} )
+    if ( scalar(@args) == 2 and !defined $args[0] and ref( $args[-1] ) eq 'HASH' ) {
+        return 1;
+    }
+    
     return;
 }
 
@@ -179,6 +184,7 @@ sub decode_params {
             $config->{order_by} = $class->validate_order_by( $config->{order_by} );
         }
     }
+
     unless ( defined $args[0] ) {
         @args = (); # passing undef in params trigger warnings
     }
@@ -273,7 +279,27 @@ sub get_store_args {
     my $store = $__store->{$pkg};
     my ( $id, $table ) = split( /:/, $store );
     die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
+    if ( ref($stores{$id}) eq 'Gideon::Connection::Pool' ) {
+        return $self->get_store_from_pool();
+    }
     return $stores{$id};
+}
+
+sub get_store_from_pool {
+    my $self  = shift;
+    my $pkg   = ref($self) ? ref($self) : $self;
+    die 'use select() to switch/choose from pool' unless defined $__pool;
+    die 'invalid pool name, use push() to add connections';
+}
+
+sub select {
+    my $self = shift;
+    my $node = shift;
+    unless ( ref($self) eq __PACKAGE__ ) {
+        Gideon::Error->throw('use select() from your class');
+    }
+    $__pool = $node;
+    return 1;
 }
 
 sub store($) {
