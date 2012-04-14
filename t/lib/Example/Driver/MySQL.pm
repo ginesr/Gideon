@@ -17,7 +17,7 @@ has 'host'     => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'port'     => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'type'     => ( is => 'ro', isa => 'Str', default  => 'MYSQL' );
 
-my $cache_dbh = {};
+our $_mysql_cache_dbh = {};
 
 sub connect {
     my $self = shift;
@@ -26,7 +26,7 @@ sub connect {
         return $dbh;
     }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password ) ) {
-        $cache_dbh->{$self->cache_key} = $dbh;
+        $_mysql_cache_dbh->{$self->cache_key} = $dbh;
         return $dbh;
     }
     Example::Error::Simple->throw($DBI::errstr);
@@ -35,8 +35,8 @@ sub connect {
 sub is_cached {
     my $self = shift;
     my $key = $self->cache_key;
-    if ( exists $cache_dbh->{$key} ) {
-        return  $cache_dbh->{$key};
+    if ( exists $_mysql_cache_dbh->{$key} ) {
+        return  $_mysql_cache_dbh->{$key};
     }
     return;
 }
