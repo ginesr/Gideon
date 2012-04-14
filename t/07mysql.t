@@ -13,63 +13,23 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 12;
+    plan tests => 7;
 }
 
-use_ok(qw(Gideon::Connection::Pool));
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
 
-my $dir = getcwd;
-if ( $dir !~ /\/t/ ) { chdir('t') }
+# Prepare test data ------------------------------------------------------------
+prepare_test_data();
+# ------------------------------------------------------------------------------
 
-my $driver_1 = Example::Driver::MySQL->new(
+my $driver = Example::Driver::MySQL->new(
     db       => 'test',
     username => 'test',
     host     => 'localhost'
 );
 
-my $driver_2 = Example::Driver::MySQL->new(
-    db       => 'test',
-    username => 'test',
-    host     => '127.0.0.1'
-);
-
-my $driver_3 = Example::Driver::MySQL->new(
-    db       => 'mysql',
-    username => 'root',
-    password => 'secret',
-    host     => '127.0.0.1'
-);
-
-my $pool = Gideon::Connection::Pool->new;
-$pool->push( 'node1', $driver_1 );
-$pool->push( 'node2', $driver_2 );
-$pool->push( 'node3', $driver_3 );
-
-# Prepare test data ------------------------------------------------------------
-prepare_test_data();
-
-# ------------------------------------------------------------------------------
-
-Gideon->register_store( 'mysql_server', $pool );
-
-throws_ok(
-    sub { Gideon->select('node1') },
-    qr/from your class/,
-    'Try to use select pool as class'
-);
-
-throws_ok( sub { Gideon->get_store_from_pool('node1') },
-    qr/to switch/, 'Not selected yet' );
-
-throws_ok(
-    sub { Example::Test->select('foo'); },
-    qr/invalid identifier/,
-    'Invalid pool identifier'
-);
-
-Example::Test->select('node1');
+Gideon->register_store( 'mysql_server', $driver );
 
 my $test_data = Example::Test->find_all( undef, { limit => 5 } );
 my $first     = $test_data->first;
@@ -78,24 +38,17 @@ my $last      = $test_data->last;
 is( $first->name, 'rec 1', 'From mysql first record' );
 is( $last->name,  'rec 5', 'From mysql last record with limit' );
 
-Example::Test->select('node2');
-
 my $record = Example::Test->find( id => 4 );
 is( $record->name, 'rec 4', 'From mysql one record' );
 
-Example::Test->select('node3');
-
-throws_ok( sub { $record = Example::Test->find( id => 4 ) },
-    'Example::Error::Simple', 'Tried to use conn from pool that failed' );
-
-$record = Example::Test->find( id => 3, { conn => 'node1' } );
-
-is( $record->name, 'rec 3', 'Using node from param' );
+throws_ok(
+    sub { $record = Example::Test->find( id => 3, { conn => 'node1' } ) },
+    qr/can't use node1 without pool configuration/, 'Failed to use pool here' );
 
 my $new_rec =
   Example::Test->new( name => 'is brand new', value => 'some value' );
-$new_rec->conn('node1');  
 $new_rec->save();
+
 my $id = $new_rec->last_inserted_id();
 
 is( $id, 11, 'New record inserted' );

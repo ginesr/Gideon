@@ -8,7 +8,7 @@ use Gideon::Meta::Attribute::DBI;
 use Mouse;
 
 extends 'Gideon::DBI';
-store 'pool:gideon_t1';
+store 'mysql_server:gideon_t1';
 
 has 'id' => (
     is          => 'rw',

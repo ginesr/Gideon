@@ -17,7 +17,9 @@ use Set::Array;
 our $VERSION = '0.02';
 
 extends 'Gideon';
+
 has '__dbh' => ( is => 'rw' );
+has 'conn' => ( is => 'rw', isa => 'Maybe[Str]' );
 
 sub remove {
 
@@ -40,7 +42,8 @@ sub remove {
         my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), undef, \%where );
 
-        my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
+        my $pool = $self->conn;
+        my $sth  = $self->dbh($pool)->prepare($stmt) or die $self->dbh->errstr;
         my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
         $sth->finish;
 
@@ -88,7 +91,8 @@ sub save {
             ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), undef, \%data );
         }
 
-        my $sth  = $self->dbh->prepare($stmt) or die $self->dbh->errstr;
+        my $pool = $self->conn;
+        my $sth  = $self->dbh($pool)->prepare($stmt) or die $self->dbh->errstr;
         my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
         $sth->finish;
 
@@ -115,7 +119,8 @@ sub save {
 sub last_inserted_id {
 
     my $self = shift;
-    my $sth  = $self->dbh->prepare('select last_insert_id() as last') or die $self->dbh->errstr;
+    my $pool = $self->conn;
+    my $sth  = $self->dbh($pool)->prepare('select last_insert_id() as last') or die $self->dbh->errstr;
     my $rows = $sth->execute or die $self->dbh->errstr;
     my %row;
 
@@ -143,10 +148,11 @@ sub find {
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
+        my $pool   = $config->{conn} || '';
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
 
-        my $sth  = $class->dbh->prepare($stmt) or die $class->dbh->errstr;
+        my $sth  = $class->dbh($pool)->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
         my %row;
 
@@ -187,10 +193,11 @@ sub find_all {
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
+        my $pool   = $config->{conn} || '';
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
 
-        my $sth  = $class->dbh->prepare($stmt) or die $class->dbh->errstr;
+        my $sth  = $class->dbh($pool)->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
         my %row;
 
@@ -286,11 +293,12 @@ sub map_meta_with_row {
 sub dbh {
 
     my $self = shift;
+    my $pool = shift;
 
     if ( ref($self) and defined $self->__dbh() ) {
         return $self->__dbh;
     }
-    return $self->_from_store_dbh();
+    return $self->_from_store_dbh($pool);
 
 }
 
@@ -323,11 +331,12 @@ sub lte {
 sub _from_store_dbh {
 
     my $self = shift;
+    my $pool = shift;
 
     if ( ref($self) and defined $self->__dbh() ) { return $self->__dbh() }
 
     my $dbh;
-    my $store = $self->get_store_args();
+    my $store = $self->get_store_args($pool);
 
     if ( ref( $store ) eq 'DBI::db' ) {
         $dbh = $store;

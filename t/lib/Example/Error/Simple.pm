@@ -12,8 +12,7 @@ sub throw {
 
     my $self = { pkg => $pkg, msg => $msg };
     bless $self, $class;
-
-    croak $self;
+    die $self;
 
 }
 

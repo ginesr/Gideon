@@ -265,18 +265,28 @@ sub get_store_id {
 sub get_store_destination {
     my $self  = shift;
     my ( $id, $dest ) = $self->_store_info;
-    die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
+    die 'invalid store \'' .$id . '\' from class '. $self .', use Gideon->register(\'' . $id . '\', ... )' unless $stores{$id};
     return $dest;
 }
 
 sub get_store_args {
+    
     my $self  = shift;
-    my $id = $self->_store_info;
-    die 'invalid store, did you define ' . $id . '?' unless $stores{$id};
-    if ( ref($stores{$id}) eq 'Gideon::Connection::Pool' ) {
-        return $self->get_store_from_pool($stores{$id});
+    my $node  = shift;
+    
+    my $id    = $self->_store_info;
+    my $store = $stores{$id};
+    
+    die 'invalid store \'' .$id . '\' from class '. $self .', use Gideon->register(\'' . $id . '\', ... )' unless $store;
+    
+    if ( ref($store) eq 'Gideon::Connection::Pool' ) {
+        return $self->get_store_from_pool( $store, $node );
     }
-    return $stores{$id};
+    if ($node and !defined $__pool) {
+        die "can't use $node without pool configuration";
+    }
+    
+    return $store;
 }
 
 sub get_store_from_pool {
@@ -284,6 +294,10 @@ sub get_store_from_pool {
     my $self  = shift;
     my $pool  = shift;
     my $node  = shift;
+    
+    if ($node) {
+        return $pool->get($node);    
+    }
     
     die 'use select() to switch/choose from pool' unless defined $__pool;
     return $pool->get($__pool);
@@ -302,7 +316,7 @@ sub select {
         Gideon::Error->throw('not a valid pool class defined');
     }
     unless ($pool->detect($node)) {
-        Gideon::Error->throw('invalid identifier ' .$node . 'is not in the pool');
+        Gideon::Error->throw('invalid identifier ' .$node . ' is not in the pool');
     }
     $__pool = $node;
     return 1;
