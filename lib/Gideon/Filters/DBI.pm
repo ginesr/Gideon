@@ -14,7 +14,7 @@ sub format {
     my $fields = shift || {};
     my $where  = shift;
     my $order  = shift;
-    my $limit  = shift|| '';
+    my $limit  = shift || '';
 
     my ($sql,@bind) = $class->build_statment($action,$table,$fields,$where,$order);
     
@@ -26,13 +26,7 @@ sub format {
 
 sub build_statment {
     
-    my $class  = shift;
-    my $action = shift;
-    my $table  = shift;
-    my $fields = shift;
-    my $where  = shift;
-    my $order  = shift;
-
+    my ($class,$action,$table,$fields,$where,$order) = @_;
     my $sql = SQL::Abstract->new;
 
     if ( $action eq 'select' ) {
