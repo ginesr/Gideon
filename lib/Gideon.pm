@@ -152,6 +152,19 @@ sub validate_order_by {
 
 }
 
+sub check_for_config_in_params {
+    
+    my $class = shift;
+    my @args  = @_;
+    
+    if ( ( ( scalar(@args) % 2 ) != 0 or scalar(@args) == 2)
+        and ref( $args[-1] ) eq 'HASH' )
+    {
+        return 1;
+    }
+    return;
+}
+
 sub decode_params {
 
     my $class  = shift;
@@ -159,11 +172,15 @@ sub decode_params {
     my $args   = {};
     my $config = {};
 
-    if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
+    # check if there are options passed, last argument as hashref
+    if ( $class->check_for_config_in_params(@args) ) {
         $config = pop @args;
         if ( exists $config->{order_by} ) {
             $config->{order_by} = $class->validate_order_by( $config->{order_by} );
         }
+    }
+    unless ( defined $args[0] ) {
+        @args = (); # passing undef in params trigger warnings
     }
 
     my $hash = Hash::MultiValue->new(@args);
