@@ -8,7 +8,7 @@ use Gideon::Error::Simple;
 use Gideon::Filters::DBI;
 use Try::Tiny;
 use DBI;
-use Carp qw(cluck carp);
+use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
@@ -51,9 +51,10 @@ sub remove {
 
     }
     catch {
-        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
-        croak $_;
-    };
+        my $e = shift;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
+        croak $e;
+    }
 
 }
 
@@ -104,9 +105,10 @@ sub save {
 
     }
     catch {
-        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
-        croak $_;
-    };
+        my $e = shift;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
+        croak $e;
+    }
 
 }
 
@@ -160,9 +162,10 @@ sub find {
 
     }
     catch {
-        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
-        croak $_;
-    };
+        my $e = shift;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
+        croak $e;
+    }
 
 }
 
@@ -208,8 +211,9 @@ sub find_all {
 
     }
     catch {
-        cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
-        croak $_;
+        my $e = shift;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
+        croak $e;
     };
 
 }
