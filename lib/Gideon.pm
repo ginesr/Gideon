@@ -39,7 +39,9 @@ sub register_store {
     my $store_name = shift;
     my @args       = @_;
     die 'register store is a class method' if ref $class;
-    $stores{$store_name} = $args[0];
+    unless ( $class->store_registered($store_name) ) {
+        $stores{$store_name} = $args[0];
+    }
 }
 
 sub new {
@@ -505,6 +507,14 @@ sub get_columns_from_meta {
 
     return wantarray ? @columns : \@columns;
 
+}
+
+sub store_registered {
+    my $class      = shift;
+    my $store_name = shift;
+    my @args       = @_;
+    die 'store \''. $store_name .'\' is already registered' if exists $stores{$store_name};
+    return;
 }
 
 # Imports ----------------------------------------------------------------------
