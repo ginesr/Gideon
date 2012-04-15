@@ -264,8 +264,9 @@ sub generate_cache_key {
     my $self = shift;
     my $stmt = shift;
     my @args = @_;
-    
-    my $id = $self . '_' . $self->get_store_id;
+    my $pkg  = $self->_get_pkg_name;
+
+    my $id = $pkg . '_' . $self->get_store_id;
     my $vals = join('_',@args);
     my $key = $id . $stmt . $vals; # uniqueness generated with sql query and filters
 

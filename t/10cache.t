@@ -13,7 +13,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 6;
+    plan tests => 9;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -40,6 +40,14 @@ is( $first->id, 5, 'Record from db using like' );
 
 is( Gideon::Cache->count, 1, 'One key in the cache' );
 is( Gideon::Cache->hits, 0, 'No hits' );
+
+my $cached_data  = Example::Cache->find_all( value => { like => 'test 5' } );
+my $first_cached = $cached_data->first;
+
+is( $first_cached->id, 5, 'Record from cache' );
+
+is( Gideon::Cache->hits, 1, 'One hit after running same search' );
+is( Gideon::Cache->count, 1, 'Still one key in the cache' );
 
 # Auxiliary test functions -----------------------------------------------------
 
