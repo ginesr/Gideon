@@ -1,13 +1,21 @@
 Don't try to use Gideo just yet, is not even an alpha version
 Thanks
 
+CURRENT ENGINES
+
+-DBI
+ - MySQL
+ - SQLIte
+-Storable (veeery basic)
+-MongoDB
+
 DEPENDENCIES
 
-SQL::Abstract
-Mouse
-Try::Tiny
-Set::Array
-DBI
-Test::Exception
-Test::More
-Data::Dumper
+-Mouse
+-Try::Tiny
+-Set::Array
+-DBI
+-SQL::Abstract
+-Test::Exception
+-Test::More
+-Data::Dumper
