@@ -1,7 +1,29 @@
-Don't try to use Gideo just yet, is not even an alpha version
-Thanks
+Don't try to use Gideon just yet, is not even an alpha version 
+--------------------------------------------------------------------------------
 
-CURRENT ENGINES
+Its purpose is to provide persistence using Moose-type objects without 
+worrying about storage format.
+Goal is to store objects without changing their class definitions, 
+no schemas required just plain Perl classes with Mouse::Meta::Attribute::Custom 
+extensions. It doesn't. provide joins between two objects right now.
+
+my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
+
+Gideon->register_store( 'mysql_server', $dbh );
+
+or
+
+Gideon->register_store( 'mysql_server', MyApp::Driver::MySQL->new(
+    db       => 'test',
+    username => 'test',
+    host     => 'localhost'
+));
+
+then
+
+my $results = MyApp::Persons->find_all( name => { like => 'Doe' } );
+
+CURRENT ENGINES SUPPORTED
 
 -DBI
  - MySQL
