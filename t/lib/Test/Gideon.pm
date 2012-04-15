@@ -3,7 +3,9 @@ package Test::Gideon;
 
 use strict;
 use Gideon;
-use base qw(Gideon);
+use Mouse;
+
+extends qw(Gideon);
 
 store 'test:destination';
 
