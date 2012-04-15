@@ -40,13 +40,12 @@ sub save {
         }
 
         my %data = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
-        my $stmt = '';
-        my @bind = ();
 
         if ( $self->is_stored ) {
         
-        } 
+        }
         else {
+            
         }
 
         if ( my $serial = $self->get_serial_columns_hash ) {
@@ -105,7 +104,7 @@ sub find_all {
 
         my $results = Set::Array->new;
         
-        if (my $found = $class->search_in_hash($args) ) {
+        if ( my $found = $class->search_in_hash($args) ) {
             
             foreach my $result ( @{ $found } ) {
         
@@ -193,7 +192,7 @@ sub test_filters {
     my $rec = shift;
     my $filter = shift;
     
-    foreach my $f (keys %{ $filter }) {
+    foreach my $f ( keys %{ $filter } ) {
         
         my $value = $rec->{ $f };
         my $option = $filter->{ $f };

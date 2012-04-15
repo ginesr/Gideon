@@ -28,6 +28,7 @@ our $EXCEPTION_DEBUG = 0;
 
 my $__meta  = undef;
 my $__store = {};
+my $__cache = undef;
 our %stores = ();
 my $__pool  = undef;
 
@@ -42,6 +43,12 @@ sub register_store {
     unless ( $class->store_registered($store_name) ) {
         $stores{$store_name} = $args[0];
     }
+}
+
+sub register_cache {
+    my $class = shift;
+    my $module = shift;
+    $__cache = $module;
 }
 
 sub new {
@@ -74,6 +81,12 @@ sub save {
 }
 
 sub remove {
+    my $class = shift;
+
+    # overload in subclass
+}
+
+sub cache_lookup {
     my $class = shift;
 
     # overload in subclass
@@ -514,6 +527,19 @@ sub store_registered {
     my $store_name = shift;
     my @args       = @_;
     die 'store \''. $store_name .'\' is already registered' if exists $stores{$store_name};
+    return;
+}
+
+sub cache_registered {
+    my $class = shift;
+    return ($__cache) ? 1 : 0;
+}
+
+sub get_cache_module {
+    my $class = shift;
+    if ($class->cache_registered) {
+        return $__cache
+    }
     return;
 }
 

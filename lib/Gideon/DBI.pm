@@ -21,6 +21,8 @@ extends 'Gideon';
 has '__dbh' => ( is => 'rw' );
 has 'conn' => ( is => 'rw', isa => 'Maybe[Str]' );
 
+use constant CACHE_MINS_TTL => 5;
+
 sub remove {
 
     my $self = shift;
@@ -188,6 +190,8 @@ sub find_all {
 
     try {
 
+        my $cache_key;
+        
         my $fields = $class->get_columns_from_meta();
         my $map    = $class->map_args_with_meta($args);
         my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
@@ -196,6 +200,11 @@ sub find_all {
         my $pool   = $config->{conn} || '';
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
+
+        if ( $class->cache_registered ) {
+            $cache_key = $class->generate_cache_key( $stmt, @bind );
+            $class->cache_lookup( $cache_key );
+        }
 
         my $sth  = $class->dbh($pool)->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
@@ -213,6 +222,10 @@ sub find_all {
             $results->push($obj);
         }
         $sth->finish;
+        
+        if ( $cache_key ) {
+            $class->cache_store( $cache_key, $results );
+        }
 
         return wantarray ? $results->flatten() : $results;
 
@@ -222,6 +235,44 @@ sub find_all {
         cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
         croak $e;
     };
+
+}
+
+sub cache_lookup {
+    
+    my $self = shift;
+    my $key = shift;
+    
+    my $module = $self->get_cache_module;
+    return $module->get($key);
+    
+}
+
+sub cache_store {
+    
+    my $self = shift;
+    my $key = shift;
+    my $what = shift;
+    
+    my $module = $self->get_cache_module;
+    return $module->set( $key, $what, CACHE_MINS_TTL * 60);
+
+}
+
+sub generate_cache_key {
+    
+    my $self = shift;
+    my $stmt = shift;
+    my @args = @_;
+    
+    my $id = $self . '_' . $self->get_store_id;
+    my $vals = join('_',@args);
+    my $key = $id . $stmt . $vals; # uniqueness generated with sql query and filters
+
+    my $module = $self->get_cache_module;
+    my $md5 = $module->digest($key);
+
+    return $md5;
 
 }
 
