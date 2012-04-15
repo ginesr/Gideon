@@ -12,10 +12,10 @@ if ( mongo_not_installed() ) {
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 24;
+    plan tests => 25;
 }
 
-use_ok(qw( Example::Driver::Mongo));
+use_ok(qw(Example::Driver::Mongo));
 use_ok(qw(Mongo::Person));
 use_ok(qw(MongoDB) );
 
@@ -111,6 +111,9 @@ is( $lt->length,   2, 'Total results using lt' );
 
 my $eq = Mongo::Person->find_all( city => 'Dallas' );
 is( $eq->length,   1, 'Total results using eq' );
+
+my $lte = Mongo::Person->find_all( type => { lte => 11 } );
+is( $lte->length,   2, 'Total results using lte' );
 
 # Prerequisites for running tests ----------------------------------------------
 
