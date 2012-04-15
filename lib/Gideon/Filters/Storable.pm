@@ -36,6 +36,15 @@ sub _transform_from_hash {
         if ($t eq '>=') {
             $filters->{$field} = [ '>=', $filters->{$field}->{$t} ];
         }
+        if ($t eq '<=') {
+            $filters->{$field} = [ '<=', $filters->{$field}->{$t} ];
+        }
+        if ($t eq '<') {
+            $filters->{$field} = [ '<', $filters->{$field}->{$t} ];
+        }
+        if ($t eq '!') {
+            $filters->{$field} = [ '!', $filters->{$field}->{$t} ];
+        }
     }
     
     return $filters;

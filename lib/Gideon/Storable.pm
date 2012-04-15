@@ -86,6 +86,34 @@ sub gt {
 
 }
 
+sub lt {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+
+}
+
+sub not {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+
+}
+
+sub lte {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+
+}
+
+sub gte {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+
+}
+
 sub find_all {
     
     my $class = shift;
@@ -196,6 +224,12 @@ sub test_filters {
         
         my $value = $rec->{ $f };
         my $option = $filter->{ $f };
+        
+        if( !ref($option) ) {
+            if ($value eq $option) {
+                return 1;
+            }
+        }
 
         if (ref($option) and ref($option) eq 'Regexp') {
             if ($value =~ $option) {
@@ -204,14 +238,31 @@ sub test_filters {
         }
         
         if (ref($option) and ref($option) eq 'ARRAY') {
+            
             my $operand = $option->[0];
+            
+            if ($operand eq '!') {
+                if ($value ne $option->[1]) {
+                    return 1;
+                }
+            }
             if ($operand eq '>') {
-                if ($value > $option->[1]) {
+                if ($value gt $option->[1]) {
+                    return 1;
+                }
+            }
+            if ($operand eq '<') {
+                if ($value lt $option->[1]) {
                     return 1;
                 }
             }
             if ($operand eq '>=') {
                 if ($value >= $option->[1]) {
+                    return 1;
+                }
+            }
+            if ($operand eq '<=') {
+                if ($value <= $option->[1]) {
                     return 1;
                 }
             }

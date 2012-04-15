@@ -3,7 +3,7 @@
 use lib './lib';
 use strict;
 use Try::Tiny;
-use Test::More tests => 4;
+use Test::More tests => 9;
 use Data::Dumper qw(Dumper);
 use Cwd;
 use Storable qw();
@@ -56,3 +56,25 @@ throws_ok(
     qr/store 'disk' is already registered/,
     'Tried to register same store again'
 );
+
+my $one = Example::Flat->find( value => 'test' );
+
+is($one->value, 'test', 'Find one using eq (value)');
+is($one->id, 2, 'Find one using eq (id)');
+
+
+my $gt = Example::Flat->find_all( id => { gte => 1 } );
+my $rec_gt = $gt->first;
+
+is( $rec_gt->id, 1, 'Find using gte' );
+
+my $lte = Example::Flat->find_all( id => { lte => 1 } );
+my $rec_lte = $lte->first;
+
+is( $rec_lte->id, 1, 'Find using lte' );
+
+my $not = Example::Flat->find_all( value => { not => 'pre generated' } );
+my $rec_not = $not->first;
+
+is( $rec_not->id, 2, 'Find using not' );
+
