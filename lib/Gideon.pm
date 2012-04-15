@@ -535,6 +535,13 @@ sub cache_registered {
     return ($__cache) ? 1 : 0;
 }
 
+sub signature_for_cache {
+    my $class = shift;
+    my $pkg  = $class->_get_pkg_name;
+    my $id = $pkg . '_' . $class->get_store_id;
+    return $id;
+}
+
 sub get_cache_module {
     my $class = shift;
     if ($class->cache_registered) {

@@ -264,16 +264,12 @@ sub generate_cache_key {
     my $self = shift;
     my $stmt = shift;
     my @args = @_;
-    my $pkg  = $self->_get_pkg_name;
 
-    my $id = $pkg . '_' . $self->get_store_id;
     my $vals = join('_',@args);
-    my $key = $id . $stmt . $vals; # uniqueness generated with sql query and filters
+    my $key = $self->signature_for_cache . $stmt . $vals; # uniqueness generated with sql query and filters
 
     my $module = $self->get_cache_module;
-    my $md5 = $module->digest($key);
-
-    return $md5;
+    return $module->digest($key);
 
 }
 
