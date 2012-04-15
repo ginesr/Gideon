@@ -5,9 +5,7 @@ use strict;
 use Try::Tiny;
 use Test::More;
 use Data::Dumper qw(Dumper);
-use Cwd;
 use DBI;
-use Test::Exception;
 
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
