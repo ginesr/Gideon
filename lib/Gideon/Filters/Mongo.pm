@@ -30,11 +30,20 @@ sub _transform_from_hash {
         if ($t eq '-like') {
             $filters->{$field} = $filters->{$field}->{$t};
         }
+        if ($t eq '!') {
+            $filters->{$field} = { '$ne' => $filters->{$field}->{$t} };
+        }
         if ($t eq '>') {
             $filters->{$field} = { '$gt' => $filters->{$field}->{$t} };
         }
         if ($t eq '>=') {
             $filters->{$field} = { '$gte' => $filters->{$field}->{$t} };
+        }
+        if ($t eq '<') {
+            $filters->{$field} = { '$lt' => $filters->{$field}->{$t} };
+        }
+        if ($t eq '<=') {
+            $filters->{$field} = { '$lte' => $filters->{$field}->{$t} };
         }
     }
     

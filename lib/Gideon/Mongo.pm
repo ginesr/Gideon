@@ -246,6 +246,12 @@ sub lte {
     return $string;
 }
 
+sub not {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+}
+
 sub remove_auto_columns_for_insert {
 
     my $self  = shift;

@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!perl
 
-use lib './lib/';
+use lib './lib';
 use strict;
 use Test::More;
 use Try::Tiny;
@@ -12,12 +12,12 @@ if ( mongo_not_installed() ) {
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 19;
+    plan tests => 24;
 }
 
-use Example::Driver::Mongo;
-use Mongo::Person;
-use_ok( 'MongoDB' );
+use_ok(qw( Example::Driver::Mongo));
+use_ok(qw(Mongo::Person));
+use_ok(qw(MongoDB) );
 
 # Prepare test data ------------------------------------------------------------
 
@@ -101,12 +101,26 @@ is( $greater->length,   1, 'Total results using gt' );
 my $greatereq = Mongo::Person->find_all( type => { gte => 20 } );
 is( $greatereq->length,   2, 'Total results using gte' );
 
+my $not = Mongo::Person->find_all( name => { not => 'John' } );
+my $rec_not = $not->first;
+
+is( $rec_not->name, 'Jane', 'Filters using not' );
+
+my $lt = Mongo::Person->find_all( type => { lt => 20 } );
+is( $lt->length,   2, 'Total results using lt' );
+
+my $eq = Mongo::Person->find_all( city => 'Dallas' );
+is( $eq->length,   1, 'Total results using eq' );
 
 # Prerequisites for running tests ----------------------------------------------
 
 sub mongo_not_running {
 
-    try { Example::Driver::Mongo->connect(); return undef } catch { return 1 }
+    try { 
+        use Example::Driver::Mongo;
+        Example::Driver::Mongo->connect();
+        return undef 
+    } catch { return 1 }
 
 }
 
