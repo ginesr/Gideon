@@ -25,7 +25,7 @@ has 'person_id' => (
     metaclass => 'Gideon'
 );
 
-has 'address' => (
+has 'street' => (
     is        => 'rw',
     required  => 1,
     isa       => 'Str',
