@@ -146,13 +146,13 @@ sub find {
     try {
 
         my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_meta($args);
-        my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
+        my $map    = $class->map_args_with_meta( $args );
+        my $where  = $class->where_stmt_from_args( $args );
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
         my $pool   = $config->{conn} || '';
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
 
         my $sth  = $class->dbh($pool)->prepare($stmt) or die $class->dbh->errstr;
         my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
@@ -193,13 +193,13 @@ sub find_all {
         my $cache_key;
         
         my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_meta($args);
-        my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
+        my $map    = $class->map_args_with_meta( $args );
+        my $where  = $class->where_stmt_from_args( $args );
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
         my $pool   = $config->{conn} || '';
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, \%where, $class->add_table_to_order($order), $limit );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
 
         if ( $class->cache_registered ) {
             $cache_key = $class->generate_cache_key( $stmt, @bind );
@@ -300,6 +300,14 @@ sub add_table_to_order {
     }
 
     return $sort;
+}
+
+sub where_stmt_from_args {
+    my $class  = shift;
+    my $args   = shift;
+    my $map    = $class->map_args_with_meta($args);
+    my %where  = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
+    return \%where;
 }
 
 sub add_table_to_where {

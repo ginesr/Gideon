@@ -32,7 +32,7 @@ my $driver = Example::Driver::MySQL->new(
 
 Gideon->register_store( 'mysql_master', $driver );
 
-my $records = Example::My::Person->find_by_address( person_id => 1 );
+my $records = Example::My::Person->find_by_address( id => 1 );
 my $first   = $records->first;
 my $last    = $records->last;
 

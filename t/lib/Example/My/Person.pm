@@ -42,11 +42,11 @@ sub find_by_address {
         
         my $tables = $class->stores_for('Example::My::Address');
         my @fields = $class->columns_meta_for('Example::My::Address');
-
-        my $where = {
-            'gideon_j1.id' => $args->{person_id},
-            'gideon_j2.person_id' => \'= gideon_j1.id',
-        };
+        my $where  = $class->where_stmt_from_args($args);
+        
+        # TODO: find relationships autmatically
+        # follow SQL-Abstract where format
+        $where->{ 'gideon_j2.person_id'}  = \'= gideon_j1.id';
         
         my $order = ['gideon_j2.id'];
 
