@@ -32,7 +32,8 @@ my $driver = Example::Driver::MySQL->new(
 
 Gideon->register_store( 'mysql_master', $driver );
 
-my $records = Example::My::Person->find_by_address( id => 1 );
+# find all addresses for person whom id is 1 ordered by address Id
+my $records = Example::My::Person->find_by_address( id => 1, { order => 'gideon_j2.id' } );
 my $first   = $records->first;
 my $last    = $records->last;
 

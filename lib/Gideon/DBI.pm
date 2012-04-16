@@ -421,6 +421,16 @@ sub execute_and_array {
     return $results;
 }
 
+sub order_from_config {
+    my $self = shift;
+    my $config = shift;
+    my $order;
+    if (exists $config->{ordered} and my $order_clause = $config->{ordered}) {
+        $order = [ $order_clause ];
+    }
+    return $order; 
+}
+
 # Private ----------------------------------------------------------------------
 
 sub _from_store_dbh {
