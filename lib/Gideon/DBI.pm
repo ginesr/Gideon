@@ -383,9 +383,15 @@ sub execute_and_array {
     my $order = shift;
     
     my $sql = SQL::Abstract->new;
+    my $cache_key;
     
     my ( $stmt, @bind ) =
       $sql->select( $tables, $fields, $where, $order );
+    
+    if ( $class->cache_registered ) {
+        $cache_key = $class->generate_cache_key( $stmt, @bind );
+        $class->cache_lookup( $cache_key );
+    }
     
     my $sth  = $class->dbh()->prepare($stmt) or die $class->dbh->errstr;
     my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
@@ -398,6 +404,10 @@ sub execute_and_array {
     while ( $sth->fetch ) {
         my %rec = map { $_, $row{$_} } keys %row;
         $results->push(\%rec);
+    }
+    
+    if ( $cache_key ) {
+        $class->cache_store( $cache_key, $results );
     }
     
     return $results;
