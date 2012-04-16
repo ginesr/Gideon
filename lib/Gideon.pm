@@ -296,6 +296,22 @@ sub stores_for {
     
 }
 
+sub columns_meta_for {
+    
+    my $self = shift;
+    my $other = shift;
+    my @fields = ();
+    
+    my $myfields = $self->get_columns_from_meta();
+    my $foreing = $other->get_columns_from_meta();
+    
+    push @fields, @{$myfields};
+    push @fields, @{$foreing};
+    
+    return wantarray ? @fields : join ',', @fields;    
+    
+}
+
 sub get_store_args {
     
     my $self  = shift;

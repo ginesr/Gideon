@@ -41,13 +41,7 @@ sub find_by_address {
     try {
         
         my $tables = $class->stores_for('Example::My::Address');
-        my $myfields = $class->get_columns_from_meta();
-        my $foreing = Example::My::Address->get_columns_from_meta();
-
-        my @fields = ();
-
-        push @fields, @{$myfields};
-        push @fields, @{$foreing};
+        my @fields = $class->columns_meta_for('Example::My::Address');
 
         my $where = {
             'gideon_j1.id' => $args->{person_id},
