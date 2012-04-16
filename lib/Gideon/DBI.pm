@@ -374,6 +374,35 @@ sub lte {
     return $string;
 }
 
+sub execute_and_array {
+    
+    my $class = shift;
+    my $tables = shift;
+    my $fields = shift;
+    my $where = shift;
+    my $order = shift;
+    
+    my $sql = SQL::Abstract->new;
+    
+    my ( $stmt, @bind ) =
+      $sql->select( $tables, $fields, $where, $order );
+    
+    my $sth  = $class->dbh()->prepare($stmt) or die $class->dbh->errstr;
+    my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
+    my %row; 
+
+    $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
+    
+    my $results  = Set::Array->new;
+    
+    while ( $sth->fetch ) {
+        my %rec = map { $_, $row{$_} } keys %row;
+        $results->push(\%rec);
+    }
+    
+    return $results;
+}
+
 # Private ----------------------------------------------------------------------
 
 sub _from_store_dbh {

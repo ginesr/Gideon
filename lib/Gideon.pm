@@ -284,6 +284,18 @@ sub get_store_destination {
     return $dest;
 }
 
+sub stores_for {
+    my $self = shift;
+    my $other = shift;
+    my @stores = ();
+
+    push @stores, $self->get_store_destination;
+    push @stores, $other->get_store_destination;
+    
+    return wantarray ? @stores : join ',', @stores;
+    
+}
+
 sub get_store_args {
     
     my $self  = shift;
