@@ -11,9 +11,8 @@ use Test::Exception;
 
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
-}
-else {
-    plan tests => 9;
+} else {
+    plan tests => 11;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -34,14 +33,16 @@ my $driver = Example::Driver::MySQL->new(
 Gideon->register_store( 'mysql_master', $driver );
 
 my $records = Example::My::Person->find_by_address( person_id => 1 );
-my $first = $records->first;
-my $last = $records->last;
+my $first   = $records->first;
+my $last    = $records->last;
 
-is( $first->{id},      1,          'First record id' );
-is( $first->{address}, 'Street 1', 'First record address' );
+is( $first->{'gideon_j1.id'},      1,          'First record id' );
+is( $last->{'gideon_j2.id'},       2,          'First record foreing id' );
+is( $first->{'gideon_j2.address'}, 'Street 1', 'First record address' );
 
-is( $last->{id},      2,          'Last record id' );
-is( $last->{address}, 'Street 2', 'Last record address' );
+is( $last->{'gideon_j1.id'},      1,          'Last record id' );
+is( $last->{'gideon_j2.id'},      2,          'Last record foreing id' );
+is( $last->{'gideon_j2.address'}, 'Street 2', 'Last record address' );
 
 my $record = Example::My::Person->find( id => 1 );
 is( $record->name, 'John', 'From mysql one record' );
@@ -56,11 +57,9 @@ sub prepare_test_data {
     #standard mysql install has test db and test user, try to use that
     my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
 
-    my $create_j1 =
-qq~create table gideon_j1 (id int not null auto_increment, name varchar(20), primary key (id), key (name))~;
+    my $create_j1 = qq~create table gideon_j1 (id int not null auto_increment, name varchar(20), primary key (id), key (name))~;
 
-    my $create_j2 =
-qq~create table gideon_j2 (id int not null auto_increment, person_id int not null, address varchar(50), primary key (id), key (person_id))~;
+    my $create_j2 = qq~create table gideon_j2 (id int not null auto_increment, person_id int not null, address varchar(50), primary key (id), key (person_id))~;
 
     $dbh->do('drop table if exists gideon_j1');
     $dbh->do('drop table if exists gideon_j2');
@@ -73,14 +72,10 @@ qq~create table gideon_j2 (id int not null auto_increment, person_id int not nul
     $dbh->do( "insert into gideon_j1 (name) values(?)", undef, "Brad" );
     $dbh->do( "insert into gideon_j1 (name) values(?)", undef, "Tom" );
 
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)",
-        undef, 1, "Street 1" );
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)",
-        undef, 1, "Street 2" );
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)",
-        undef, 2, "Jane home" );
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)",
-        undef, 4, "Tom's house" );
+    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 1, "Street 1" );
+    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 1, "Street 2" );
+    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 2, "Jane home" );
+    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 4, "Tom's house" );
 
 }
 

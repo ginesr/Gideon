@@ -7,6 +7,7 @@ use Gideon::Meta::Attribute::DBI;
 use Mouse;
 use Try::Tiny;
 use Carp qw(croak);
+use Data::Dumper qw(Dumper);
 
 extends 'Gideon::DBI';
 store 'mysql_master:gideon_j1';
@@ -40,10 +41,14 @@ sub find_by_address {
     try {
         
         my $tables = $class->stores_for('Example::My::Address');
-        
-        my $fields = [ 'gideon_j1.id', 'gideon_j1.name','gideon_j2.id',
-        'gideon_j2.person_id','gideon_j2.address' ];
-        
+        my $myfields = $class->get_columns_from_meta();
+        my $foreing = Example::My::Address->get_columns_from_meta();
+
+        my @fields = ();
+
+        push @fields, @{$myfields};
+        push @fields, @{$foreing};
+
         my $where = {
             'gideon_j1.id' => $args->{person_id},
             'gideon_j2.person_id' => \'= gideon_j1.id',
@@ -51,7 +56,7 @@ sub find_by_address {
         
         my $order = ['gideon_j2.id'];
 
-        my $results = $class->execute_and_array($tables,$fields,$where,$order);
+        my $results = $class->execute_and_array($tables,\@fields,$where,$order);
         return $results;
         
     }
