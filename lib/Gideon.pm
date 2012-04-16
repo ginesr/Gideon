@@ -484,10 +484,17 @@ sub map_args_with_meta {
     my $args  = shift;
     my $meta  = $__meta || {};
     my $map   = {};
+    my $pkg   = $class->_get_pkg_name;
 
     foreach my $arg ( keys %{$args} ) {
-        my $col = $class->get_colum_for_attribute($arg);
-        $map->{$col} = $arg;
+        
+        if ( my $col = $class->get_colum_for_attribute($arg)) {
+            $map->{$col} = $arg;
+            next
+        }
+        
+        Gideon::Error->throw('invalid argument ' . $arg . ' for ' . $pkg);
+        
     }
 
     return $map;

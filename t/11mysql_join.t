@@ -12,7 +12,7 @@ use Test::Exception;
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 } else {
-    plan tests => 11;
+    plan tests => 12;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -50,6 +50,8 @@ is( $record->name, 'John', 'From mysql one record' );
 
 my $address = Example::My::Address->find( id => 1 );
 is( $address->person_id, 1, 'From mysql one record other table' );
+
+throws_ok( sub { my $invalid = Example::My::Person->find_by_address( address => 1 ) }, 'Gideon::Error', 'Using invalid argument' );
 
 # Auxiliary test functions -----------------------------------------------------
 
