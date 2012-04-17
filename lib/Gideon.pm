@@ -540,6 +540,16 @@ sub get_all_meta {
     return $cache_meta->{$class};
 }
 
+sub get_column_from_meta {
+    my $class = shift;
+    my $attribute = shift;
+    my $meta = $__meta->{$class} || $class->get_all_meta;
+    if ( exists $meta->{attributes}->{$attribute}->{column} ) {
+        return $meta->{attributes}->{$attribute}->{column};
+    }
+    return;
+}
+
 sub get_columns_from_meta {
 
     my $class = shift;

@@ -20,6 +20,7 @@ has 'id' => (
     primary_key => 1,
     metaclass   => 'Gideon'
 );
+
 has 'name' => (
     is        => 'rw',
     required  => 1,
@@ -39,8 +40,16 @@ sub find_by_address {
     }
 
     try {
+
+        my $results = $class->join_with( 
+            args     => $args,
+            config   => $config,
+            joins    => [{ 
+                $class->get_column_with_table('id') => Example::My::Address->get_column_with_table('person_id')
+            }],
+            foreings => [ 'Example::My::Address' ]
+        );
         
-        my $results = $class->join_with( $args, $config, [ { 'gideon_j2.person_id' => 'gideon_j1.id' } ], 'Example::My::Address' );
         return wantarray ? $results->flatten() : $results;
         
     }

@@ -12,7 +12,7 @@ use Test::Exception;
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 } else {
-    plan tests => 12;
+    plan tests => 13;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -40,6 +40,7 @@ my $last    = $records->last;
 is( $first->{'gideon_j1.id'},      1,          'First record id' );
 is( $last->{'gideon_j2.id'},       2,          'First record foreing id' );
 is( $first->{'gideon_j2.address'}, 'Street 1', 'First record address' );
+is( $records->length,              2,          'Total results' );
 
 is( $last->{'gideon_j1.id'},      1,          'Last record id' );
 is( $last->{'gideon_j2.id'},      2,          'Last record foreing id' );
@@ -62,7 +63,7 @@ sub prepare_test_data {
 
     my $create_j1 = qq~create table gideon_j1 (id int not null auto_increment, name varchar(20), primary key (id), key (name))~;
 
-    my $create_j2 = qq~create table gideon_j2 (id int not null auto_increment, person_id int not null, address varchar(50), primary key (id), key (person_id))~;
+    my $create_j2 = qq~create table gideon_j2 (id int not null auto_increment, person_id int not null, address varchar(50), city varchar(20), primary key (id), key (person_id))~;
 
     $dbh->do('drop table if exists gideon_j1');
     $dbh->do('drop table if exists gideon_j2');
@@ -75,10 +76,10 @@ sub prepare_test_data {
     $dbh->do( "insert into gideon_j1 (name) values(?)", undef, "Brad" );
     $dbh->do( "insert into gideon_j1 (name) values(?)", undef, "Tom" );
 
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 1, "Street 1" );
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 1, "Street 2" );
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 2, "Jane home" );
-    $dbh->do( "insert into gideon_j2 (person_id,address) values(?,?)", undef, 4, "Tom's house" );
+    $dbh->do( "insert into gideon_j2 (person_id,address,city) values(?,?,?)", undef, 1, "Street 1", 'NY' );
+    $dbh->do( "insert into gideon_j2 (person_id,address,city) values(?,?,?)", undef, 1, "Street 2", 'NY' );
+    $dbh->do( "insert into gideon_j2 (person_id,address,city) values(?,?,?)", undef, 2, "Jane home", 'SF' );
+    $dbh->do( "insert into gideon_j2 (person_id,address,city) values(?,?,?)", undef, 4, "Tom's house", 'LA' );
 
 }
 

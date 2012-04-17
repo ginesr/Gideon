@@ -33,4 +33,12 @@ has 'street' => (
     metaclass => 'Gideon'
 );
 
+has 'city' => (
+    is        => 'rw',
+    required  => 1,
+    isa       => 'Str',
+    column    => 'address',
+    metaclass => 'Gideon'
+);
+
 1;

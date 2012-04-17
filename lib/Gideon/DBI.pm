@@ -13,6 +13,7 @@ use Data::Dumper qw(Dumper);
 use Gideon::Results;
 use Mouse;
 use Set::Array;
+use Hash::Merge qw();
 
 our $VERSION = '0.02';
 
@@ -310,6 +311,17 @@ sub where_stmt_from_args {
     return \%where;
 }
 
+sub get_column_with_table {
+    
+    my $class     = shift;
+    my $attribute = shift;
+    
+    my $table  = $class->get_store_destination();
+    my $column = $class->get_column_from_meta($attribute);
+    
+    return $table . '.' . $column;
+}
+
 sub add_table_to_where {
 
     my $class = shift;
@@ -395,7 +407,7 @@ sub execute_and_array {
     
     my ( $stmt, @bind ) =
       $sql->select( $tables, $fields, $where, $order );
-    
+
     if ( $class->cache_registered ) {
         $cache_key = $class->generate_cache_key( $stmt, @bind );
         $class->cache_lookup( $cache_key );
@@ -433,25 +445,24 @@ sub order_from_config {
 
 sub join_with {
     
-    my $self = shift;
-    my $args = shift;
-    my $config = shift;
-    my $joins = shift;
-    my @args = @_;
+    my $self    = shift;
+    my $options = {@_};
+
+    my $args     = $options->{args};
+    my $config   = $options->{config};
+    my $joins    = $options->{joins};
+    my $foreings = $options->{foreings};
     
-    my $foreing_class = $args[0];
+    my $foreing_class = $foreings->[0];
     
     my $tables  = $self->stores_for($foreing_class);
     my @fields  = $self->columns_meta_for($foreing_class);
     my $where   = $self->where_stmt_from_args($args);
     my $order   = $self->order_from_config($config);
     my $joined  = $self->_translate_join_sql_abstract($joins);
-    
-    # TODO: find relationships autmatically
-    # follow SQL-Abstract where format
-    foreach (keys %{ $joined } ) {
-        $where->{$_} = $joined->{$_}
-    }
+
+    # TODO: find relationships autmatically?
+    $where = $self->_merge_where_and_join($where,$joined);   
     
     return $self->execute_and_array($tables,\@fields,$where,$order);
 
@@ -555,6 +566,28 @@ sub _translate_join_sql_abstract {
 
     return \%pair;
     
+}
+
+sub _merge_where_and_join {
+    
+    my $self = shift;
+    my $where = shift;
+    my $joined = shift;
+    my $final = shift;
+    
+    # follow SQL-Abstract "where" syntax
+    # check if same exists in both hashes
+    foreach ( keys %{ $joined } ) {
+        if (exists $where->{$_}) {
+            $final->{$_} = [ -and => {'=', $where->{$_} }, [ $joined->{$_} ] ];
+            next;
+        }
+        $final->{$_} = $joined->{$_}
+    }
+
+    # merge
+    my $merge = Hash::Merge->new()->merge($final,$where);
+    return $merge;
 }
 
 1;
