@@ -431,6 +431,32 @@ sub order_from_config {
     return $order; 
 }
 
+sub join_with {
+    
+    my $self = shift;
+    my $args = shift;
+    my $config = shift;
+    my $joins = shift;
+    my @args = @_;
+    
+    my $foreing_class = $args[0];
+    
+    my $tables  = $self->stores_for($foreing_class);
+    my @fields  = $self->columns_meta_for($foreing_class);
+    my $where   = $self->where_stmt_from_args($args);
+    my $order   = $self->order_from_config($config);
+    my $joined  = $self->_translate_join_sql_abstract($joins);
+    
+    # TODO: find relationships autmatically
+    # follow SQL-Abstract where format
+    foreach (keys %{ $joined } ) {
+        $where->{$_} = $joined->{$_}
+    }
+    
+    return $self->execute_and_array($tables,\@fields,$where,$order);
+
+}
+
 # Private ----------------------------------------------------------------------
 
 sub _from_store_dbh {
@@ -505,6 +531,29 @@ sub _loop_sort_conditions {
     }
     
     return $clauses;
+    
+}
+
+sub _translate_join_sql_abstract {
+    
+    my $self = shift;
+    my $array_ref = shift;
+    my %pair = ();
+    
+    foreach my $hash ( @{ $array_ref } ) {
+        foreach my $k ( keys %{ $hash } ) {
+            if ( ref($hash->{$k}) eq 'ARRAY' ) {
+                
+                foreach my $f ( @{ $hash->{$k} } ) {
+                    $pair{$k} = \"= $f";
+                }
+                next;
+            }
+            $pair{$k} = \"= $hash->{$k}";
+        }
+    }
+
+    return \%pair;
     
 }
 
