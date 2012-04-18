@@ -10,10 +10,8 @@ use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
-use Gideon::Results;
 use Mouse;
 use Set::Array;
-use Hash::Merge qw();
 
 our $VERSION = '0.02';
 

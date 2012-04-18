@@ -5,6 +5,7 @@ use warnings;
 use Gideon::DBI;
 use Gideon::Error;
 use Mouse;
+use Hash::Merge qw();
 
 extends 'Gideon::DBI';
 
