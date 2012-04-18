@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Gideon::DBI;
 use Gideon::Error;
+use Gideon::Error::DBI;
 use Mouse;
 use Hash::Merge qw();
 

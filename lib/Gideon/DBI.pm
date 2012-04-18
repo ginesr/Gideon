@@ -7,6 +7,7 @@ use Gideon::Error;
 use Gideon::Error::Simple;
 use Gideon::Filters::DBI;
 use Gideon::Error::DBI;
+use Gideon::Error::Params;
 use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
@@ -316,7 +317,7 @@ sub get_column_with_table {
     my $attribute = shift;
     
     my $table  = $class->get_store_destination();
-    my $column = $class->get_column_from_meta($attribute);
+    my $column = $class->get_colum_for_attribute($attribute);
     
     return $table . '.' . $column;
 }
@@ -338,6 +339,17 @@ sub get_columns_from_meta {
     my $columns = $class->SUPER::get_columns_from_meta();
     my @columns = map { $table . '.' . $_ . ' as `' . $table . '.' . $_ . '`' } @{$columns};
 
+    return wantarray ? @columns : \@columns;
+}
+
+sub columns_with_table_as_list {
+    
+    my $class = shift;
+    my $table = $class->get_store_destination();
+
+    my $columns = $class->SUPER::get_columns_from_meta();
+    my @columns = map { $table . '.' . $_ } @{$columns};
+    
     return wantarray ? @columns : \@columns;
 }
 
@@ -530,6 +542,12 @@ sub _add_group_by {
     my $self = shift;
     my $stmt = shift;
     my $group = shift;
+    
+    my @valid_params = $self->columns_with_table_as_list;
+    
+    unless (grep {/^$group/} @valid_params) {
+        Gideon::Error::Params->throw('not valid object meta data \`' . $group);
+    }
     
     my $group_clause = ' group by `' . $group . '`';
     

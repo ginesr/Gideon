@@ -81,7 +81,7 @@ is( $first->{'_count'},       2, 'Group first record count' );
 throws_ok( sub{
         Example::My::Person->find_by_address( { grouped => 'gideon_j1.foo' } ) 
     },
-    'Gideon::Error',
+    'Gideon::Error::Params',
     'Not valid group parameter'
 );
 
