@@ -11,7 +11,7 @@ use Test::Exception;
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 } else {
-    plan tests => 21;
+    plan tests => 23;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -64,12 +64,19 @@ my $limited = Example::My::Person->find_by_address(
 
 $first = $limited->first;
 
-is( $first->{'gideon_j1.id'},         1,     'First record id' );
-is( $first->{'gideon_j1.name'},      undef,  'First record name (filtered)' );
-is( $first->{'gideon_j2.id'},        undef,  'First record foreing id (filtered)' );
-is( $first->{'gideon_j2.person_id'}, undef,  'First record person id (filtered)' );
-is( $first->{'gideon_j2.address'},   undef,  'First record address (filtered)' );
-is( $first->{'gideon_j2.city'},      'NY',   'First record city' );
+is( $first->{'gideon_j1.id'},         1,     'Filtered record id' );
+is( $first->{'gideon_j1.name'},      undef,  'Filtered record name (filtered)' );
+is( $first->{'gideon_j2.id'},        undef,  'Filtered record foreing id (filtered)' );
+is( $first->{'gideon_j2.person_id'}, undef,  'Filtered record person id (filtered)' );
+is( $first->{'gideon_j2.address'},   undef,  'Filtered record address (filtered)' );
+is( $first->{'gideon_j2.city'},      'NY',   'Filtered record city' );
+
+# group by with join
+my $grouped = Example::My::Person->find_by_address( undef, { grouped => 'gideon_j1.id', ordered => 'gideon_j1.id' } );
+$first = $grouped->first;
+
+is( $first->{'gideon_j1.id'}, 1, 'Group first record id' );
+is( $first->{'_count'},       2, 'Group first record count' );
 
 # Auxiliary test functions -----------------------------------------------------
 

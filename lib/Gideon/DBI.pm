@@ -401,12 +401,17 @@ sub execute_and_array {
     my $fields = shift;
     my $where = shift;
     my $order = shift;
+    my $group = shift;
     
     my $sql = SQL::Abstract->new;
     my $cache_key;
     
     my ( $stmt, @bind ) =
       $sql->select( $tables, $fields, $where, $order );
+      
+    if ( $group ) {
+        $stmt = $class->_add_group_by($stmt,$group);
+    }
 
     if ( $class->cache_registered ) {
         $cache_key = $class->generate_cache_key( $stmt, @bind );
@@ -460,7 +465,8 @@ sub join_with {
     my $where   = $self->where_stmt_from_args($args);
     my $order   = $self->order_from_config($config);
     my $joined  = $self->_translate_join_sql_abstract($joins);
-    
+    my $group;
+
     if ( exists $config->{limit_fields} ) {
         
         @fields = $self->_filter_fields( 
@@ -469,11 +475,15 @@ sub join_with {
         );
         
     }
+    if ( exists $config->{grouped} ) {
+        push @fields, 'count(*) as _count';
+        $group = $config->{grouped};
+    }
 
     # TODO: find relationships autmatically?
     $where = $self->_merge_where_and_join($where,$joined);   
     
-    return $self->execute_and_array($tables,\@fields,$where,$order);
+    return $self->execute_and_array($tables,\@fields,$where,$order,$group);
 
 }
 
@@ -623,6 +633,24 @@ sub _filter_fields {
     }
     return @fields;
 
+}
+
+sub _add_group_by {
+    
+    my $self = shift;
+    my $stmt = shift;
+    my $group = shift;
+    
+    my $group_clause = ' group by `' . $group . '`';
+    
+    if ($stmt =~ /ORDER BY/) {
+        $stmt =~ s/ORDER BY/$group_clause ORDER BY/;
+    }
+    else {
+        $stmt .= $group_clause;
+    }
+    
+    return $stmt;
 }
 
 1;
