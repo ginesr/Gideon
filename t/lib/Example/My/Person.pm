@@ -9,7 +9,7 @@ use Try::Tiny;
 use Carp qw(croak);
 use Data::Dumper qw(Dumper);
 
-extends 'Gideon::DBI';
+extends 'Gideon::DBI::Join';
 store 'mysql_master:gideon_j1';
 
 has 'id' => (
@@ -33,11 +33,11 @@ sub find_by_address {
     
     my $class = shift;
     
-    my ( $args, $config ) = $class->decode_params(@_);
-
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
+
+    my ( $args, $config ) = $class->decode_params(@_);
 
     try {
 
