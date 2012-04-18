@@ -119,22 +119,4 @@ sub _filter_fields {
 
 }
 
-sub _add_group_by {
-    
-    my $self = shift;
-    my $stmt = shift;
-    my $group = shift;
-    
-    my $group_clause = ' group by `' . $group . '`';
-    
-    if ($stmt =~ /ORDER BY/) {
-        $stmt =~ s/ORDER BY/$group_clause ORDER BY/;
-    }
-    else {
-        $stmt .= $group_clause;
-    }
-    
-    return $stmt;
-}
-
 1;

@@ -6,6 +6,7 @@ use warnings;
 use Gideon::Error;
 use Gideon::Error::Simple;
 use Gideon::Filters::DBI;
+use Gideon::Error::DBI;
 use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
@@ -416,8 +417,8 @@ sub execute_and_array {
         $class->cache_lookup( $cache_key );
     }
 
-    my $sth  = $class->dbh()->prepare($stmt) or die $class->dbh->errstr;
-    my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
+    my $sth  = $class->dbh()->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+    my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh->errstr );
     my %row; 
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
@@ -522,6 +523,24 @@ sub _loop_sort_conditions {
     
     return $clauses;
     
+}
+
+sub _add_group_by {
+    
+    my $self = shift;
+    my $stmt = shift;
+    my $group = shift;
+    
+    my $group_clause = ' group by `' . $group . '`';
+    
+    if ($stmt =~ /ORDER BY/) {
+        $stmt =~ s/ORDER BY/$group_clause ORDER BY/;
+    }
+    else {
+        $stmt .= $group_clause;
+    }
+    
+    return $stmt;
 }
 
 1;

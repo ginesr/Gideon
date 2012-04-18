@@ -11,7 +11,7 @@ use Test::Exception;
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 } else {
-    plan tests => 23;
+    plan tests => 24;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -77,6 +77,13 @@ $first = $grouped->first;
 
 is( $first->{'gideon_j1.id'}, 1, 'Group first record id' );
 is( $first->{'_count'},       2, 'Group first record count' );
+
+throws_ok( sub{
+        Example::My::Person->find_by_address( { grouped => 'gideon_j1.foo' } ) 
+    },
+    'Gideon::Error',
+    'Not valid group parameter'
+);
 
 # Auxiliary test functions -----------------------------------------------------
 
