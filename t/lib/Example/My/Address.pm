@@ -37,7 +37,7 @@ has 'city' => (
     is        => 'rw',
     required  => 1,
     isa       => 'Str',
-    column    => 'address',
+    column    => 'city',
     metaclass => 'Gideon'
 );
 

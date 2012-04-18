@@ -412,7 +412,7 @@ sub execute_and_array {
         $cache_key = $class->generate_cache_key( $stmt, @bind );
         $class->cache_lookup( $cache_key );
     }
-    
+
     my $sth  = $class->dbh()->prepare($stmt) or die $class->dbh->errstr;
     my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
     my %row; 
@@ -460,6 +460,15 @@ sub join_with {
     my $where   = $self->where_stmt_from_args($args);
     my $order   = $self->order_from_config($config);
     my $joined  = $self->_translate_join_sql_abstract($joins);
+    
+    if ( exists $config->{limit_fields} ) {
+        
+        @fields = $self->_filter_fields( 
+            fields => \@fields, 
+            filter => $config->{limit_fields}
+        );
+        
+    }
 
     # TODO: find relationships autmatically?
     $where = $self->_merge_where_and_join($where,$joined);   
@@ -588,6 +597,32 @@ sub _merge_where_and_join {
     # merge
     my $merge = Hash::Merge->new()->merge($final,$where);
     return $merge;
+}
+
+sub _filter_fields {
+    
+    my $self = shift;
+    my $params = {@_};
+    
+    my @fields = @{ $params->{fields} };
+    
+    unless (ref $params->{filter} eq 'ARRAY') {
+        Gideon::Error->throw('not a valid filter list');
+    }
+    
+    if ( my @list = @{ $params->{filter} } ) {
+        my @limited;
+        foreach my $f ( @list ) {
+            if ( my @t = grep { /^$f\s/ } @fields ) {
+                push @limited, @t;
+            }
+        }
+        if (scalar(@limited)>0) {
+            @fields = @limited;
+        }
+    }
+    return @fields;
+
 }
 
 1;

@@ -2,17 +2,16 @@
 
 use lib './lib';
 use strict;
-use Try::Tiny;
 use Test::More;
+use Try::Tiny;
 use Data::Dumper qw(Dumper);
-use Cwd;
 use DBI;
 use Test::Exception;
 
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 } else {
-    plan tests => 13;
+    plan tests => 21;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -38,8 +37,10 @@ my $first   = $records->first;
 my $last    = $records->last;
 
 is( $first->{'gideon_j1.id'},      1,          'First record id' );
+is( $first->{'gideon_j1.name'},    'John',     'First record name' );
 is( $last->{'gideon_j2.id'},       2,          'First record foreing id' );
 is( $first->{'gideon_j2.address'}, 'Street 1', 'First record address' );
+is( $first->{'gideon_j2.city'},    'NY',       'First record city' );
 is( $records->length,              2,          'Total results' );
 
 is( $last->{'gideon_j1.id'},      1,          'Last record id' );
@@ -53,6 +54,22 @@ my $address = Example::My::Address->find( id => 1 );
 is( $address->person_id, 1, 'From mysql one record other table' );
 
 throws_ok( sub { my $invalid = Example::My::Person->find_by_address( address => 1 ) }, 'Gideon::Error', 'Using invalid argument' );
+
+my $limited = Example::My::Person->find_by_address( 
+    id => 1,
+    { 
+        limit_fields => ['gideon_j2.city','gideon_j1.id' ] 
+    } 
+);
+
+$first = $limited->first;
+
+is( $first->{'gideon_j1.id'},         1,     'First record id' );
+is( $first->{'gideon_j1.name'},      undef,  'First record name (filtered)' );
+is( $first->{'gideon_j2.id'},        undef,  'First record foreing id (filtered)' );
+is( $first->{'gideon_j2.person_id'}, undef,  'First record person id (filtered)' );
+is( $first->{'gideon_j2.address'},   undef,  'First record address (filtered)' );
+is( $first->{'gideon_j2.city'},      'NY',   'First record city' );
 
 # Auxiliary test functions -----------------------------------------------------
 
