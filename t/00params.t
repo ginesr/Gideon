@@ -2,7 +2,7 @@
 
 use lib './lib/';
 use strict;
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Gideon;
 
 my $one = Gideon->check_for_config_in_params( name => 1 );
@@ -13,6 +13,9 @@ is( $no_pair, undef, 'One param not pairs. No config in params' );
 
 my $no_pair_p = Gideon->check_for_config_in_params('name', {});
 is( $no_pair_p, undef, 'One param not pairs. Config is present' );
+
+my $just_config = Gideon->check_for_config_in_params( { this => 'that' } );
+is( $just_config, 1, 'Just config is present' );
 
 my $undef = Gideon->check_for_config_in_params(undef);
 is( $undef, undef, 'No params. No config in params' );

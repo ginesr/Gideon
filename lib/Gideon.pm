@@ -181,7 +181,10 @@ sub check_for_config_in_params {
     if ( scalar(@args) == 2 and !defined $args[0] and ref( $args[-1] ) eq 'HASH' ) {
         return 1;
     }
-    
+    if ( scalar(@args) == 1 and ref( $args[-1] ) eq 'HASH' ) {
+        return 1;
+    }
+        
     return;
 }
 

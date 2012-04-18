@@ -72,7 +72,7 @@ is( $first->{'gideon_j2.address'},   undef,  'Filtered record address (filtered)
 is( $first->{'gideon_j2.city'},      'NY',   'Filtered record city' );
 
 # group by with join
-my $grouped = Example::My::Person->find_by_address( undef, { grouped => 'gideon_j1.id', ordered => 'gideon_j1.id' } );
+my $grouped = Example::My::Person->find_by_address( { grouped => 'gideon_j1.id', ordered => 'gideon_j1.id' } );
 $first = $grouped->first;
 
 is( $first->{'gideon_j1.id'}, 1, 'Group first record id' );
