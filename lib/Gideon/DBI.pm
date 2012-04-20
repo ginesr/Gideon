@@ -159,22 +159,26 @@ sub find {
         my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
         my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh->errstr );
         my %row;
+        my $obj;
 
         $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
-        $sth->fetch;
-        $sth->finish;
 
-        if ($rows >= 1) {
+        while ( $sth->fetch ) {
 
             my $args_map       = $class->map_meta_with_row( \%row );
             my @construct_args = $class->args_with_db_values( $args_map, \%row );
-            my $obj            = $class->new(@construct_args);
+            $obj               = $class->new(@construct_args);
             $obj->is_stored(1);
-            return $obj;
+            
+            last;
         
         }
         
-        Gideon::Error::DBI::NotFound->throw('no results found');
+        $sth->finish;
+        
+        Gideon::Error::DBI::NotFound->throw('no results found') unless $obj;
+        
+        return $obj;
 
     }
     catch {
