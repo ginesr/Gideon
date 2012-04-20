@@ -17,8 +17,8 @@ my $mock_session = DBD::Mock::Session->new(
         results      => []
     },
     {
-        statement    => 'UPDATE country SET country_iso = ?, country_name = ?',
-        bound_params => [ 'AR', 'Argentina' ],
+        statement    => 'UPDATE country SET country_iso = ?, country_name = ? WHERE ( country_name = ? )',
+        bound_params => [ 'AR', 'Argentina', 'Argentina'],
         results      => []
     }
 );

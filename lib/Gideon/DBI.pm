@@ -44,7 +44,7 @@ sub remove {
         }
 
         my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), undef, \%where );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), \%where );
 
         my $pool = $self->conn;
         my $sth  = $self->dbh($pool)->prepare($stmt) or die $self->dbh->errstr;
@@ -527,9 +527,15 @@ sub get_key_columns_for_update {
     my $where = {};
 
     my $keys = $self->get_key_columns_hash;
+    
+    if ( scalar( keys %{$keys} ) == 0 ) {
+        Gideon::Error->throw('can\'t update without table primary key');
+    }
+    
     foreach ( keys %{ $keys } ) {
         $where->{ $keys->{$_} } = $self->$_;
     }
+    
     return $where;
 
 }

@@ -1,5 +1,5 @@
 
-package Example::Country;
+package Example::Currency;
 
 use strict;
 use warnings;
@@ -8,20 +8,19 @@ use Gideon::Meta::Attribute::DBI;
 use Mouse;
 
 extends 'Gideon::DBI';
-store 'master:country';
+store 'master:currency';
 
 has 'name' => (
     is          => 'rw',
     isa         => 'Str',
-    column      => 'country_name',
-    primary_key => 1,
+    column      => 'currency_name',
     metaclass   => 'Gideon',
 );
 
-has 'iso' => (
+has 'symbol' => (
     is        => 'rw',
     isa       => 'Maybe[Str]',
-    column    => 'country_iso',
+    column    => 'currency_symbol',
     metaclass => 'Gideon'
 );
 

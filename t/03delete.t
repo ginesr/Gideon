@@ -3,12 +3,14 @@
 use strict;
 use warnings;
 use lib './lib';
-use Test::More tests => 5;
+use Test::More tests => 8;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
-use Example::Person;
-use Example::Country;
 use Test::Exception;
+
+use_ok qw(Example::Person);
+use_ok qw(Example::Country);
+use_ok qw(Example::Currency);
 
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
@@ -27,9 +29,9 @@ my $mock_session = DBD::Mock::Session->new(
         results      => []
     },
     {
-        statement    => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_iso = ? )',
-        bound_params => ['UY'],
-        results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'UY', 'Uruguay' ] ]
+        statement    => 'SELECT currency.currency_symbol as `currency.currency_symbol`, currency.currency_name as `currency.currency_name` FROM currency WHERE ( currency.currency_name = ? )',
+        bound_params => ['Dollar'],
+        results      => [ [ 'currency.currency_name', 'currency.currency_symbol' ], [ 'Dollar', 'USD' ] ]
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -56,7 +58,7 @@ lives_ok(
 
 throws_ok(
     sub {
-        my $record = Example::Country->find( iso => 'UY' );
+        my $record = Example::Currency->find( name => 'Dollar' );
         $record->remove;
     },
     'Gideon::Error',
