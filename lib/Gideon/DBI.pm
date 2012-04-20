@@ -8,6 +8,7 @@ use Gideon::Error::Simple;
 use Gideon::Filters::DBI;
 use Gideon::Error::DBI;
 use Gideon::Error::Params;
+use Gideon::Error::DBI::NotFound;
 use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
@@ -155,19 +156,25 @@ sub find {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
 
-        my $sth  = $class->dbh($pool)->prepare($stmt) or die $class->dbh->errstr;
-        my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
+        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh->errstr );
         my %row;
 
         $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
         $sth->fetch;
         $sth->finish;
 
-        my $args_map       = $class->map_meta_with_row( \%row );
-        my @construct_args = $class->args_with_db_values( $args_map, \%row );
-        my $obj            = $class->new(@construct_args);
-        $obj->is_stored(1);
-        return $obj;
+        if ($rows >= 1) {
+
+            my $args_map       = $class->map_meta_with_row( \%row );
+            my @construct_args = $class->args_with_db_values( $args_map, \%row );
+            my $obj            = $class->new(@construct_args);
+            $obj->is_stored(1);
+            return $obj;
+        
+        }
+        
+        Gideon::Error::DBI::NotFound->throw('no results found');
 
     }
     catch {

@@ -13,7 +13,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 8;
+    plan tests => 9;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -54,6 +54,9 @@ is( $new_rec->id, 11, 'New record inserted' );
 my $id = $new_rec->last_inserted_id();
 
 is( $id, 11, 'Last id from db' );
+
+throws_ok(sub { my $not_found = Example::Test->find( id => 9999 ) }, 'Gideon::Error::DBI::NotFound');
+
 
 # Auxiliary test functions -----------------------------------------------------
 
