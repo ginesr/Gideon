@@ -13,7 +13,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 12;
+    plan tests => 16;
 }
 
 use_ok(qw(Gideon::Connection::Pool));
@@ -99,6 +99,18 @@ $new_rec->save();
 my $id = $new_rec->last_inserted_id();
 
 is( $id, 11, 'New record inserted' );
+
+my $nw_record = Example::Test->find( id => 11, { conn => 'node2' } );
+$nw_record->name('not so new now');
+
+is($nw_record->is_stored, 1, 'Is stored');
+is($nw_record->conn, undef, 'No pool selected to save');
+
+$nw_record->conn('node2');
+
+is($nw_record->conn, 'node2', 'Changed to pool before save');
+
+lives_ok( sub { $nw_record->save() } );
 
 # Auxiliary test functions -----------------------------------------------------
 

@@ -34,7 +34,7 @@ sub build_statment {
           $sql->select( $table, $fields, $where, $order );
     }
     else {
-        return my ( $stmt, @bind ) = $sql->$action( $table, $where );
+        return my ( $stmt, @bind ) = $sql->$action( $table, $fields, $where );
     }
 
 }

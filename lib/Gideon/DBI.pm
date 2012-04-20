@@ -77,10 +77,13 @@ sub save {
 
     try {
 
+        my $where  = {};
         my $fields = $self->get_columns_hash();
 
-        unless ( $self->is_stored ) {
-
+        if ( $self->is_stored ) {
+            $where = $self->get_key_columns_for_update();
+        }
+        else {
             # remove auto increment columns for insert
             $self->remove_auto_columns_for_insert($fields);
         }
@@ -90,9 +93,9 @@ sub save {
         my @bind = ();
 
         if ( $self->is_stored ) {
-            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $self->get_store_destination(), undef, \%data );
+            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $self->get_store_destination(), \%data, $where );
         } else {
-            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), undef, \%data );
+            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), \%data );
         }
 
         my $pool = $self->conn;
@@ -515,6 +518,19 @@ sub remove_auto_columns_for_insert {
     foreach ( keys %{$serial} ) {
         delete $field->{$_};
     }
+
+}
+
+sub get_key_columns_for_update {
+
+    my $self  = shift;
+    my $where = {};
+
+    my $keys = $self->get_key_columns_hash;
+    foreach ( keys %{ $keys } ) {
+        $where->{ $keys->{$_} } = $self->$_;
+    }
+    return $where;
 
 }
 
