@@ -30,7 +30,7 @@ sub remove {
     my $self = shift;
 
     unless ( ref($self) ) {
-        Gideon::Error->throw('save() is not a static method');
+        return $self->remove_all(@_);
     }
 
     return undef unless $self->is_stored;
@@ -47,10 +47,10 @@ sub remove {
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), \%where );
 
         my $pool = $self->conn;
-        my $sth  = $self->dbh($pool)->prepare($stmt) or die $self->dbh->errstr;
-        my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
+        my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $self->dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $self->dbh->errstr );
+        
         $sth->finish;
-
         $self->is_stored(0);
         $self->is_modified(0);
 
@@ -63,6 +63,33 @@ sub remove {
         croak $e;
     }
 
+}
+
+sub remove_all {
+    
+    my $class = shift;
+    my ( $args, $config ) = $class->decode_params(@_);
+    
+    try {
+    
+        my $map    = $class->map_args_with_meta( $args );
+        my $where  = $class->where_stmt_from_args( $args );
+        my $limit  = $config->{limit} || '';
+        my $pool   = $config->{conn} || '';
+
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('delete', $class->get_store_destination(), $where, undef, undef, $limit );
+
+        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        $sth->finish;
+        
+        return $rows;
+        
+    }
+    catch {
+        croak shift;
+    };
+    
 }
 
 sub save {

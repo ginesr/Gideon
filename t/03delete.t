@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib './lib';
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -16,10 +16,14 @@ my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
         statement =>
-          'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( ( person.person_country = ? AND person.person_id = ? ) )',
+'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( ( person.person_country = ? AND person.person_id = ? ) )',
         bound_params => [ 'AR', 123 ],
         results      => [
-            [ 'person.person_id', 'person.person_name', 'person.person_city', 'person.person_country', 'person.person_type' ],
+            [
+                'person.person_id',   'person.person_name',
+                'person.person_city', 'person.person_country',
+                'person.person_type'
+            ],
             [ 123, 'Foo', 'Vegas', 'AR', 300 ]
         ]
     },
@@ -29,9 +33,19 @@ my $mock_session = DBD::Mock::Session->new(
         results      => []
     },
     {
-        statement    => 'SELECT currency.currency_symbol as `currency.currency_symbol`, currency.currency_name as `currency.currency_name` FROM currency WHERE ( currency.currency_name = ? )',
+        statement =>
+'SELECT currency.currency_symbol as `currency.currency_symbol`, currency.currency_name as `currency.currency_name` FROM currency WHERE ( currency.currency_name = ? )',
         bound_params => ['Dollar'],
-        results      => [ [ 'currency.currency_name', 'currency.currency_symbol' ], [ 'Dollar', 'USD' ] ]
+        results      => [
+            [ 'currency.currency_name', 'currency.currency_symbol' ],
+            [ 'Dollar',                 'USD' ]
+        ]
+    },
+    {
+        statement =>
+          'DELETE FROM person WHERE ( person.person_country = ? ) limit 10',
+        bound_params => ['AR'],
+        results      => [ [], [], [] ],
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -65,3 +79,5 @@ throws_ok(
     'Can\'t delete without keys'
 );
 
+my $rows_deleted = Example::Person->remove( country => 'AR', { limit => 10 } );
+is( $rows_deleted, 2, 'Remove all records matching criteria' );

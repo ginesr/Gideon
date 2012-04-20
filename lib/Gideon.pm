@@ -86,6 +86,12 @@ sub remove {
     # overload in subclass
 }
 
+sub remove_all {
+    my $class = shift;
+
+    # overload in subclass    
+}
+
 sub cache_lookup {
     my $class = shift;
 
