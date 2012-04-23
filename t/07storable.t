@@ -29,7 +29,7 @@ Storable::store $table, 'db/flat.db';
 # ------------------------------------------------------------------------------
 
 Gideon->register_store( 'disk',
-    Example::Driver::Storable->new( db => 'db/flat.db' ) );
+    Example::Driver::Storable->new( db => 'db/flat.db' ), qw/strict/ );
 
 my $flat = Example::Flat->new;
 $flat->value('is a new record!');
@@ -54,7 +54,7 @@ throws_ok(
 
     },
     qr/store 'disk' is already registered/,
-    'Tried to register same store again'
+    'Tried to register same store again in strict mode'
 );
 
 my $one = Example::Flat->find( value => 'test' );

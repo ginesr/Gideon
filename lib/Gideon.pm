@@ -28,6 +28,7 @@ our $EXCEPTION_DEBUG = 0;
 
 my $__meta  = undef;
 my $__store = {};
+my $__stricts = {};
 my $__cache = undef;
 our %stores = ();
 my $__pool  = undef;
@@ -43,6 +44,10 @@ sub register_store {
     unless ( $class->store_registered($store_name,@args) ) {
         $stores{$store_name} = $args[0];
     }
+    if ( grep { /strict/ } @args ) {
+        $__stricts->{$store_name} = 1;
+    }
+    $class;    
 }
 
 sub register_cache {
@@ -571,7 +576,7 @@ sub store_registered {
     my $store_name = shift;
     my @args       = @_;
 
-    if ( grep { /strict/ } @args ) {
+    if ( exists $__stricts->{$store_name} ) {
         die 'store \''. $store_name .'\' is already registered' if exists $stores{$store_name};        
     }
     return;
