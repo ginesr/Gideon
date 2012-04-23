@@ -199,6 +199,7 @@ sub find {
             my @construct_args = $class->args_with_db_values( $args_map, \%row );
             $obj               = $class->new(@construct_args);
             $obj->is_stored(1);
+            $obj->conn($pool) if $pool;
             
             last;
         
