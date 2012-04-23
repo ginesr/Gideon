@@ -1,6 +1,6 @@
 #!perl
 
-use lib './lib/';
+use lib './lib';
 use strict;
 use Try::Tiny;
 use Test::More;
@@ -13,12 +13,13 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 16;
+    plan tests => 18;
 }
 
 use_ok(qw(Gideon::Connection::Pool));
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
+use_ok(qw(Example::Test2));
 
 my $dir = getcwd;
 if ( $dir !~ /\/t/ ) { chdir('t') }
@@ -70,6 +71,10 @@ throws_ok(
 );
 
 Example::Test->select('node1');
+Example::Test2->select('node3');
+
+throws_ok( sub { Example::Test2->find( id => 4 ) },
+    'Example::Error::Simple', 'Tried to use conn from pool that failed' );
 
 my $test_data = Example::Test->find_all( undef, { limit => 5 } );
 my $first     = $test_data->first;

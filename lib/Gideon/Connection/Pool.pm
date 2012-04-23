@@ -30,15 +30,19 @@ has 'pool' => (
 );
 
 sub get {
+
     my $self = shift;
     my $key = shift;
+
     if ( $self->detect($key) ) {
         my $hash = $self->pool;
         return $hash->{$key}
     }
-    Gideon::Error->throw('called get() using a reference') if ref $key;
-    Gideon::Error->throw('called get() without key') unless $key;
+
+    Gideon::Error->throw(__PACKAGE__ . ' called get() using a reference') if ref $key;
+    Gideon::Error->throw(__PACKAGE__ . ' called get() without key') unless $key;
     Gideon::Error->throw($key . ' is not in the pool');
+    
 }
 
 sub detect {

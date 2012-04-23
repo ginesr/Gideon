@@ -31,7 +31,7 @@ my $__store = {};
 my $__stricts = {};
 my $__cache = undef;
 our %stores = ();
-my $__pool  = undef;
+our $__pool  = undef;
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
@@ -330,16 +330,17 @@ sub get_store_args {
     
     my $self  = shift;
     my $node  = shift;
-    
+
     my $id    = $self->_store_info;
     my $store = $stores{$id};
-    
+    my $pkg   = $self->_get_pkg_name;
+
     die 'invalid store \'' .$id . '\' from class '. $self .', use Gideon->register(\'' . $id . '\', ... )' unless $store;
     
     if ( ref($store) eq 'Gideon::Connection::Pool' ) {
         return $self->get_store_from_pool( $store, $node );
     }
-    if ($node and !defined $__pool) {
+    if ($node and !defined $__pool->{$pkg}) {
         die "can't use $node without pool configuration";
     }
     
@@ -352,31 +353,40 @@ sub get_store_from_pool {
     my $pool  = shift;
     my $node  = shift;
     
+    my $pkg = $self->_get_pkg_name;
+    
     if ($node) {
         return $pool->get($node);    
     }
     
-    die 'use select() to switch/choose from pool' unless defined $__pool;
-    return $pool->get($__pool);
+    die 'use select() to switch/choose from pool' unless defined $__pool->{$pkg};
+    return $pool->get( $__pool->{$pkg} );
     
 }
 
 sub select {
+    
     my $self = shift;
     my $node = shift;
+    
     if ( $self eq __PACKAGE__ ) {
         Gideon::Error->throw('use select() from your class');
     }
-    my $id = $self->_store_info;
+    
+    my $id   = $self->_store_info;
     my $pool = $stores{$id};
+    my $pkg  = $self->_get_pkg_name;
+
     unless ( ref($pool) eq 'Gideon::Connection::Pool' ) {
         Gideon::Error->throw('not a valid pool class defined');
     }
     unless ($pool->detect($node)) {
         Gideon::Error->throw('invalid identifier ' .$node . ' is not in the pool');
     }
-    $__pool = $node;
+    
+    $__pool->{$pkg} = $node;
     return 1;
+    
 }
 
 sub store($) {
