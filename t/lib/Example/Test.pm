@@ -18,6 +18,7 @@ has 'id' => (
     primary_key => 1,
     metaclass   => 'Gideon'
 );
+
 has 'name' => (
     is        => 'rw',
     required  => 1,

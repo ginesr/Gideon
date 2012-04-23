@@ -130,7 +130,7 @@ sub save {
         my $rows = $sth->execute(@bind)       or Gideon::Error->throw( $self->dbh($pool)->errstr );
         $sth->finish;
 
-        if ( my $serial = $self->get_serial_columns_hash ) {
+        if ( !$self->is_stored and my $serial = $self->get_serial_columns_hash ) {
             my $last_id = $self->last_inserted_id;
             my $serial_attribute = ( map { $_ } keys %{$serial} )[0];
             $self->$serial_attribute($last_id);
