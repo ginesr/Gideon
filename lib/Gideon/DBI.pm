@@ -126,8 +126,8 @@ sub save {
         }
 
         my $pool = $self->conn;
-        my $sth  = $self->dbh($pool)->prepare($stmt) or die $self->dbh->errstr;
-        my $rows = $sth->execute(@bind)       or die $self->dbh->errstr;
+        my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error->throw( $self->dbh($pool)->errstr );
+        my $rows = $sth->execute(@bind)       or Gideon::Error->throw( $self->dbh($pool)->errstr );
         $sth->finish;
 
         if ( my $serial = $self->get_serial_columns_hash ) {
@@ -155,7 +155,7 @@ sub last_inserted_id {
     my $self = shift;
     my $pool = $self->conn;
     my $sth  = $self->dbh($pool)->prepare('select last_insert_id() as last') or die $self->dbh->errstr;
-    my $rows = $sth->execute or die $self->dbh->errstr;
+    my $rows = $sth->execute or die $self->dbh($pool)->errstr;
     my %row;
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
@@ -418,6 +418,7 @@ sub dbh {
     if ( ref($self) and defined $self->__dbh() ) {
         return $self->__dbh;
     }
+
     return $self->_from_store_dbh($pool);
 
 }
