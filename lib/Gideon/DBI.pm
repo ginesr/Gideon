@@ -190,8 +190,8 @@ sub find {
         my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         my %row;
         my $obj;
-
-        $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
+        
+        $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
 
         while ( $sth->fetch ) {
 
@@ -253,7 +253,7 @@ sub find_all {
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         my %row;
 
-        $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
+        $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
 
         my $results  = Set::Array->new;
         my $args_map = $class->map_meta_with_row( \%row );
