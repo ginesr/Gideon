@@ -186,8 +186,8 @@ sub find {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
 
-        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
-        my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
+        my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         my %row;
         my $obj;
 
@@ -249,8 +249,8 @@ sub find_all {
             $class->cache_lookup( $cache_key );
         }
 
-        my $sth  = $class->dbh($pool)->prepare($stmt) or die $class->dbh->errstr;
-        my $rows = $sth->execute(@bind)        or die $class->dbh->errstr;
+        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         my %row;
 
         $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
