@@ -120,4 +120,6 @@ sub _filter_fields {
 
 }
 
+__PACKAGE__->meta->make_immutable();
+
 1;

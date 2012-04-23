@@ -16,4 +16,6 @@ sub connect {
     return MongoDB::Connection->new;
 }
 
+__PACKAGE__->meta->make_immutable();
+
 1;

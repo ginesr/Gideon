@@ -63,4 +63,6 @@ sub cache_key {
     return $string;
 }
 
+__PACKAGE__->meta->make_immutable();
+
 1;
