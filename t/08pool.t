@@ -104,13 +104,13 @@ my $nw_record = Example::Test->find( id => 11, { conn => 'node2' } );
 $nw_record->name('not so new now');
 
 is($nw_record->is_stored, 1, 'Is stored');
-is($nw_record->conn, undef, 'No pool selected to save');
+is($nw_record->conn, 'node2', 'After find pool is set');
 
 $nw_record->conn('node2');
 
 is($nw_record->conn, 'node2', 'Changed to pool before save');
 
-lives_ok( sub { $nw_record->save() } );
+lives_ok( sub { $nw_record->save() }, 'Save record using pool' );
 
 # Auxiliary test functions -----------------------------------------------------
 
