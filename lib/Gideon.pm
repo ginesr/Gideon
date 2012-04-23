@@ -40,7 +40,7 @@ sub register_store {
     my $store_name = shift;
     my @args       = @_;
     die 'register store is a class method' if ref $class;
-    unless ( $class->store_registered($store_name) ) {
+    unless ( $class->store_registered($store_name,@args) ) {
         $stores{$store_name} = $args[0];
     }
 }
@@ -570,7 +570,10 @@ sub store_registered {
     my $class      = shift;
     my $store_name = shift;
     my @args       = @_;
-    die 'store \''. $store_name .'\' is already registered' if exists $stores{$store_name};
+
+    if ( grep { /strict/ } @args ) {
+        die 'store \''. $store_name .'\' is already registered' if exists $stores{$store_name};        
+    }
     return;
 }
 
