@@ -88,5 +88,6 @@ qq~create table gideon_t1 (id int not null auto_increment, name varchar(20), val
 }
 
 sub mysql_not_installed {
-    return;
+    try { use DBD::mysql; return undef }
+    catch { return 1 };
 }

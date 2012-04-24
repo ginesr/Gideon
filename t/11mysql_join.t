@@ -115,5 +115,6 @@ sub prepare_test_data {
 }
 
 sub mysql_not_installed {
-    return;
+    try { use DBD::mysql; return undef }
+    catch { return 1 };
 }
