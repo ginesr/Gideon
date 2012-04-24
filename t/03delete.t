@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib './lib';
-use Test::More tests => 11;
+use Test::More tests => 13;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -61,7 +61,25 @@ my $mock_session = DBD::Mock::Session->new(
         statement => 'DELETE FROM person WHERE ( person.person_country = ? )',
         bound_params => ['AR'],
         results => [[],[],[]],
-    }
+    },
+    {
+        statement => 'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( ( person.person_country = ? AND person.person_type > ? ) )',
+        bound_params => ['AR',30],
+        results => [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], 
+        [ 1, 'AR', 'Foo' ], 
+        [ 2, 'AR', 'Bar' ], 
+        ]
+    },
+    {
+        statement => 'DELETE FROM person WHERE ( ( person.person_country = ? AND person.person_type > ? ) )',
+        bound_params => ['AR',30],
+        results => [ [],[],[],[] ],
+    },
+    {
+        statement => 'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( person.person_type = ? )',
+        bound_params => [30],
+        results => []
+    },    
 );
 $dbh->{mock_session} = $mock_session;
 
@@ -107,5 +125,10 @@ throws_ok(
 );
 
 my $rows = Example::Person->find_all( country => 'AR' )->remove();
-
 is( $rows, 2, 'Two row removed from results' );
+
+$rows = Example::Person->find_all( country => 'AR', type => { gt => 30 } )->remove();
+is( $rows, 3, 'Two arguments remove within results' );
+
+$rows = Example::Person->find_all( type => 30 )->remove();
+is( $rows, 0, 'Nothing to delete' );

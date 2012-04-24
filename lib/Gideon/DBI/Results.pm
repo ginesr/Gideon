@@ -28,6 +28,10 @@ sub remove {
     my ( $args, $config ) = $self->package->decode_params(@_);
 
     try {
+        
+        if ($self->results->is_empty) {
+            return 0
+        }
 
         my $where       = $self->where;
         my $destination = $self->package->get_store_destination();
@@ -51,6 +55,10 @@ sub update {
     my ( $args, $config ) = $self->package->decode_params(@_);
 
     try {
+        
+        if ($self->results->is_empty) {
+            return 0
+        }        
 
         my $where       = $self->where;
         my $destination = $self->package->get_store_destination();
