@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib './lib';
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -81,3 +81,12 @@ throws_ok(
 
 my $rows_deleted = Example::Person->remove( country => 'AR', { limit => 10 } );
 is( $rows_deleted, 2, 'Remove all records matching criteria' );
+
+throws_ok(
+    sub {
+        my $rec = Example::Currency->new;
+        $rec->remove_all( name => 'Dollar' );
+    },
+    'Gideon::Error',
+    'Can\'t call remove all as instance method'
+);

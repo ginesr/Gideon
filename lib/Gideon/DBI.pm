@@ -103,6 +103,10 @@ sub remove_all {
     my $class = shift;
     my ( $args, $config ) = $class->decode_params(@_);
     
+    if ( ref($class) ) {
+        Gideon::Error->throw('remove_all() is a static method');
+    }    
+    
     try {
     
         my $map    = $class->map_args_with_meta( $args );
