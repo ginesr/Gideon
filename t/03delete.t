@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib './lib';
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -46,6 +46,21 @@ my $mock_session = DBD::Mock::Session->new(
           'DELETE FROM person WHERE ( person.person_country = ? ) limit 10',
         bound_params => ['AR'],
         results      => [ [], [], [] ],
+    },
+    {
+        statement =>
+          'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( person.person_country = ? )',
+        bound_params => ['AR'],
+        results      => [ 
+        [ 'person.person_id', 'person.person_country', 'person.person_name' ], 
+        [ 1, 'AR', 'Foo' ], 
+        [ 2, 'AR', 'Bar' ], 
+        ]
+    },
+    {
+        statement => 'DELETE FROM person WHERE ( person.person_country = ? )',
+        bound_params => ['AR'],
+        results => [[],[],[]],
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -90,3 +105,7 @@ throws_ok(
     'Gideon::Error',
     'Can\'t call remove all as instance method'
 );
+
+my $rows = Example::Person->find_all( country => 'AR' )->remove();
+
+is( $rows, 2, 'Two row removed from results' );

@@ -403,7 +403,7 @@ sub check_meta {
     my $attribute = shift;
 
     unless ( exists $meta->{attributes}->{$attribute} ) {
-        Gideon::Error->throw('invalid meta data');
+        Gideon::Error->throw('invalid meta data \'' . $attribute . '\' for class ' . $pkg);
     }
 
     return $meta->{attributes}->{$attribute};
