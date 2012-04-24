@@ -24,6 +24,36 @@ has 'conn'    => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'where'   => ( is => 'rw', isa => 'Maybe[HashRef]' );
 has 'package' => ( is => 'rw', isa => 'Str' );
 
+sub map {
+
+    my $self = shift;
+    my $code = shift;
+    
+    unless ( ref($code) ) {
+        Gideon::Error->throw('grep() needs a fuction as argument');
+    }
+    if ( ref($code) ne 'CODE' ) {
+        Gideon::Error->throw('grep() argument is not a function reference');
+    }
+        
+    my $filtered = Set::Array->new;
+    
+    my @list = $self->results->flatten();
+    my @filter = grep { defined $_ } map { (&$code) ? $_ : undef } @list;
+    
+    $filtered->push(@filter);
+    
+    my $results = __PACKAGE__->new(
+        'where'   => $self->where,
+        'package' => $self->package,
+        'conn'    => $self->conn,
+        'results' => $filtered 
+    );
+    
+    return $results;
+    
+}
+
 sub grep {
     
     my $self = shift;
@@ -46,7 +76,7 @@ sub grep {
     my $results = __PACKAGE__->new(
         'where'   => $self->where,
         'package' => $self->package,
-        'conn'    => $self->conn, 
+        'conn'    => $self->conn,
         'results' => $filtered 
     );
     
