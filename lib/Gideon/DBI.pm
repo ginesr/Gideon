@@ -9,6 +9,7 @@ use Gideon::Filters::DBI;
 use Gideon::Error::DBI;
 use Gideon::Error::Params;
 use Gideon::Error::DBI::NotFound;
+use Gideon::DBI::Results;
 use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
@@ -47,7 +48,7 @@ sub remove {
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), \%where );
 
         my $pool = $self->conn;
-        my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $self->dbh->errstr );
+        my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $self->dbh($pool)->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $self->dbh->errstr );
         
         $sth->finish;
@@ -65,6 +66,38 @@ sub remove {
 
 }
 
+sub update {
+    
+    my $class = shift;
+    
+    if ( ref($class) ) {
+        Gideon::Error->throw('update() is a static method');
+    }
+    
+    my ( $args, $config ) = $class->decode_params(@_);
+    
+    try {
+        
+        my $map    = $class->map_args_with_meta( $args );
+        my $where  = $class->where_stmt_from_args( $args );
+        my $limit  = $config->{limit} || '';
+        my $pool   = $config->{conn} || '';
+        
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('update', $class->get_store_destination(), $where, undef, undef, $limit );
+
+        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        $sth->finish;
+        
+        return $rows;
+        
+    }
+    catch {
+        croak shift;
+    }
+    
+}
+
 sub remove_all {
     
     my $class = shift;
@@ -79,8 +112,8 @@ sub remove_all {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('delete', $class->get_store_destination(), $where, undef, undef, $limit );
 
-        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         $sth->finish;
         
         return $rows;
@@ -241,8 +274,10 @@ sub find_all {
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
         my $pool   = $config->{conn} || '';
+        
+        my $destination = $class->get_store_destination();
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $destination, $fields, $where, $class->add_table_to_order($order), $limit );
 
         if ( $class->cache_registered ) {
             $cache_key = $class->generate_cache_key( $stmt, @bind );
@@ -269,8 +304,15 @@ sub find_all {
         if ( $cache_key ) {
             $class->cache_store( $cache_key, $results );
         }
+        
+        my $dbi_results = Gideon::DBI::Results->new(
+            package    => $class,
+            where       => $where,
+            conn        => $pool, 
+            results     => $results 
+        );
 
-        return wantarray ? $results->flatten() : $results;
+        return wantarray ? $results->flatten() : $dbi_results;
 
     }
     catch {
