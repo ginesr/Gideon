@@ -1,6 +1,6 @@
 #!perl
 
-use lib './lib';
+use lib 'xlib';
 use strict;
 use Try::Tiny;
 use Test::More;

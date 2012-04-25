@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use lib './lib';
+use lib 'xlib';
 use Test::More tests => 3;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;

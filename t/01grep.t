@@ -1,6 +1,6 @@
 #!perl
 
-use lib './lib';
+use lib 'xlib';
 use strict;
 use Test::More tests => 1;
 use Example::Person;
