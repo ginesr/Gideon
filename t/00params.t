@@ -1,6 +1,6 @@
 #perl
 
-use lib './lib/';
+use lib './lib';
 use strict;
 use Test::More tests => 14;
 use Gideon;
