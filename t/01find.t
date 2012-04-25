@@ -1,11 +1,12 @@
 #!perl
 
-use lib './lib/';
+use lib './lib';
 use strict;
-use Test::More tests => 9;
-use Example::Person;
+use Test::More tests => 10;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
+
+use_ok qw(Example::Person);
 
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
