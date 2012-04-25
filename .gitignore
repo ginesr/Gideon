@@ -1,1 +1,4 @@
 .build
+/.includepath
+/.project
+/.externalToolBuilders
