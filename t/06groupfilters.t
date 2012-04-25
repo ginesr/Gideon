@@ -1,6 +1,6 @@
 #!perl
 
-use lib 'xlib';
+use lib './lib';
 use strict;
 use Test::More tests => 4;
 use Gideon;
