@@ -12,9 +12,12 @@ use Test::Exception;
 if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
-else {
-    plan tests => 12;
+
+if ( mysql_cant_connect() ) {
+    plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
+
+plan tests => 12;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -89,5 +92,25 @@ qq~create table gideon_t1 (id int not null auto_increment, name varchar(20), val
 
 sub mysql_not_installed {
     try { use DBD::mysql; return undef }
-    catch { return 1 };
+    catch { return 1 }
+}
+
+sub mysql_cant_connect {
+    
+    my $test_db = 'database=test;host=;port=';
+    my $test_user = 'test';
+    my $test_pass = '';
+    
+    if ($ENV{'GIDEON_DBI_TEST_DB'}) {
+        $test_db = $ENV{GIDEON_DBI_TEST_DB}; 
+    }
+    if ($ENV{'GIDEON_DBI_TEST_USER'}) {
+        $test_user = $ENV{GIDEON_DBI_TEST_USER}; 
+    }
+    if ($ENV{'GIDEON_DBI_TEST_PASS'}) {
+        $test_user = $ENV{GIDEON_DBI_TEST_PASS}; 
+    }
+    
+    try { DBI->connect( "dbi:mysql:$test_db", $test_user, $test_pass ) or die; return undef }
+    catch { return 1 }
 }
