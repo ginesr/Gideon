@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Gideon::Error::Simple;
 use MongoDB;
-use Mouse;
+use Moose;
 
 extends 'Gideon::DB::Driver';
 

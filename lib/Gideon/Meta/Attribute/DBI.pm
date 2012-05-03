@@ -1,10 +1,10 @@
 
 package Gideon::Meta::Attribute::DBI;
  
-use Mouse;
+use Moose;
 our $VERSION = '0.02';
 
-extends 'Mouse::Meta::Attribute';
+extends 'Moose::Meta::Attribute';
 
 has 'column' => (
     is => 'rw',
@@ -30,7 +30,7 @@ sub new {
     $class->SUPER::new(@_);
 }
 
-package Mouse::Meta::Attribute::Custom::Gideon;
+package Moose::Meta::Attribute::Custom::Gideon;
 sub register_implementation {'Gideon::Meta::Attribute::DBI'}
 
 1;

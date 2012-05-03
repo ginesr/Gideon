@@ -4,7 +4,7 @@ package Example::Driver::Mongo;
 use strict;
 use warnings;
 use Example::Error::Simple;
-use Mouse;
+use Moose;
 use MongoDB;
 
 extends 'Gideon::DB::Driver';

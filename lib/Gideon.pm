@@ -17,7 +17,7 @@ use Exporter qw(import);
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Gideon::Error;
-use Mouse;
+use Moose;
 use Hash::MultiValue;
 use 5.008_001;
 
@@ -550,7 +550,7 @@ sub get_all_meta {
       ) {
 
         my $name = $attribute->name;
-        if ( ref($attribute) =~ /Mouse::Meta::Attribute/ ) {
+        if ( ref($attribute) =~ /Moose::Meta::Attribute/ ) {
             next;
         }
 

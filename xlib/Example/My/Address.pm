@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Gideon::DBI;
 use Gideon::Meta::Attribute::DBI;
-use Mouse;
+use Moose;
 
 extends 'Gideon::DBI';
 store 'mysql_master:gideon_j2';

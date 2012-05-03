@@ -1,10 +1,10 @@
 
 package Gideon::Meta::Attribute::Mongo;
  
-use Mouse;
+use Moose;
 our $VERSION = '0.02';
 
-extends 'Mouse::Meta::Attribute';
+extends 'Moose::Meta::Attribute';
 
 has 'serial' => (
     is => 'rw',
@@ -24,7 +24,7 @@ sub new {
     $class->SUPER::new(@_);
 }
 
-package Mouse::Meta::Attribute::Custom::Gideon;
+package Moose::Meta::Attribute::Custom::Gideon;
 sub register_implementation {'Gideon::Meta::Attribute::Mongo'}
 
 1;

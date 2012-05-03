@@ -15,7 +15,7 @@ use strict;
 use warnings;
 use Data::Dumper qw(Dumper);
 use Gideon::Error;
-use Mouse;
+use Moose;
 use Hash::MultiValue;
 use 5.008_001;
 

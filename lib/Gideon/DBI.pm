@@ -14,7 +14,7 @@ use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
-use Mouse;
+use Moose;
 use Set::Array;
 
 our $VERSION = '0.02';

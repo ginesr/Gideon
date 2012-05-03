@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Storable qw();
 use Example::Error::Simple;
-use Mouse;
+use Moose;
 
 extends 'Gideon::DB::Driver';
 

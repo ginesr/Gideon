@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper qw(Dumper);
 use Try::Tiny;
-use Mouse;
+use Moose;
 use Gideon::Filters::DBI;
 use Gideon::Error::DBI;
 use Set::Array;

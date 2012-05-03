@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Gideon::Storable;
 use Gideon::Meta::Attribute::Storable;
-use Mouse;
+use Moose;
 
 extends 'Gideon::Storable';
 store 'disk:flat';

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Gideon::Mongo;
 use Gideon::Meta::Attribute::Mongo;
-use Mouse;
+use Moose;
 
 extends 'Gideon::Mongo';
 store 'gideon:person';

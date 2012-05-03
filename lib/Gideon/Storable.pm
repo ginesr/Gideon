@@ -11,7 +11,7 @@ use Storable qw();
 use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
 use Gideon::Results;
-use Mouse;
+use Moose;
 use Set::Array;
 
 our $VERSION = '0.02';

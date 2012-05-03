@@ -4,8 +4,8 @@ use strict;
 use warnings;
 use Gideon::DBI;
 use Gideon::Meta::Attribute::DBI;
-use Mouse;
-use Mouse::Util::TypeConstraints;
+use Moose;
+use Moose::Util::TypeConstraints;
 use Date::Simple;
 
 extends 'Gideon::DBI';

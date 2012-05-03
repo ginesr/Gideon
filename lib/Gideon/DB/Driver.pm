@@ -3,7 +3,7 @@ package Gideon::DB::Driver;
 
 use strict;
 use warnings;
-use Mouse;
+use Moose;
 use DBI;
 use Gideon::Error::Simple;
 

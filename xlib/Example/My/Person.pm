@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Gideon::DBI;
 use Gideon::Meta::Attribute::DBI;
-use Mouse;
+use Moose;
 use Try::Tiny;
 use Carp qw(croak);
 use Data::Dumper qw(Dumper);

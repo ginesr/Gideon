@@ -5,8 +5,7 @@ use strict;
 use warnings;
 use Gideon::Error;
 use DBI;
-use Mouse;
-use Mouse;
+use Moose;
 
 extends 'Gideon::DB::Driver';
 
