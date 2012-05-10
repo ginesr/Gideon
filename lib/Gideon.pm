@@ -36,6 +36,15 @@ our $__pool  = undef;
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
 
+sub BUILD {
+
+    my $self = shift;
+    my @args  = @_;
+
+    $self->_init(@args);
+
+}
+
 sub register_store {
     my $class      = shift;
     my $store_name = shift;
@@ -54,17 +63,6 @@ sub register_cache {
     my $class = shift;
     my $module = shift;
     $__cache = $module;
-}
-
-sub new {
-
-    my $class = shift;
-    my @args  = @_;
-    my $self  = {@args};
-    bless $self, $class;
-    $self->_init(@args);
-    return $self;
-
 }
 
 sub find {
@@ -634,8 +632,8 @@ use warnings 'redefine';
 sub _init {
 
     my $self = shift;
-    my $args = {@_};
-
+    my $args = shift;
+    return;
 }
 
 sub _transform_sort_by_from_array {
