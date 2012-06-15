@@ -450,6 +450,7 @@ sub map_meta_with_row {
     foreach my $r ( keys %{$row} ) {
         my ( $table, $col ) = split( /\./, $r );
         my $attribute = $class->get_attribute_for_column($col);
+        next unless $attribute;
         $map->{$attribute} = $r;
     }
 

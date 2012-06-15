@@ -492,7 +492,7 @@ sub get_attribute_for_column {
     my $meta   = $__meta->{$pkg} || $class->get_all_meta;
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( $class->get_colum_for_attribute($attribute) eq $column ) {
+        if ( $column and $class->get_colum_for_attribute($attribute) eq $column ) {
             return $attribute;
         }
     }
