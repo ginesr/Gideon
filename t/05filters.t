@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Gideon;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
@@ -53,6 +53,13 @@ my $mock_session = DBD::Mock::Session->new(
           'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? AND country.country_name <= ? ) OR country.country_name > ? ) )',
         bound_params => [ '%Afr%', 1, 20 ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AF', 'Africa' ] ]
+
+    },
+    {
+        statement =>
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name = ? OR country.country_name = ? ) )',
+        bound_params => [ 'Argentina', 'Uruguay' ],
+        results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ], [ 'UY', 'Uruguay' ] ]
 
     },
     {
@@ -124,5 +131,12 @@ lives_ok(
         $record = Example::Country->find_all( name => { eq => ['Argentina','Uruguay'] } );
     },
     'One eq filter with multiple values produces: country_name = ? OR country_name = ?'
+);
+
+lives_ok(
+    sub {
+        $record = Example::Country->find_all( name => 'Argentina', name => 'Uruguay' );
+    },
+    'Two filters without operands produces: country_name = ? OR country_name = ?'
 );
 

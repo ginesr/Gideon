@@ -232,7 +232,7 @@ sub decode_params {
             $args->{$_} = \@all;
         }
     }
-    
+
     return wantarray ? ( $args, $config ) : $args;
 
 }
@@ -251,8 +251,12 @@ sub trans_filters {
     if ( ref($filter) eq 'ARRAY' ) {
         my @multi = ();
         foreach ( @{$filter} ) {
-            my @filters = $class->_transform_filter( $_, @filters );
             my @pairs = ();
+            if ( !ref( $_ ) ) {
+                push @multi, $_;
+                next;
+            }
+            my @filters = $class->_transform_filter( $_, @filters );
             foreach my $f (@filters) {
                 foreach my $h ( keys %{$f} ) {
                     push @pairs, ( $h, $f->{$h} );
@@ -715,10 +719,16 @@ sub _transform_filter {
     my $class   = shift;
     my $filter  = shift;
     my @filters = @_;
+    
+    unless ( ref $filter eq 'HASH' ) {
+        push @filters, $filter;
+        return @filters;
+    }
 
     my %map = (
         'like' => '-like',
         'eq'   => '=',
+        '='    => '=',
         'gt'   => '>',
         'lt'   => '<',
         'not'  => '!',
