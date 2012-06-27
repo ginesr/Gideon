@@ -68,46 +68,46 @@ lives_ok(
     sub {
         $record = Example::Country->find_all( name => 'arg' );
     },
-    'One straight filter'
+    'One straight filter produces: country_name = ?'
 );
 
 lives_ok(
     sub {
         $record = Example::Country->find_all( name => { like => 'arg' } );
     },
-    'One like filter'
+    'One like filter produces: country_name LIKE ?'
 );
 lives_ok(
     sub {
         $record = Example::Country->find_all( name => { like => 'arg', gte => 'AR' } );
     },
-    'Two filters like + gte'
+    'Two filters like + gte produces: country_name LIKE ? OR country_name >= ?'
 );
 
 lives_ok(
     sub {
         $record = Example::Country->find_all( name => { like => [ 'arg', 'ent' ], gte => 'AR' } );
     },
-    'Two filters with 2 like + 1 gte'
+    'Two filters with 2 like + 1 gte produces: ( country_name LIKE ? OR country_name LIKE ? ) OR country_name >= ? '
 );
 
 lives_ok(
     sub {
         $record = Example::Country->find_all( name => { lt => 1 } );
     },
-    'lt filter'
+    'One lt filter produces: country_name < ?'
 );
 
 lives_ok(
     sub {
         $record = Example::Country->find_all( name => { lte => 1 }, name => { gt => 20 } );
     },
-    'lt + gt filter with multi filter'
+    'Two lt + gt filter with multi filter produces: country_name <= ? OR country_name > ?'
 );
 
 lives_ok(
     sub {
         $record = Example::Country->find_all( name => { like => 'Afr', lte => 1 }, name => { gt => 20 } );
     },
-    'like with lt + nested gt with multi filter on same column'
+    'like with lt + nested gt with multi filter on same column produces: ( country_name LIKE ? AND country_name <= ? ) OR country_name > ?'
 );
