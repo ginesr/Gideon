@@ -471,6 +471,12 @@ sub dbh {
 
 }
 
+sub eq {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+}
+
 sub lt {
     my $class = shift;
     my $string = shift || "";

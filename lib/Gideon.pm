@@ -156,6 +156,13 @@ sub lt {
 
 }
 
+sub eq {
+    my $class = shift;
+    my $string = shift || "";
+    return '=' . $string;
+
+}
+
 sub validate_order_by {
 
     my $class   = shift;
@@ -711,6 +718,7 @@ sub _transform_filter {
 
     my %map = (
         'like' => '-like',
+        'eq'   => '=',
         'gt'   => '>',
         'lt'   => '<',
         'not'  => '!',
@@ -721,6 +729,7 @@ sub _transform_filter {
     foreach my $filter_type ( keys %{$filter} ) {
         if (   $filter_type eq 'like'
             or $filter_type eq 'gt'
+            or $filter_type eq 'eq'
             or $filter_type eq 'lt'
             or $filter_type eq 'not'
             or $filter_type eq 'gte'
