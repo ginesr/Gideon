@@ -719,16 +719,10 @@ sub _transform_filter {
     my $class   = shift;
     my $filter  = shift;
     my @filters = @_;
-    
-    unless ( ref $filter eq 'HASH' ) {
-        push @filters, $filter;
-        return @filters;
-    }
 
     my %map = (
         'like' => '-like',
         'eq'   => '=',
-        '='    => '=',
         'gt'   => '>',
         'lt'   => '<',
         'not'  => '!',
