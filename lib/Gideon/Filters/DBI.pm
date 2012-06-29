@@ -6,6 +6,8 @@ use warnings;
 use Data::Dumper qw(Dumper);
 use SQL::Abstract;
 
+use constant MYSQL_ESCAPE => '`';
+
 sub format {
 
     my $class  = shift;
@@ -34,6 +36,7 @@ sub build_statment {
           $sql->select( $table, $fields, $where, $order );
     }
     else {
+        $fields = $class->escape_field_names($fields);
         return my ( $stmt, @bind ) = $sql->$action( $table, $fields, $where );
     }
 
@@ -49,6 +52,17 @@ sub add_limit_in_sql {
         return $stmt . ' limit ' . $limit;
     }
     return $stmt;
+}
+
+sub escape_field_names {
+    my $class = shift;
+    my $fields  = shift;
+    foreach (keys %{$fields}) {
+        my $mylsq_escaped = join '.', map { MYSQL_ESCAPE . $_ . MYSQL_ESCAPE } split /\./, $_; 
+        $fields->{$mylsq_escaped} = $fields->{$_};
+        delete $fields->{$_};
+    }
+    return $fields;
 }
 
 1;

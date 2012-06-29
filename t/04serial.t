@@ -12,7 +12,7 @@ use Test::Exception;
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
-        statement    => 'INSERT INTO person ( person_city, person_country, person_name, person_type) VALUES ( ?, ?, ?, ? )',
+        statement    => 'INSERT INTO person ( `person_city`, `person_country`, `person_name`, `person_type`) VALUES ( ?, ?, ?, ? )',
         bound_params => [ 'Dallas', 'US', 'John Doe', 100 ],
         results      => []
     },

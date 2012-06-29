@@ -12,7 +12,7 @@ use Test::Exception;
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
-        statement    => 'UPDATE country SET country.country_iso = ?',
+        statement    => 'UPDATE country SET `country`.`country_iso` = ?',
         bound_params => ['AR'],
         results      => [ [], [] ]
     },
@@ -29,7 +29,7 @@ my $mock_session = DBD::Mock::Session->new(
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ], [ 'AR', 'Argentine' ], ]
     },
     {
-        statement => 'UPDATE country SET iso = ? WHERE ( country.country_iso = ? )',
+        statement => 'UPDATE country SET `iso` = ? WHERE ( country.country_iso = ? )',
         bound_params => ['UY','AR'],
         results => [[],[]]
     },

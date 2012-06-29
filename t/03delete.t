@@ -28,7 +28,7 @@ my $mock_session = DBD::Mock::Session->new(
         ]
     },
     {
-        statement    => 'DELETE FROM person WHERE ( person_id = ? )',
+        statement    => 'DELETE FROM person WHERE ( `person_id` = ? )',
         bound_params => [123],
         results      => []
     },
@@ -43,7 +43,7 @@ my $mock_session = DBD::Mock::Session->new(
     },
     {
         statement =>
-          'DELETE FROM person WHERE ( person.person_country = ? ) limit 10',
+          'DELETE FROM person WHERE ( `person`.`person_country` = ? ) limit 10',
         bound_params => ['AR'],
         results      => [ [], [], [] ],
     },
@@ -58,7 +58,7 @@ my $mock_session = DBD::Mock::Session->new(
         ]
     },
     {
-        statement => 'DELETE FROM person WHERE ( person.person_country = ? )',
+        statement => 'DELETE FROM person WHERE ( `person`.`person_country` = ? )',
         bound_params => ['AR'],
         results => [[],[],[]],
     },
@@ -71,7 +71,7 @@ my $mock_session = DBD::Mock::Session->new(
         ]
     },
     {
-        statement => 'DELETE FROM person WHERE ( ( person.person_country = ? AND person.person_type > ? ) )',
+        statement => 'DELETE FROM person WHERE ( ( `person`.`person_country` = ? AND `person`.`person_type` > ? ) )',
         bound_params => ['AR',30],
         results => [ [],[],[],[] ],
     },
