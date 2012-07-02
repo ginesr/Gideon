@@ -473,31 +473,31 @@ sub dbh {
 
 sub eq {
     my $class = shift;
-    my $string = shift || "";
+    my $string = shift;
     return $string;
 }
 
 sub lt {
     my $class = shift;
-    my $string = shift || "";
+    my $string = shift;
     return $string;
 }
 
 sub gt {
     my $class = shift;
-    my $string = shift || "";
+    my $string = shift;
     return $string;
 }
 
 sub gte {
     my $class = shift;
-    my $string = shift || "";
+    my $string = shift;
     return $string;
 }
 
 sub lte {
     my $class = shift;
-    my $string = shift || "";
+    my $string = shift;
     return $string;
 }
 
