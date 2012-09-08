@@ -5,10 +5,13 @@ use strict;
 use warnings;
 use Moose;
 use Try::Tiny;
+use Exporter qw(import);
 use Carp qw(croak);
 use Data::Dumper qw(Dumper);
 use Gideon::Error;
 use Set::Array;
+
+my $__virtual_store = {};
 
 has 'driver' => ( is => 'rw' );
 has 'class' => ( is => 'rw', isa => 'Str' );
@@ -25,10 +28,11 @@ sub execute {
     my $self = shift;
     my $name = shift;
     my $fiters = shift;
+    my $map = shift;
     
     $self->supports($name);
     my $method = $self->method($name);
-    $self->$method($fiters);
+    &$method($self,$fiters,$map);
     
     return $self->results;
     
@@ -38,8 +42,9 @@ sub supports {
     
     my $self = shift;
     my $name = shift;
+    my $package = ref $self;
     
-    my $stores_hash = $self->virtual_stores;
+    my $stores_hash = $__virtual_store->{ $package };
     
     if ( exists $stores_hash->{ $name } ) {
         return 1;
@@ -51,10 +56,33 @@ sub supports {
 sub method {
     my $self = shift;
     my $name = shift;   
-    my $stores_hash = $self->virtual_stores;
+    my $package = ref $self;
+    my $stores_hash = $__virtual_store->{ $package };
     return $stores_hash->{ $name };
 }
 
-sub virtual_stores {die('implement in your class')}
+# Imports ----------------------------------------------------------------------
 
-1;
+no strict 'refs';
+no warnings 'redefine';
+
+sub import {
+
+    my ($class) = @_;
+    my $caller = caller;
+
+    *{"${caller}::virtual_store"} = \&virtual_store;
+
+}
+
+use strict 'refs';
+use warnings 'redefine';
+
+sub virtual_store($$) {
+    my $store = shift || return undef;
+    my $method = shift;
+    my $caller = caller;
+    $__virtual_store->{$caller}->{$store} = $method;
+}
+
+__PACKAGE__->meta->make_immutable();

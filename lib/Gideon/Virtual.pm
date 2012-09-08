@@ -14,8 +14,6 @@ extends 'Gideon';
 
 use constant CACHE_MINS_TTL => 1;
 
-has 'provider' => ( is => 'rw' );
-
 sub find_all {
 
     my $class = shift;
@@ -37,19 +35,19 @@ sub find_all {
         my $limit  = $config->{limit} || '';
         
         my $destination = $class->get_store_destination();
-        my $store = $class->get_store_args();
+        my $provider = $class->get_store_args();
         
-        $store->provider->supports($destination);
+        $provider->supports($destination);
 
         if ( $class->cache_registered ) {
-            $cache_key = $store->provider->cache_key($destination);
+            $cache_key = $provider->cache_key($destination);
             $class->cache_lookup( $cache_key );
         }
 
-        $store->provider->results(Set::Array->new);
-        $store->provider->class($class);
+        $provider->results(Set::Array->new);
+        $provider->class($class);
 
-        my $results = $store->provider->execute($destination,$args);
+        my $results = $provider->execute($destination,$args,$map);
         
         if ( $cache_key ) {
             $class->cache_store( $cache_key, $results );
@@ -81,4 +79,4 @@ sub cache_store {
 
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

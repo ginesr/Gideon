@@ -12,14 +12,12 @@ use Gideon::Error::Virtual;
 use Gideon::DBI::Common;
 
 extends 'Gideon::Virtual::Provider';
-
 # externalize for easier maintenance?
-my $stores = { person_with_address => 'join_person_with_address' };
-
-sub join_person_with_address {
+virtual_store 'person_with_address' => sub {
 
     my $self    = shift;
     my $filters = shift;
+    my $map     = shift;
     
     my $package = $self->class;
     my $results = $self->results;
@@ -63,12 +61,7 @@ sub join_person_with_address {
     
     return $results;
 
-}
-
-sub virtual_stores {
-    my $self = shift;
-    return $stores;
-}
+};
 
 sub dbh {
     my $self = shift;
@@ -76,4 +69,4 @@ sub dbh {
     return $dbh;
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

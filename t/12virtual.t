@@ -39,15 +39,11 @@ my $driver = Gideon::DB::Driver::MySQL->new(
 my $provider = Example::Virtual::Provider->new;
 $provider->driver($driver);
 
-my $virtual = Gideon::Virtual->new;
-$virtual->provider($provider);
-
-Gideon->register_store( 'my_virtual_store', $virtual );
+Gideon->register_store( 'my_virtual_store', $provider );
 
 my $results = Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
-
-my $first = $results->first;
-my $last  = $results->last;
+my $first   = $results->first;
+my $last    = $results->last;
 
 is( $first->name,     'person 1',              'From join first record name' );
 is( $first->address,  'person1 first address', 'From join first record address' );
