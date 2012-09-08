@@ -283,9 +283,20 @@ sub find_all {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $destination, $fields, $where, $class->add_table_to_order($order), $limit );
 
+        my $results = Set::Array->new;
+        my $dbi_results = Gideon::DBI::Results->new(
+            package    => $class,
+            where       => $where,
+            conn        => $pool, 
+            results     => $results 
+        );
+        
         if ( $class->cache_registered ) {
             $cache_key = $class->generate_cache_key( $stmt, @bind );
-            $class->cache_lookup( $cache_key );
+            if (my $cached_results = $class->cache_lookup( $cache_key ) ) {
+                $dbi_results->results($cached_results);
+                return wantarray ? $cached_results->flatten() : $dbi_results;
+            }
         }
 
         my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
@@ -294,7 +305,6 @@ sub find_all {
 
         $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
 
-        my $results  = Set::Array->new;
         my $args_map = $class->map_meta_with_row( \%row );
 
         while ( $sth->fetch ) {
@@ -309,13 +319,6 @@ sub find_all {
             $class->cache_store( $cache_key, $results );
         }
         
-        my $dbi_results = Gideon::DBI::Results->new(
-            package    => $class,
-            where       => $where,
-            conn        => $pool, 
-            results     => $results 
-        );
-
         return wantarray ? $results->flatten() : $dbi_results;
 
     }
@@ -327,24 +330,13 @@ sub find_all {
 
 }
 
-sub cache_lookup {
-    
-    my $self = shift;
-    my $key = shift;
-    
-    my $module = $self->get_cache_module;
-    return $module->get($key);
-    
-}
-
 sub cache_store {
     
     my $self = shift;
     my $key = shift;
     my $what = shift;
     
-    my $module = $self->get_cache_module;
-    return $module->set( $key, $what, CACHE_MINS_TTL * 60);
+    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60);
 
 }
 
