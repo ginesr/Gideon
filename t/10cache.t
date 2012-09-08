@@ -39,6 +39,8 @@ is( $first->id, 5, 'Record from db using like' );
 is( Gideon::Cache->count, 1, 'One key in the cache' );
 is( Gideon::Cache->hits, 0, 'No hits' );
 
+empty_table();
+
 my $cached_data  = Example::Cache->find_all( value => { like => 'test 5' } );
 my $first_cached = $cached_data->first;
 
@@ -65,6 +67,11 @@ qq~create table gideon_t2 (id int not null auto_increment, name varchar(20), val
             undef, "test $_", "value of test $_" );
     }
 
+}
+
+sub empty_table {
+    my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
+    $dbh->do('truncate table gideon_t2');
 }
 
 sub mysql_not_installed {
