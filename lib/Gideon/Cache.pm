@@ -42,6 +42,11 @@ sub count {
     return scalar keys %{$_cache};
 }
 
+sub content {
+    my $self = shift;
+    return $_cache;
+}
+
 sub hits {
     my $self = shift;
     return $hits;

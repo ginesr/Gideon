@@ -17,12 +17,6 @@ has 'driver' => ( is => 'rw' );
 has 'class' => ( is => 'rw', isa => 'Str' );
 has 'results' => ( is => 'rw', isa => 'Set::Array' );
 
-sub cache_key {
-    my $self = shift;
-    my $name = shift;
-    return $name;
-}
-
 sub execute {
     
     my $self = shift;
