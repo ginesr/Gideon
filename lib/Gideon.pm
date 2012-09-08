@@ -110,10 +110,10 @@ sub cache_store {
     my $self = shift;
     my $key = shift;
     my $what = shift;
-    my $milis = shift;
+    my $secs = shift;
     
     my $module = $self->get_cache_module;
-    return $module->set( $key, $what, $milis);
+    return $module->set( $key, $what, $secs);
 
 }
 
