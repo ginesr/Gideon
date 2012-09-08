@@ -327,24 +327,13 @@ sub find_all {
 
 }
 
-sub cache_lookup {
-    
-    my $self = shift;
-    my $key = shift;
-    
-    my $module = $self->get_cache_module;
-    return $module->get($key);
-    
-}
-
 sub cache_store {
     
     my $self = shift;
     my $key = shift;
     my $what = shift;
     
-    my $module = $self->get_cache_module;
-    return $module->set( $key, $what, CACHE_MINS_TTL * 60);
+    return super( $key, $what, CACHE_MINS_TTL * 60);
 
 }
 

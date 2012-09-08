@@ -96,9 +96,25 @@ sub remove_all {
 }
 
 sub cache_lookup {
-    my $class = shift;
+    
+    my $self = shift;
+    my $key = shift;
+    
+    my $module = $self->get_cache_module;
+    return $module->get($key);
+    
+}
 
-    # overload in subclass
+sub cache_store {
+    
+    my $self = shift;
+    my $key = shift;
+    my $what = shift;
+    my $milis = shift;
+    
+    my $module = $self->get_cache_module;
+    return $module->set( $key, $what, $milis);
+
 }
 
 sub filter_rules {
