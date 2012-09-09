@@ -527,17 +527,35 @@ sub get_attribute_for_column {
     return undef;
 }
 
-sub map_args_with_meta {
+sub get_attribute_for_alias {
 
-    my $class = shift;
-    my $args  = shift;
-    my $meta  = $__meta || {};
-    my $map   = {};
-    my $pkg   = $class->_get_pkg_name;
+    my $class  = shift;
+    my $column = shift;
+    my $pkg    = $class->_get_pkg_name;
+    my $meta   = $__meta->{$pkg} || $class->get_all_meta;
+
+    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        if ( $column and $class->get_alias_for_attribute($attribute) eq $column ) {
+            return $attribute;
+        }
+    }
+
+    return undef;
+}
+
+sub _map_args_with_metadata {
+    
+    my $class  = shift;
+    my $args   = shift;
+    my $getter = shift; 
+    
+    my $meta   = $__meta || {};
+    my $map    = {};
+    my $pkg    = $class->_get_pkg_name;
 
     foreach my $arg ( keys %{$args} ) {
         
-        if ( my $col = $class->get_colum_for_attribute($arg)) {
+        if ( my $col = $class->$getter($arg)) {
             $map->{$col} = $arg;
             next
         }
@@ -547,19 +565,49 @@ sub map_args_with_meta {
     }
 
     return $map;
+    
+}
+
+sub map_args_with_alias {
+
+    my $class = shift;
+    my $args  = shift;
+    return $class->_map_args_with_metadata($args,'get_alias_for_attribute');
+    
+}
+
+sub map_args_with_meta {
+
+    my $class = shift;
+    my $args  = shift;
+    return $class->_map_args_with_metadata($args,'get_colum_for_attribute');
 
 }
 
-sub get_colum_for_attribute {
-
+sub get_alias_for_attribute {
     my $class     = shift;
     my $attribute = shift;
+    return $class->get_value_for_attribute_key($attribute,'alias');
+}
+
+sub get_colum_for_attribute {
+    my $class     = shift;
+    my $attribute = shift;
+    return $class->get_value_for_attribute_key($attribute,'column');
+}
+
+sub get_value_for_attribute_key {
+    
+    my $class     = shift;
+    my $attribute = shift;
+    my $key       = shift;
     my $meta      = $__meta->{$class} || $class->get_all_meta;
 
-    if ( exists $meta->{attributes}->{$attribute}->{column} ) {
-        return $meta->{attributes}->{$attribute}->{column};
+    if ( exists $meta->{attributes}->{$attribute}->{$key} ) {
+        return $meta->{attributes}->{$attribute}->{$key};
     }
     return;
+    
 }
 
 sub get_all_meta {
@@ -581,6 +629,7 @@ sub get_all_meta {
 
         $cache_meta->{$class}->{attributes}->{$name}->{key}    = $attribute->primary_key;
         $cache_meta->{$class}->{attributes}->{$name}->{column} = $attribute->column if ( $attribute->can('column') );
+        $cache_meta->{$class}->{attributes}->{$name}->{alias}  = $attribute->alias if ( $attribute->can('alias') );
         $cache_meta->{$class}->{attributes}->{$name}->{serial} = $attribute->serial if ( $attribute->can('serial') );
     }
 
