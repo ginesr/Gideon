@@ -55,6 +55,34 @@ sub method {
     return $stores_hash->{ $name };
 }
 
+sub args_for_new_object {
+    
+    my $class = shift;
+    my $package = shift;
+    my $row   = shift;
+    
+    my $map = $class->map_meta_with_row($package,$row);
+    return map { $_ => $row->{ $map->{$_} } } ( keys %{ $map } );
+    
+}
+
+sub map_meta_with_row {
+
+    my $class = shift;
+    my $package = shift;
+    my $row   = shift;
+    my $map   = {};
+
+    foreach my $col ( keys %{$row} ) {
+        my $attribute = $package->get_attribute_for_alias($col);
+        next unless $attribute;
+        $map->{$attribute} = $col;
+    }
+
+    return $map;
+
+}
+
 # Imports ----------------------------------------------------------------------
 
 no strict 'refs';

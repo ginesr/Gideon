@@ -14,7 +14,7 @@ has 'person_id' => (
     is          => 'rw',
     isa         => 'Num',
     column      => 'id',
-    alias       => 'n',
+    alias       => 'person_id',
     serial      => 1,
     primary_key => 1,
     metaclass   => 'Gideon'
@@ -24,7 +24,7 @@ has 'address_id' => (
     is          => 'rw',
     isa         => 'Num',
     column      => 'id',
-    alias       => 'd',
+    alias       => 'address_id',
     serial      => 1,
     primary_key => 1,
     metaclass   => 'Gideon'
@@ -35,7 +35,7 @@ has 'name' => (
     required  => 1,
     isa       => 'Str',
     column    => 'name',
-    alias     => 'n',
+    alias     => 'name',
     metaclass => 'Gideon'
 );
 
@@ -44,7 +44,7 @@ has 'address' => (
     required  => 1,
     isa       => 'Str',
     column    => 'address',
-    alias     => 'd',
+    alias     => 'address',
     metaclass => 'Gideon'
 );
 
