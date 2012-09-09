@@ -224,29 +224,26 @@ sub find {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format('select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
 
-        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
-        my $rows = $sth->execute(@bind)        or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
-        my %row;
         my $obj;
         
-        $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
+        my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
+            'dbh' => $class->dbh($pool),
+            'query' => $stmt,
+            'bind' => [ @bind ],
+            'block' => sub {
+                
+                my $row = shift;
+                
+                my $args_map       = $class->map_meta_with_row( $row );
+                my @construct_args = $class->args_with_db_values( $args_map, $row );
+                $obj               = $class->new(@construct_args);
+                $obj->is_stored(1);
+                $obj->conn($pool) if $pool;
+                
+             }
+        );
 
-        while ( $sth->fetch ) {
-
-            my $args_map       = $class->map_meta_with_row( \%row );
-            my @construct_args = $class->args_with_db_values( $args_map, \%row );
-            $obj               = $class->new(@construct_args);
-            $obj->is_stored(1);
-            $obj->conn($pool) if $pool;
-            
-            last;
-        
-        }
-        
-        $sth->finish;
-        
         Gideon::Error::DBI::NotFound->throw('no results found') unless $obj;
-        
         return $obj;
 
     }

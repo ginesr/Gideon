@@ -6,15 +6,23 @@ use warnings;
 use Gideon::Error;
 use Gideon::Error::DBI;
 
+sub execute_one_with_bind_columns {
+
+    my $self  = shift;
+    return $self->execute_with_bind_columns(@_, single => 1);
+
+}
+
 sub execute_with_bind_columns {
     
     my $self  = shift;
     my $args  = {@_};
     
-    my $dbh   = $args->{'dbh'} || Gideon::Error->throw('missing db handler');
-    my $stmt  = $args->{'query'} || '';
-    my $bind  = $args->{'bind'} || [];
+    my $dbh = $args->{'dbh'} || Gideon::Error->throw('missing db handler');
+    my $stmt = $args->{'query'} || '';
+    my $bind = $args->{'bind'} || [];
     my $block = $args->{'block'} || sub {};
+    my $only_one = $args->{'single'} || undef;
     
     my @bind = map { $_ } @{ $bind };
     
@@ -26,6 +34,7 @@ sub execute_with_bind_columns {
 
     while ( $sth->fetch ) {
         &$block(\%row);
+        last if $only_one;
     }
     $sth->finish;
     
