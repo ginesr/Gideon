@@ -42,11 +42,11 @@ virtual_store 'person_with_address' => sub {
         $stmt .= join ' and ', map { " $_ = ? " } @filters;
     }
     
-    Gideon::DBI::Common->execute_with_bind(
-        $self->dbh,
-        $stmt,
-        \@bind,
-        sub {
+    my $rows = Gideon::DBI::Common->execute_with_bind_columns(
+        'dbh' => $self->dbh,
+        'query' => $stmt,
+        'bind' => [ @bind ],
+        'block' => sub {
             my $row = shift;
             my $obj = $package->new(
                 person_id => $row->{'person_id'},

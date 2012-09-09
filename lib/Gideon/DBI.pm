@@ -10,6 +10,7 @@ use Gideon::Error::DBI;
 use Gideon::Error::Params;
 use Gideon::Error::DBI::NotFound;
 use Gideon::DBI::Results;
+use Gideon::DBI::Common;
 use Try::Tiny;
 use DBI;
 use Carp qw(cluck carp croak);
@@ -298,23 +299,25 @@ sub find_all {
                 return wantarray ? $cached_results->flatten() : $dbi_results;
             }
         }
-
-        my $sth  = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
-        my %row;
-
-        $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
-
-        my $args_map = $class->map_meta_with_row( \%row );
-
-        while ( $sth->fetch ) {
-            my @construct_args = $class->args_with_db_values( $args_map, \%row );
-            my $obj = $class->new(@construct_args);
-            $obj->is_stored(1);
-            $results->push($obj);
-        }
-        $sth->finish;
         
+        my $rows = Gideon::DBI::Common->execute_with_bind_columns(
+            'dbh' => $class->dbh($pool),
+            'query' => $stmt,
+            'bind' => [ @bind ],
+            'block' => sub {
+                
+                my $row = shift;
+                
+                my $args_map = $class->map_meta_with_row( $row );
+                my @construct_args = $class->args_with_db_values( $args_map, $row );
+                my $obj = $class->new(@construct_args);
+                
+                $obj->is_stored(1);
+                $results->push($obj);
+                
+             }
+        );
+
         if ( $cache_key ) {
             $class->cache_store( $cache_key, $results );
         }
