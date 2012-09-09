@@ -18,7 +18,7 @@ virtual_store 'person_with_address' => sub {
     my $self    = shift;
     my $filters = shift;
     my $map     = shift;
-    
+
     my $package = $self->class;
     my $results = $self->results;
     
@@ -47,13 +47,9 @@ virtual_store 'person_with_address' => sub {
         'query' => $stmt,
         'bind' => [ @bind ],
         'block' => sub {
-            my $row = shift;
-            my $obj = $package->new(
-                person_id => $row->{'person_id'},
-                name => $row->{'name'},
-                address_id => $row->{'address_id'},
-                address => $row->{'address'},
-            );
+            my $row  = shift;
+            my @args = $self->args_for_new_object( $package, $row );
+            my $obj  = $package->new(@args);
             $obj->is_stored(1);
             $results->push( $obj );  
          }

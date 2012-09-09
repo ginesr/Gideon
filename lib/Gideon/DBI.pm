@@ -233,9 +233,7 @@ sub find {
             'block' => sub {
                 
                 my $row = shift;
-                
-                my $args_map       = $class->map_meta_with_row( $row );
-                my @construct_args = $class->args_with_db_values( $args_map, $row );
+                my @construct_args = $class->args_for_new_object($row);
                 $obj               = $class->new(@construct_args);
                 $obj->is_stored(1);
                 $obj->conn($pool) if $pool;
@@ -305,8 +303,7 @@ sub find_all {
                 
                 my $row = shift;
                 
-                my $args_map = $class->map_meta_with_row( $row );
-                my @construct_args = $class->args_with_db_values( $args_map, $row );
+                my @construct_args = $class->args_for_new_object($row);
                 my $obj = $class->new(@construct_args);
                 
                 $obj->is_stored(1);
@@ -612,6 +609,16 @@ sub get_key_columns_for_update {
     
     return $where;
 
+}
+
+sub args_for_new_object {
+    
+    my $class = shift;
+    my $row   = shift;
+    
+    my $map = $class->map_meta_with_row($row);
+    return map { $_ => $row->{ $map->{$_} } } ( keys %{ $map } );
+    
 }
 
 sub args_with_db_values {

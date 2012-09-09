@@ -30,7 +30,7 @@ sub find_all {
         my $cache_key;
         
         my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_meta( $args );
+        my $map    = $class->map_args_with_alias( $args );
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
         
@@ -92,6 +92,23 @@ sub generate_cache_key {
 
     my $module = $self->get_cache_module;
     return $module->digest($key);
+
+}
+
+sub map_meta_with_row {
+
+    my $class = shift;
+    my $row   = shift;
+    my $map   = {};
+
+    foreach my $r ( keys %{$row} ) {
+        my ( $table, $col ) = split( /\./, $r );
+        my $attribute = $class->get_attribute_for_column($col);
+        next unless $attribute;
+        $map->{$attribute} = $r;
+    }
+
+    return $map;
 
 }
 
