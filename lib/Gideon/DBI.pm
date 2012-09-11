@@ -675,4 +675,53 @@ sub _add_group_by {
     return $stmt;
 }
 
+sub _translate_join_sql_abstract {
+    
+    my $self = shift;
+    my $array_ref = shift;
+    my %pair = ();
+    
+    foreach my $hash ( @{ $array_ref } ) {
+        foreach my $k ( keys %{ $hash } ) {
+            if ( ref($hash->{$k}) eq 'ARRAY' ) {
+                
+                foreach my $f ( @{ $hash->{$k} } ) {
+                    $pair{$k} = \"= $f";
+                }
+                next;
+            }
+            $pair{$k} = \"= $hash->{$k}";
+        }
+    }
+
+    return \%pair;
+    
+}
+
+sub _filter_fields {
+    
+    my $self = shift;
+    my $params = {@_};
+    
+    my @fields = @{ $params->{fields} };
+    
+    unless (ref $params->{filter} eq 'ARRAY') {
+        Gideon::Error->throw('not a valid filter list');
+    }
+    
+    if ( my @list = @{ $params->{filter} } ) {
+        my @limited;
+        foreach my $f ( @list ) {
+            if ( my @t = grep { /^$f\s/ } @fields ) {
+                push @limited, @t;
+            }
+        }
+        if (scalar(@limited)>0) {
+            @fields = @limited;
+        }
+    }
+    return @fields;
+
+}
+
 1;

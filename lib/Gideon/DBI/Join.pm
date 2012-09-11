@@ -7,31 +7,31 @@ use Gideon::Error;
 use Gideon::Error::DBI;
 use Moose;
 use Hash::Merge qw();
-
-extends 'Gideon::DBI';
+use Data::Dumper qw(Dumper);
 
 sub join_with {
     
     my $self    = shift;
     my $options = {@_};
 
+    my $package  = $options->{package};
     my $args     = $options->{args};
     my $config   = $options->{config};
     my $joins    = $options->{joins};
     my $foreings = $options->{foreings};
-    
+
     my $foreing_class = $foreings->[0];
     
-    my $tables  = $self->stores_for($foreing_class);
-    my @fields  = $self->columns_meta_for($foreing_class);
-    my $where   = $self->where_stmt_from_args($args);
-    my $order   = $self->order_from_config($config);
-    my $joined  = $self->_translate_join_sql_abstract($joins);
+    my $tables  = $package->stores_for($foreing_class);   
+    my @fields  = $package->columns_meta_for($foreing_class);
+    my $where   = $package->where_stmt_from_args($args);
+    my $order   = $package->order_from_config($config);
+    my $joined  = $package->_translate_join_sql_abstract($joins);
     my $group;
 
     if ( exists $config->{limit_fields} ) {
         
-        @fields = $self->_filter_fields( 
+        @fields = $package->_filter_fields( 
             fields => \@fields, 
             filter => $config->{limit_fields}
         );
@@ -44,31 +44,7 @@ sub join_with {
 
     # TODO: find relationships autmatically?
     $where = $self->_merge_where_and_join($where,$joined);   
-    
-    return $self->execute_and_array($tables,\@fields,$where,$order,$group);
-
-}
-
-sub _translate_join_sql_abstract {
-    
-    my $self = shift;
-    my $array_ref = shift;
-    my %pair = ();
-    
-    foreach my $hash ( @{ $array_ref } ) {
-        foreach my $k ( keys %{ $hash } ) {
-            if ( ref($hash->{$k}) eq 'ARRAY' ) {
-                
-                foreach my $f ( @{ $hash->{$k} } ) {
-                    $pair{$k} = \"= $f";
-                }
-                next;
-            }
-            $pair{$k} = \"= $hash->{$k}";
-        }
-    }
-
-    return \%pair;
+    return $package->execute_and_array($tables,\@fields,$where,$order,$group);
     
 }
 
@@ -94,32 +70,5 @@ sub _merge_where_and_join {
     return $merge;
 }
 
-sub _filter_fields {
-    
-    my $self = shift;
-    my $params = {@_};
-    
-    my @fields = @{ $params->{fields} };
-    
-    unless (ref $params->{filter} eq 'ARRAY') {
-        Gideon::Error->throw('not a valid filter list');
-    }
-    
-    if ( my @list = @{ $params->{filter} } ) {
-        my @limited;
-        foreach my $f ( @list ) {
-            if ( my @t = grep { /^$f\s/ } @fields ) {
-                push @limited, @t;
-            }
-        }
-        if (scalar(@limited)>0) {
-            @fields = @limited;
-        }
-    }
-    return @fields;
-
-}
-
 __PACKAGE__->meta->make_immutable();
 
-1;
