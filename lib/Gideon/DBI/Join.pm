@@ -5,7 +5,6 @@ use warnings;
 use Gideon::DBI;
 use Gideon::Error;
 use Gideon::Error::DBI;
-use Moose;
 use Hash::Merge qw();
 use Data::Dumper qw(Dumper);
 
@@ -70,5 +69,5 @@ sub _merge_where_and_join {
     return $merge;
 }
 
-__PACKAGE__->meta->make_immutable();
+1;
 
