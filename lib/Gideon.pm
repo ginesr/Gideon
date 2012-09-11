@@ -14,10 +14,12 @@ package Gideon;
 use strict;
 use warnings;
 use Exporter qw(import);
+use Module::Load qw(load);
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Gideon::Error;
 use Moose;
+use Class::MOP::Attribute;
 use Hash::MultiValue;
 use 5.008_001;
 
@@ -28,6 +30,7 @@ our $EXCEPTION_DEBUG = 0;
 
 my $__meta  = undef;
 my $__store = {};
+my $__relations = {};
 my $__stricts = {};
 my $__cache = undef;
 our %stores = ();
@@ -420,6 +423,24 @@ sub store($) {
     $__store->{$caller} = $store;
 }
 
+sub has_many($%) {
+    my $foreing = shift || return undef;
+    my $params = {@_};
+    my $caller = caller;
+    $__relations->{$caller}{foreing} = $foreing;
+    load($foreing);
+    load(Gideon::Extensions::Join);
+    $__relations->{$caller}{params} = $params;
+    $caller->meta->add_method( $params->{predicate} => sub { return Gideon::Extensions::Join->join_with(@_) } );
+    
+}
+sub get_relations {
+    my $self = shift;
+    my $pkg = $self->_get_pkg_name;
+    return $__relations->{$pkg};
+    
+}
+
 sub check_meta {
 
     my $class     = shift;
@@ -697,6 +718,7 @@ sub import {
     my $caller = caller;
 
     *{"${caller}::store"} = \&store;
+    *{"${caller}::has_many"} = \&has_many;
 
 }
 
