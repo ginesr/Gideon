@@ -8,8 +8,9 @@ use Moose;
 use Try::Tiny;
 use Carp qw(croak);
 use Data::Dumper qw(Dumper);
+use Class::MOP::Attribute;
 
-extends 'Gideon::DBI::Join';
+extends 'Gideon::DBI';
 store 'mysql_master:gideon_j1';
 
 has 'id' => (
@@ -29,35 +30,10 @@ has 'name' => (
     metaclass => 'Gideon'
 );
 
-sub find_by_address {
-    
-    my $class = shift;
-    
-    if ( ref($class) ) {
-        Gideon::Error->throw('find() is a static method');
-    }
-
-    my ( $args, $config ) = $class->decode_params(@_);
-
-    try {
-
-        my $results = $class->join_with( 
-            args     => $args,
-            config   => $config,
-            joins    => [{ 
-                $class->get_column_with_table('id') => Example::My::Address->get_column_with_table('person_id')
-            }],
-            foreings => [ 'Example::My::Address' ]
-        );
-        
-        return wantarray ? $results->flatten() : $results;
-        
-    }
-    catch {
-        my $e = shift;
-        croak $e;
-    }
-    
-}
+has_many 'Example::My::Address' => (
+    predicate => 'find_by_address',
+    type      => 'DBI',
+    join_on   => { id => 'person_id' },
+);
 
 1;
