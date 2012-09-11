@@ -33,7 +33,7 @@ has 'name' => (
 has_many 'Example::My::Address' => (
     predicate => 'find_by_address',
     type      => 'DBI',
-    join_on   => { id => 'person_id' },
+    join_on   => [ 'id', 'person_id' ],
 );
 
 1;
