@@ -22,7 +22,7 @@ sub join_with {
 
     if ( $relations->{params}->{type} eq 'DBI' ) {
 
-        return $class->_execute_dbi_join( $package, $args, $config, $relations->{foreing} );
+        return $class->_execute_dbi_join( $package, $args, $config, $relations->{foreing}, $relations->{params}->{join_on} );
 
     }
     else {
@@ -38,7 +38,11 @@ sub _execute_dbi_join {
     my $args    = shift;
     my $config  = shift;
     my $foreing = shift;
-
+    my $joinon  = shift;
+    
+    #TODO: support multiple keys
+    #TODO: check for primary keys
+    
     try {
 
         my $foreing = $foreing;
@@ -46,7 +50,7 @@ sub _execute_dbi_join {
             package  => $package,
             args     => $args,
             config   => $config,
-            joins    => [ { $package->get_column_with_table('id') => $foreing->get_column_with_table('person_id') } ],
+            joins    => [ { $package->get_column_with_table($joinon->[0]) => $foreing->get_column_with_table($joinon->[1]) } ],
             foreings => [$foreing]
         );
 
