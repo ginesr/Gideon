@@ -1,0 +1,89 @@
+package Test::Gideon::Results::DBI;
+
+use strict;
+use warnings;
+use Data::Dumper qw(Dumper);
+use Carp qw(cluck);
+use Gideon::Error;
+use Gideon::Error::DBI;
+use Moose;
+use Test::MockObject;
+
+extends 'Test::Gideon::Results';
+
+sub connect {
+    my $self = shift;
+    return $self;
+}
+
+sub errstr {
+    my $self = shift;
+    return "This is an error"
+}
+
+sub prepare {
+
+    my $self  = shift;
+    my $query = shift;
+
+    my $session = $self->get_next_session;
+
+    if ( !$session ) {
+        Gideon::Error::DBI->throw('Session exhausted');
+    }
+
+    my $cols  = shift @{$session};
+    my $sth   = Test::MockObject->new();
+    my $bound = [];
+
+    $sth->{NAME_lc} = [ map { $_ } @$cols ];
+    $sth->mock(
+        'execute',
+        sub {
+            my $class = shift;
+            my @bind  = @_;
+            return scalar @$session;
+        }
+    );
+    $sth->mock(
+        'bind_columns',
+        sub {
+            my $class = shift;
+            $bound = [@_];
+        }
+    );
+    $sth->mock(
+        'fetch',
+        sub {
+
+            my $class = shift;
+            my %row;
+            my $c = 0;
+
+            if ( scalar @$session == 0 ) {
+                return;
+            }
+
+            my $r = shift $session;
+            foreach (@$r) {
+                $row{ $cols->[$c] } = $_;
+                if ( ref $bound->[$c] eq 'SCALAR' ) {
+                    my $bound = $bound->[$c];
+                    $$bound = $_;
+                }
+                $c++;
+            }
+            return \%row;
+        }
+    );
+    $sth->mock(
+        'finish',
+        sub {
+            $bound = [];
+        }
+    );
+
+    return $sth;
+}
+
+1;
