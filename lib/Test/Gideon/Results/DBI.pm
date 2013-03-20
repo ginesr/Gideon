@@ -42,7 +42,8 @@ sub prepare {
         sub {
             my $class = shift;
             my @bind  = @_;
-            return scalar @$session;
+            my $total = scalar @$session;
+            return $total ? $total : -1;
         }
     );
     $sth->mock(
