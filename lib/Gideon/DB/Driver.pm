@@ -30,5 +30,3 @@ sub get_dbi_string {
 }
 
 __PACKAGE__->meta->make_immutable();
-
-1;
