@@ -4,7 +4,6 @@ package Gideon::Virtual;
 use strict;
 use warnings;
 use Moose;
-use Gideon;
 use Gideon::Error;
 use Carp qw(cluck carp croak);
 use Set::Array;
