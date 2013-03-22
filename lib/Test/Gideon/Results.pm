@@ -30,6 +30,9 @@ sub get_next_session {
 DESTROY {
     my $self    = shift;
     my $session = $self->session;
+    unless ($session) {
+        return;
+    }
     if ( my $rest = scalar @{$session} > 0 ) {
         Gideon::Error->throw("Session not exhausted ($rest left)");
     }

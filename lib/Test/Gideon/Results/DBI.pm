@@ -25,6 +25,10 @@ sub prepare {
 
     my $self  = shift;
     my $query = shift;
+    
+    if($query =~ /insert into/i){
+        return $self->prepare_to_insert();
+    }
 
     my $session = $self->get_next_session;
 
@@ -84,6 +88,28 @@ sub prepare {
         }
     );
 
+    return $sth;
+}
+
+sub prepare_to_insert {
+    
+    my $self = shift;
+    my $sth  = Test::MockObject->new();
+
+    $sth->mock(
+        'execute',
+        sub {
+            my $class = shift;
+            return 1;
+        }
+    );
+
+    $sth->mock(
+        'finish',
+        sub {
+            return 1;
+        }
+    );
     return $sth;
 }
 
