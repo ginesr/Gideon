@@ -194,7 +194,13 @@ sub last_inserted_id {
 
     my $self = shift;
     my $pool = $self->conn;
-    my $sth  = $self->dbh($pool)->prepare('select last_insert_id() as last') or die $self->dbh->errstr;
+    my $function_name = "last_insert_id()";
+    
+    if ( index( $self->dbh($pool)->get_info(17), 'SQLite' ) >= 0 ) {
+        $function_name = "last_insert_rowid()";
+    }
+    
+    my $sth  = $self->dbh($pool)->prepare('select '.$function_name.' as last') or die $self->dbh->errstr;
     my $rows = $sth->execute or die $self->dbh($pool)->errstr;
     my %row;
 
