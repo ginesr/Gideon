@@ -24,16 +24,34 @@ has 'conn'    => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'where'   => ( is => 'rw', isa => 'Maybe[HashRef]' );
 has 'package' => ( is => 'rw', isa => 'Str' );
 
+sub distinct {
+    
+    my $self = shift;
+    my $property = shift;
+    my @list = $self->results->flatten();
+    my $filtered = Set::Array->new;
+    
+    foreach my $i (@list) {
+        if ($i->can($property)) {
+            $filtered->push($i->$property);
+        }
+        else {
+            Gideon::Error->throw("object can't $property");
+        }
+    }
+    return $filtered->unique
+}
+
 sub map {
 
     my $self = shift;
     my $code = shift;
     
     unless ( ref($code) ) {
-        Gideon::Error->throw('grep() needs a fuction as argument');
+        Gideon::Error->throw('map() needs a fuction as argument');
     }
     if ( ref($code) ne 'CODE' ) {
-        Gideon::Error->throw('grep() argument is not a function reference');
+        Gideon::Error->throw('map() argument is not a function reference');
     }
         
     my $filtered = Set::Array->new;
@@ -139,5 +157,3 @@ sub update {
 }
 
 __PACKAGE__->meta->make_immutable();
-
-1;
