@@ -164,7 +164,6 @@ sub save {
         else {
             ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), \%data );
         }
-
         my $pool = $self->conn;
         my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error->throw( $self->dbh($pool)->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error->throw( $self->dbh($pool)->errstr );
@@ -194,13 +193,14 @@ sub last_inserted_id {
 
     my $self = shift;
     my $pool = $self->conn;
-    my $function_name = "last_insert_id()";
+    my $query = "select last_insert_id() as last";
     
     if ( index( $self->dbh($pool)->get_info(17), 'SQLite' ) >= 0 ) {
-        $function_name = "last_insert_rowid()";
+        my $t = $self->get_store_destination();
+        $query = "SELECT ROWID as last from $t order by ROWID DESC limit 1";
     }
     
-    my $sth  = $self->dbh($pool)->prepare('select '.$function_name.' as last') or die $self->dbh->errstr;
+    my $sth  = $self->dbh($pool)->prepare($query) or die $self->dbh($pool)->errstr;
     my $rows = $sth->execute or die $self->dbh($pool)->errstr;
     my %row;
 
