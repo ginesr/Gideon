@@ -13,7 +13,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 9;
+    plan tests => 10;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -57,6 +57,11 @@ my $person_again = Example::My::Lastlog->find( name => 'John' );
 is( $person_again->lastlog, '2012-01-02 10:11:12', 'Last log was updated' );
 is( $person_again->lastlog->year, 2012, 'Last log is coerced' );
 
+$person_again->datetime(undef);
+$person_again->save;
+
+is_deeply( $person_again->datetime, undef, 'Update date field to be null' );
+
 # Auxiliary test functions -----------------------------------------------------
 
 sub prepare_test_data {
@@ -65,16 +70,16 @@ sub prepare_test_data {
     my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
 
     my $create_t3 =
-qq~create table gideon_t3 (id int not null auto_increment, name varchar(20), `timestamp` timestamp, primary key (id), key (name))~;
+qq~create table gideon_t3 (id int not null auto_increment, name varchar(20), `timestamp` timestamp, `datetime` datetime, primary key (id), key (name))~;
 
     $dbh->do('drop table if exists gideon_t3');
     $dbh->do($create_t3);
 
-    $dbh->do( "insert into gideon_t3 (name,timestamp) values(?,?)",
-        undef, "John", "2001-01-02 10:11:12" );
+    $dbh->do( "insert into gideon_t3 (name,timestamp,datetime) values(?,?,?)",
+        undef, "John", "2001-01-02 10:11:12", undef );
 
-    $dbh->do( "insert into gideon_t3 (name,timestamp) values(?,now())",
-        undef, "Jane" );
+    $dbh->do( "insert into gideon_t3 (name,timestamp,datetime) values(?,now(),?)",
+        undef, "Jane", undef );
 }
 
 sub mysql_not_installed {

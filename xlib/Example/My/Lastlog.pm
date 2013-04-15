@@ -13,6 +13,7 @@ store 'mysql:gideon_t3';
 
 subtype 'MySQLdateStringToDate', as 'Date::Simple'; 
 coerce 'MySQLdateStringToDate', from 'Str', via { Date::Simple->from_mysql_string($_) };
+coerce 'MySQLdateStringToDate', from 'Undef', via { Date::Simple->from_mysql_string($_) };
 
 has 'id' => (
     is          => 'rw',
@@ -40,6 +41,12 @@ has 'lastlog' => (
     coerce    => 1
 );
 
-__PACKAGE__->meta->make_immutable();
+has 'datetime' => (
+    is        => 'rw',
+    isa       => 'MySQLdateStringToDate',
+    column    => 'datetime',
+    metaclass => 'Gideon',
+    coerce    => 1
+);
 
-1;
+__PACKAGE__->meta->make_immutable();

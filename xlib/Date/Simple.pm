@@ -2,7 +2,7 @@ package Date::Simple;
 
 use strict;
 use base qw(Class::Accessor::Fast);
-use overload '""' => \&to_string, fallback => 1;
+use overload '""' => \&to_string, 'bool' => \&is_void, fallback => 1;
 
 __PACKAGE__->mk_accessors(qw(year month day hour min sec));
 
@@ -17,6 +17,14 @@ sub from_mysql_string {
 
     my $self       = shift;
     my $mysql_date = shift;
+    
+    unless ($mysql_date) {
+        return $self->new(
+            year     => 0,
+            month    => 0,
+            day      => 0,
+        );        
+    }
 
     my ( $date, $time ) = split( ' ', $mysql_date );
     my ( $year, $month, $day ) = split( '-', $date );
@@ -54,9 +62,20 @@ sub to_string {
     if ($self->hour and $self->min and $self->sec) {
         return sprintf '%04d-%02d-%02d %02d:%02d:%02d', $self->year, $self->month, $self->day, $self->hour, $self->min, $self->sec;        
     }
+    if (!$self->year and !$self->month and !$self->day) {
+        return undef
+    }
     
     return sprintf '%04d-%02d-%02d', $self->year, $self->month, $self->day;
 
+}
+
+sub is_void {
+    my $self = shift;
+    if (!$self->hour and !$self->min and !$self->sec) {
+        return 0
+    }
+    return 1;
 }
 
 1;

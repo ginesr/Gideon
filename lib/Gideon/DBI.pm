@@ -154,7 +154,7 @@ sub save {
             $self->remove_auto_columns_for_insert($fields);
         }
 
-        my %data = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
+        my %data = $self->stringify_fields($fields);
         my $stmt = '';
         my @bind = ();
 

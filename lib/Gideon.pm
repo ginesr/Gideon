@@ -17,6 +17,7 @@ use Exporter qw(import);
 use Module::Load qw(load);
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
+use Scalar::Util qw(blessed);
 use Gideon::Error;
 use Moose;
 use Class::MOP::Attribute;
@@ -134,6 +135,32 @@ sub filter_rules {
 
     return $args;
 
+}
+
+sub stringify_fields {
+    
+    my $self = shift;
+    my $fields = shift;
+    my @fields = ();
+    
+    # when binding parameters try to stringify objects using to_string method
+    # then fallback to whatever overload is defined
+    # useful when undef is needed to convert object into string
+    
+    foreach my $f (sort keys %{$fields}) {
+        my $str = $self->$f;
+        if (ref($self->$f) and blessed($self->$f)) {
+            if ($self->$f->can('to_string')) {
+                $str = $self->$f->to_string;
+            }
+            else {
+                $str = $self->$f . ''
+            }
+        }
+        push @fields, $fields->{$f} => $str
+    }
+    
+    return @fields
 }
 
 sub like {
