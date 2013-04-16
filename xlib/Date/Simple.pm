@@ -72,7 +72,7 @@ sub to_string {
 
 sub is_void {
     my $self = shift;
-    if (!$self->hour and !$self->min and !$self->sec) {
+    if (!$self->year and !$self->mon and !$self->day) {
         return 0
     }
     return 1;

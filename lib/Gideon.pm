@@ -99,6 +99,16 @@ sub max {
     # overload in subclass
 }
 
+sub min {
+    my $class = shift;
+    # overload in subclass
+}
+
+sub count {
+    my $class = shift;
+    # overload in subclass
+}
+
 sub remove_all {
     my $class = shift;
     # overload in subclass    
