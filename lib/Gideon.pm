@@ -71,31 +71,36 @@ sub register_cache {
 
 sub find {
     my $class = shift;
-
     # overload in subclass
 }
 
 sub find_all {
     my $class = shift;
-
     # overload in subclass
 }
 
 sub save {
     my $class = shift;
-
     # overload in subclass
 }
 
 sub remove {
     my $class = shift;
+    # overload in subclass
+}
 
+sub update {
+    my $class = shift;
+    # overload in subclass
+}
+
+sub max {
+    my $class = shift;
     # overload in subclass
 }
 
 sub remove_all {
     my $class = shift;
-
     # overload in subclass    
 }
 
@@ -465,7 +470,6 @@ sub get_relations {
     my $self = shift;
     my $pkg = $self->_get_pkg_name;
     return $__relations->{$pkg};
-    
 }
 
 sub check_meta {
