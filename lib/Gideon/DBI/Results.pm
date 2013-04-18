@@ -156,4 +156,19 @@ sub update {
 
 }
 
+sub as_hash {
+    
+    my $self = shift;
+    my $key = shift || Gideon::Error::DBI->throw('provide a key to return a hash');
+    
+    my @list = $self->results->flatten();
+    my $hash = {};
+    
+    foreach my $i (@list) {
+        $hash->{$i->$key} = $i;
+    }
+    
+    return $hash;
+}
+
 __PACKAGE__->meta->make_immutable();
