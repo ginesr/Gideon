@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use Gideon::Error;
 use Gideon::Error::DBI;
+use Data::Dumper qw(Dumper);
 
 sub execute_one_with_bind_columns {
 
@@ -23,11 +24,15 @@ sub execute_with_bind_columns {
     my $bind = $args->{'bind'} || [];
     my $block = $args->{'block'} || sub {};
     my $only_one = $args->{'single'} || undef;
-    
+    my $debug = $args->{'debug'} || undef;
+
     my @bind = map { $_ } @{ $bind };
+    $self->debug($debug,'Query', $stmt);
     
-    my $sth  = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
-    my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $dbh->errstr );
+    my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( "failed in prepare " . $dbh->errstr );
+    $self->debug($debug,'Binding',\@bind);
+    
+    my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( "failed while executing " . ( $dbh->errstr ? $dbh->errstr : 'no errstr returned' ) );
     my %row;
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
@@ -39,6 +44,19 @@ sub execute_with_bind_columns {
     $sth->finish;
     
     return $rows;
+    
+}
+
+sub debug {
+    
+    my $self = shift;
+    my $flag = shift;
+    my $where = shift;
+    my $val = shift;
+    
+    return unless defined $flag;
+    
+    warn $where . ": " . (ref($val) ? Dumper($val) : $val);
     
 }
 

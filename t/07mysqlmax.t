@@ -35,10 +35,10 @@ my $driver = Example::Driver::MySQL->new(
 
 Gideon->register_store( 'mysql_server', $driver );
 
-my $max = Example::Test->max( 'id' );
+my $max = Example::Test->function( max => 'id' );
 cmp_ok($max,'==',10,'Max id from db');
 
-my $max_where = Example::Test->max( 'id', name => { eq => ['lala'] } );
+my $max_where = Example::Test->function( max => 'id', name => { eq => ['lala'] } );
 cmp_ok($max_where,'==',0,'Max with where');
 
 # Auxiliary test functions -----------------------------------------------------

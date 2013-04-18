@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 4;
+plan tests => 3;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -35,11 +35,8 @@ my $driver = Example::Driver::MySQL->new(
 
 Gideon->register_store( 'mysql_server', $driver );
 
-my $count = Example::Test->function( count => '*' );
-cmp_ok($count,'==',5,'Count records from db');
-
-my $distinct = Example::Test->function( count_distinct => 'value' );
-cmp_ok($distinct,'==',1,'Distinct count from db');
+my $sum = Example::Test->function( sum => 'value' );
+cmp_ok($sum,'==',20,'Sum numeric value from db');
 
 # Auxiliary test functions -----------------------------------------------------
 
@@ -48,13 +45,13 @@ sub prepare_test_data {
     #standard mysql install has test db and test user, try to use that
     my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
 
-    my $create_t1 = qq~create table gideon_t1 (id int not null auto_increment, name varchar(20), value text, primary key (id), key (name))~;
+    my $create_t1 = qq~create table gideon_t1 (id int not null auto_increment, name varchar(20), value int, primary key (id), key (name))~;
 
     $dbh->do('drop table if exists gideon_t1');
     $dbh->do($create_t1);
 
-    for ( 1 .. 5 ) {
-        $dbh->do( "insert into gideon_t1 (name,value) values(?,?)", undef, "rec $_", "foo" );
+    for ( 1 .. 2 ) {
+        $dbh->do( "insert into gideon_t1 (name,value) values(?,?)", undef, "rec $_", 10 );
     }
 
 }

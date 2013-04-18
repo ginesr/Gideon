@@ -12,13 +12,14 @@ use Gideon::Error::DBI::NotFound;
 use Gideon::DBI::Results;
 use Gideon::DBI::Common;
 use Try::Tiny;
-use DBI;
+use DBI 1.60;
 use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
 use Moose;
 use Set::Array;
 
 our $VERSION = '0.02';
+our $DBI_DEBUG = 0;
 
 extends 'Gideon';
 
@@ -65,27 +66,6 @@ sub remove {
         croak $e;
     }
 
-}
-
-sub max {
-    
-    my $class = shift;
-    return $class->_functions('max',@_);
-    
-}
-
-sub min {
-    
-    my $class = shift;
-    return $class->_functions('min',@_);
-    
-}
-
-sub count {
-    
-    my $class = shift;
-    return $class->_functions('count',@_);
-    
 }
 
 sub update {
@@ -754,12 +734,12 @@ sub _filter_fields {
 
 }
 
-sub _functions {
+sub function {
     
     my $class = shift;
     my $function = shift;
     my $attr = shift;
-
+    
     if ( ref($class) ) {
         Gideon::Error->throw($function . 'max is a static method');
     }
@@ -786,12 +766,13 @@ sub _functions {
         
         my $where = $class->where_stmt_from_args($args);
         my $pool  = $config->{conn} || '';
-        my $fields = "$function($column) as $function";
+        my $fields = $class->_function_to_query($function,$column);
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->get_store_destination(), $fields, $where, undef, undef);
 
         my $num = 0;
         my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
             'dbh'   => $class->dbh($pool),
+            'debug' => $DBI_DEBUG,
             'query' => $stmt,
             'bind'  => [@bind],
             'block' => sub {
@@ -804,8 +785,33 @@ sub _functions {
     }
     catch {
         my $e = shift;
-        croak $e;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
+        croak "Error calling function ($function) for attribute '$attr', " . $e;
     }
+    
+}
+
+sub _function_to_query {
+    
+    my $class = shift;
+    my $function = shift;
+    my $column = shift;
+    
+    my $map = {
+        'MIN' => 'min(%s) as %s',
+        'MAX' => 'max(%s) as %s',
+        'SUM' => 'sum(%s) as %s',
+        'COUNT' => 'count(%s) as %s',
+        'COUNT_DISTINCT' => 'count(distinct(%s)) as %s',
+    };
+    
+    Gideon::Error->throw("invalid function called ($function)") unless exists $map->{uc($function)};
+    
+    if ($column ne '*') {
+        $column = "`$column`";
+    }
+    
+    return sprintf $map->{uc($function)}, $column, $function
     
 }
 

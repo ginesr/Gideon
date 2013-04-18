@@ -40,7 +40,7 @@ sub msg {
 
 sub stringify {
     my $self = shift;
-    my $text = $self->msg;
+    my $text = $self->msg || '';
     return $text . "\n" . '';
 }
 

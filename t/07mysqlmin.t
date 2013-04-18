@@ -35,7 +35,7 @@ my $driver = Example::Driver::MySQL->new(
 
 Gideon->register_store( 'mysql_server', $driver );
 
-my $min = Example::Test->min( 'id' );
+my $min = Example::Test->function( min => 'id' );
 cmp_ok($min,'==',1,'Min id from db');
 
 # Auxiliary test functions -----------------------------------------------------
