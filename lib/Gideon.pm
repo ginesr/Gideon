@@ -17,7 +17,7 @@ use Exporter qw(import);
 use Module::Load qw(load);
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
-use Scalar::Util qw(blessed);
+use Scalar::Util qw(blessed looks_like_number);
 use Gideon::Error;
 use Moose;
 use Class::MOP::Attribute;
@@ -147,18 +147,26 @@ sub stringify_fields {
     # then fallback to whatever overload is defined
     # useful when undef is needed to convert object into string
     
+    my @stringify = ('to_string');
+    
     foreach my $f (sort keys %{$fields}) {
         my $str = $self->$f;
         if (ref($self->$f) and blessed($self->$f)) {
-            if ($self->$f->can('to_string')) {
-                $str = $self->$f->to_string;
+            my $yes_it_can;
+            foreach (@stringify) {
+                if ($self->$f->can($_)) {
+                    $str = $self->$f->$_;
+                    $yes_it_can = 1;
+                    last;
+                }
             }
-            elsif ($self->$f->can('as_string')) {
-                $str = $self->$f->as_string;
+            if (!$yes_it_can && looks_like_number($self->$f)) {
+                $str = $self->$f->value->numify;
             }
             else {
-                $str = $self->$f . ''
+                $str = $self->$f . '' unless $yes_it_can;
             }
+
         }
         push @fields, $fields->{$f} => $str
     }
