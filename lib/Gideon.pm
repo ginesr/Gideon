@@ -153,6 +153,9 @@ sub stringify_fields {
             if ($self->$f->can('to_string')) {
                 $str = $self->$f->to_string;
             }
+            elsif ($self->$f->can('as_string')) {
+                $str = $self->$f->as_string;
+            }
             else {
                 $str = $self->$f . ''
             }
