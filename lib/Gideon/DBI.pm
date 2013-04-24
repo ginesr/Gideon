@@ -195,8 +195,9 @@ sub last_inserted_id {
     my $self = shift;
     my $pool = $self->conn;
     my $query = "select last_insert_id() as last";
+    my $dbh_info = $self->dbh($pool)->get_info(17);
     
-    if ( index( $self->dbh($pool)->get_info(17), 'SQLite' ) >= 0 ) {
+    if ( $dbh_info and index( $dbh_info, 'SQLite' ) >= 0 ) {
         my $t = $self->get_store_destination();
         $query = "SELECT ROWID as last from $t order by ROWID DESC limit 1";
     }

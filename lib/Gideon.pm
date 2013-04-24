@@ -685,7 +685,7 @@ sub get_all_meta {
             next;
         }
 
-        $cache_meta->{$class}->{attributes}->{$name}->{key}    = $attribute->primary_key;
+        $cache_meta->{$class}->{attributes}->{$name}->{key}    = $attribute->primary_key if ( $attribute->can('primary_key') );
         $cache_meta->{$class}->{attributes}->{$name}->{column} = $attribute->column if ( $attribute->can('column') );
         $cache_meta->{$class}->{attributes}->{$name}->{alias}  = $attribute->alias if ( $attribute->can('alias') );
         $cache_meta->{$class}->{attributes}->{$name}->{serial} = $attribute->serial if ( $attribute->can('serial') );
