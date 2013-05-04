@@ -32,7 +32,7 @@ sub execute_with_bind_columns {
     my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( "failed in prepare " . $dbh->errstr );
     $self->debug($debug,'Binding',\@bind);
     
-    my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( "failed while executing " . ( $dbh->errstr ? $dbh->errstr : 'no errstr returned' ) );
+    my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => "failed while executing " . ( $sth->errstr ? $sth->errstr : 'no errstr returned' ), stmt => $stmt, params => \@bind );
     my %row;
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };

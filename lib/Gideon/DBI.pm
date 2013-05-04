@@ -51,7 +51,7 @@ sub remove {
 
         my $pool = $self->conn;
         my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $self->dbh($pool)->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $self->dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
 
         $sth->finish;
         $self->is_stored(0);
@@ -88,7 +88,7 @@ sub update {
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $class->get_store_destination(), $where, undef, undef, $limit );
 
         my $sth = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
         $sth->finish;
 
         return $rows;
@@ -119,7 +119,7 @@ sub remove_all {
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $class->get_store_destination(), $where, undef, undef, $limit );
 
         my $sth = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 
         return $rows;
@@ -165,9 +165,10 @@ sub save {
         else {
             ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), \%data );
         }
+
         my $pool = $self->conn;
-        my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error->throw( $self->dbh($pool)->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error->throw( $self->dbh($pool)->errstr );
+        my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $self->dbh($pool)->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
         $sth->finish;
 
         if ( !$self->is_stored and my $serial = $self->get_serial_columns_hash ) {
@@ -203,7 +204,7 @@ sub last_inserted_id {
     }
     
     my $sth  = $self->dbh($pool)->prepare($query) or die $self->dbh($pool)->errstr;
-    my $rows = $sth->execute or die $self->dbh($pool)->errstr;
+    my $rows = $sth->execute or die $sth->errstr;
     my %row;
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
@@ -526,7 +527,7 @@ sub execute_and_array {
     }
 
     my $sth  = $class->dbh()->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
-    my $rows = $sth->execute(@bind)          or Gideon::Error::DBI->throw( $class->dbh->errstr );
+    my $rows = $sth->execute(@bind)          or Gideon::Error::DBI->throw( $sth->errstr );
     my %row;
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );

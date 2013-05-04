@@ -24,7 +24,9 @@ sub connect {
     if ( my $dbh = $self->is_cached ) {
         return $dbh;
     }
-    if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password ) ) {
+    if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password, {
+        RaiseError => 0, PrintError => 0
+    } ) ) {
         $dbh->{'mysql_auto_reconnect'} = 1;
         $dbh->{'mysql_enable_utf8'} = 1;
         $_mysql_cache_dbh->{$self->cache_key} = $dbh;

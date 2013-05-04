@@ -12,11 +12,26 @@ our $VERSION = '0.02';
 
 has 'msg' => ( is => 'rw', isa => 'Str' );
 has 'pkg' => ( is => 'rw', isa => 'Str' );
+has 'stmt' => ( is => 'rw', isa => 'Maybe[Str]' );
+has 'params' => ( is => 'rw', isa => 'Maybe[Arrayref]' );
 
 sub throw {
     
     my $class = shift;
-    my $msg = shift;
+    my $msg;
+    my $stmt;
+    my $params;
+    
+    if (scalar @_ == 1) {
+        $msg = shift;
+    }
+    else {
+        my $args = {@_};
+        
+        $msg = $args->{msg};
+        $stmt = $args->{stmt};
+        $params = $args->{params};
+    }
     
     my ( $pkg, $file, $line ) = caller(1);
     
@@ -27,9 +42,8 @@ sub throw {
 
     }
 
-    my $self = { pkg => $pkg, msg => $msg  };
+    my $self = { pkg => $pkg, msg => $msg, stmt => $stmt, params => $params  };
     bless $self, $class;
-    
     croak $self;
     
 }
