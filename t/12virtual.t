@@ -49,7 +49,7 @@ is( $first->name,     'person 1',              'From join first record name' );
 is( $first->address,  'person1 first address', 'From join first record address' );
 is( $last->name,      'person 1',              'From join last record name' );
 is( $last->address,   'person1 third address', 'From join last record address' );
-is( $results->length, 3,                       'Total results' );
+is( $results->records_found, 3,                'Total results' );
 
 # Auxiliary test functions -----------------------------------------------------
 

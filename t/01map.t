@@ -31,4 +31,4 @@ $dbh->{mock_session} = $mock_session;
 Gideon->register_store( 'master', $dbh );
 
 my $results = Example::Person->find_all( country => 'AR' )->map( sub { $_->name =~ /^B/ } );
-is( $results->length, 3, 'Only record with name beginnig with B' );
+is( $results->records_found, 3, 'Only records wich name begins with B' );

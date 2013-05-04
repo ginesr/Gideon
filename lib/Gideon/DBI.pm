@@ -16,7 +16,6 @@ use DBI 1.60;
 use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
 use Moose;
-use Set::Array;
 
 our $VERSION = '0.02';
 our $DBI_DEBUG = 0;
@@ -291,19 +290,17 @@ sub find_all {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $destination, $fields, $where, $class->add_table_to_order($order), $limit );
 
-        my $results     = Set::Array->new;
-        my $dbi_results = Gideon::DBI::Results->new(
+        my $results = Gideon::DBI::Results->new(
             package => $class,
             where   => $where,
             conn    => $pool,
-            results => $results
         );
 
         if ( $class->cache_registered ) {
             $cache_key = $class->generate_cache_key( $stmt, @bind );
             if ( my $cached_results = $class->cache_lookup($cache_key) ) {
-                $dbi_results->results($cached_results);
-                return wantarray ? $cached_results->flatten() : $dbi_results;
+                $results = $cached_results;
+                return wantarray ? $results->records : $results;
             }
         }
 
@@ -319,7 +316,7 @@ sub find_all {
                 my $obj            = $class->new(@construct_args);
 
                 $obj->is_stored(1);
-                $results->push($obj);
+                $results->add_record($obj);
 
             }
         );
@@ -328,7 +325,7 @@ sub find_all {
             $class->cache_store( $cache_key, $results );
         }
 
-        return wantarray ? $results->flatten() : $dbi_results;
+        return wantarray ? $results->records : $results;
 
     }
     catch {
@@ -532,11 +529,14 @@ sub execute_and_array {
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
 
-    my $results = Set::Array->new;
+    my $results = Gideon::DBI::Results->new(
+        package => $class,
+        where   => $where,
+    );
 
     while ( $sth->fetch ) {
         my %rec = map { $_, $row{$_} } keys %row;
-        $results->push( \%rec );
+        $results->add_record( \%rec );
     }
 
     if ($cache_key) {
@@ -582,7 +582,7 @@ sub _from_store_dbh {
     my $user       = '';
     my $pw         = '';
 
-    unless ( $dbh = DBI->connect( $dbi_string, $user, $pw, { RaiseError => 1 } ) ) {
+    unless ( $dbh = DBI->connect( $dbi_string, $user, $pw, { RaiseError => 0, PrintError => 0 } ) ) {
         Gideon::Error::Simple->throw($DBI::errstr);
     }
 

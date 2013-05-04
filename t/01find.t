@@ -30,9 +30,10 @@ my $mock_session = DBD::Mock::Session->new(
         results      => [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], [ 1, 'US', 'Foo' ], [ 2, 'US', 'Bar' ] ]
     },
     {
-        statement => 'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( person.person_type > ? )',
+        statement =>
+          'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( person.person_type > ? )',
         bound_params => [0],
-        results => [],
+        results      => [],
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -56,11 +57,11 @@ is( $record->id,      123,   'Person ID using restore' );
 my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
-is( $persons->is_empty, 0,     'Not empty!' );
-is( $persons->length,   2,     'Total results' );
-is( $first->name,       'Foo', 'Results as object' );
+is( $persons->has_no_records, 0,     'Not empty!' );
+is( $persons->records_found,  2,     'Total results' );
+is( $first->name,           'Foo', 'Results as object' );
 
 $persons = Example::Person->find_all( type => { gt => 0 } );
 
-is( $persons->is_empty, 1,     'Is empty!' );
-is( $persons->length,   0,     'Total results' );
+is( $persons->has_no_records, 1, 'Is empty!' );
+is( $persons->records_found,  0, 'Total results' );

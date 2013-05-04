@@ -41,7 +41,7 @@ is( $first->{'gideon_j1.name'},    'John',     'First record name' );
 is( $last->{'gideon_j2.id'},       2,          'First record foreing id' );
 is( $first->{'gideon_j2.address'}, 'Street 1', 'First record address' );
 is( $first->{'gideon_j2.city'},    'NY',       'First record city' );
-is( $records->length,              2,          'Total results' );
+is( $records->records_found,       2,          'Total results' );
 
 is( $last->{'gideon_j1.id'},      1,          'Last record id' );
 is( $last->{'gideon_j2.id'},      2,          'Last record foreing id' );

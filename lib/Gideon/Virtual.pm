@@ -1,4 +1,3 @@
-
 package Gideon::Virtual;
 
 use strict;
@@ -6,7 +5,6 @@ use warnings;
 use Moose;
 use Gideon::Error;
 use Carp qw(cluck carp croak);
-use Set::Array;
 use Gideon::Virtual::Results;
 
 extends 'Gideon';
@@ -27,39 +25,34 @@ sub find_all {
     try {
 
         my $cache_key;
-        
+
         my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_alias( $args );
+        my $map    = $class->map_args_with_alias($args);
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
-        
+
         my $destination = $class->get_store_destination();
-        my $provider = $class->get_store_args();
-                
+        my $provider    = $class->get_store_args();
+
         $provider->supports($destination);
-        $provider->results(Set::Array->new);
+        $provider->results( Gideon::Virtual::Results->new( package => $class ) );
         $provider->class($class);
-                
-        my $virtual_results = Gideon::Virtual::Results->new(
-            package  => $class
-        );
-        
+
         if ( $class->cache_registered ) {
-            $cache_key = $class->generate_cache_key($destination,$args);
-            if (my $cached_results = $class->cache_lookup( $cache_key ) ) {
-                $virtual_results->results($cached_results);
-                return wantarray ? $cached_results->flatten() : $virtual_results;
+            $cache_key = $class->generate_cache_key( $destination, $args );
+            if ( my $cached_results = $class->cache_lookup($cache_key) ) {
+                $provider->results($cached_results);
+                return wantarray ? $provider->results->records : $provider->results;
             }
         }
-        
-        my $results = $provider->execute($destination,$args,$map);
-        $virtual_results->results($results);
-        
-        if ( $cache_key ) {
+
+        my $results = $provider->execute( $destination, $args, $map );
+
+        if ($cache_key) {
             $class->cache_store( $cache_key, $results );
         }
 
-        return wantarray ? $results->flatten() : $virtual_results;
+        return wantarray ? $provider->results->records : $provider->results;
 
     }
     catch {
@@ -71,23 +64,23 @@ sub find_all {
 }
 
 sub cache_store {
-    
+
     my $self = shift;
-    my $key = shift;
+    my $key  = shift;
     my $what = shift;
-    
-    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60);
+
+    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60 );
 
 }
 
 sub generate_cache_key {
-    
+
     my $self = shift;
     my $dest = shift;
     my $args = shift || {};
 
-    my $vals = join '_', map { $_ . '-' . $args->{$_} } keys %{ $args };
-    my $key = $self->signature_for_cache . $dest . $vals; # uniqueness generated with sql query and filters
+    my $vals = join '_', map { $_ . '-' . $args->{$_} } keys %{$args};
+    my $key = $self->signature_for_cache . $dest . $vals;    # uniqueness generated with sql query and filters
 
     my $module = $self->get_cache_module;
     return $module->digest($key);
@@ -109,6 +102,10 @@ sub map_meta_with_row {
 
     return $map;
 
+}
+
+sub is_debug {
+    return $Gideon::EXCEPTION_DEBUG
 }
 
 __PACKAGE__->meta->make_immutable();

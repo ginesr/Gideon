@@ -40,8 +40,8 @@ Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
 $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
-is( $persons->is_empty, 0,     'Not empty!' );
-is( $persons->length,   3,     'Total results' );
+is( $persons->has_no_records, 0,     'Not empty!' );
+is( $persons->records_found,   3,     'Total results' );
 is( $first->name,       'Joe', 'Results as object' );
 
 $first->name('John');
@@ -92,14 +92,14 @@ is( $not_existent, undef, 'No results using find()' );
 
 my $list = Mongo::Person->find_all( city => { like => 'york' } );
 
-is( $list->is_empty, 0, 'Not empty!' );
-is( $list->length,   2, 'Total results using like' );
+is( $list->has_no_records, 0, 'Not empty!' );
+is( $list->records_found,   2, 'Total results using like' );
 
 my $greater = Mongo::Person->find_all( type => { gt => 20 } );
-is( $greater->length,   1, 'Total results using gt' );
+is( $greater->records_found,   1, 'Total results using gt' );
 
 my $greatereq = Mongo::Person->find_all( type => { gte => 20 } );
-is( $greatereq->length,   2, 'Total results using gte' );
+is( $greatereq->records_found,   2, 'Total results using gte' );
 
 my $not = Mongo::Person->find_all( name => { not => 'John' } );
 my $rec_not = $not->first;
@@ -107,13 +107,13 @@ my $rec_not = $not->first;
 is( $rec_not->name, 'Jane', 'Filters using not' );
 
 my $lt = Mongo::Person->find_all( type => { lt => 20 } );
-is( $lt->length,   2, 'Total results using lt' );
+is( $lt->records_found,   2, 'Total results using lt' );
 
 my $eq = Mongo::Person->find_all( city => 'Dallas' );
-is( $eq->length,   1, 'Total results using eq' );
+is( $eq->records_found,   1, 'Total results using eq' );
 
 my $lte = Mongo::Person->find_all( type => { lte => 11 } );
-is( $lte->length,   2, 'Total results using lte' );
+is( $lte->records_found,   2, 'Total results using lte' );
 
 # Prerequisites for running tests ----------------------------------------------
 

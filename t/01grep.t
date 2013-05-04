@@ -30,4 +30,4 @@ $dbh->{mock_session} = $mock_session;
 Gideon->register_store( 'master', $dbh );
 
 my $results = Example::Person->find_all( country => 'AR' )->grep( sub { $_->type >= 30 } );
-is($results->length, 1, 'Only record one after grep');
+is($results->records_found, 1, 'Only record one after grep');

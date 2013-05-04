@@ -47,11 +47,14 @@ virtual_store 'person_with_address' => sub {
         'query' => $stmt,
         'bind' => [ @bind ],
         'block' => sub {
+            
             my $row  = shift;
             my @args = $self->args_for_new_object( $package, $row );
             my $obj  = $package->new(@args);
             $obj->is_stored(1);
-            $results->push( $obj );  
+            
+            $results->add_record($obj);
+              
          }
     );
     

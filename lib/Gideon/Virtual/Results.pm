@@ -6,20 +6,39 @@ use Data::Dumper qw(Dumper);
 use Try::Tiny;
 use Moose;
 use Gideon::Error;
-use Set::Array;
+use List::MoreUtils qw(uniq);
 
 has 'results' => (
+    traits  => ['Array'],
     is      => 'rw',
-    isa     => 'Set::Array',
+    isa     => 'ArrayRef',
     handles => {
-        'first'    => 'first',
-        'last'     => 'last',
-        'is_empty' => 'is_empty',
-        'length'   => 'length',
-        'flatten'  => 'flatten',
-    }
+        has_no_records => 'is_empty',
+        filter_records => 'grep',
+        clear_results  => 'clear',
+        count_records  => 'count',        
+        uniq_records   => 'uniq',
+        sort_records   => 'sort',
+        find_record    => 'first',
+        map_records    => 'map',
+        records_found  => 'count',
+        add_record     => 'push',
+        get_record     => 'get',
+        records        => 'elements',
+    },
+    lazy => 1,
+    default => sub { return [] }
 );
 has 'package' => ( is => 'rw', isa => 'Str' );
+
+sub first {
+    my $self = shift;
+    return $self->get_record(0)
+}
+sub last {
+    my $self = shift;
+    return $self->get_record(-1)
+}
 
 sub map {
 
@@ -33,20 +52,12 @@ sub map {
         Gideon::Error->throw('grep() argument is not a function reference');
     }
         
-    my $filtered = Set::Array->new;
-    
-    my @list = $self->results->flatten();
-    my @filter = grep { defined $_ } map { (&$code) ? $_ : undef } @list;
-    
-    $filtered->push(@filter);
-    
+    my @filter = grep { defined $_ } map { (&$code) ? $_ : undef } $self->records;
     my $results = __PACKAGE__->new(
         'package' => $self->package,
-        'results' => $filtered 
     );
-    
+    $results->results(\@filter);
     return $results;
-    
 }
 
 sub grep {
@@ -61,20 +72,12 @@ sub grep {
         Gideon::Error->throw('grep() argument is not a function reference');
     }
         
-    my $filtered = Set::Array->new;
-    
-    my @list = $self->results->flatten();
-    my @filter = grep { &$code } @list;
-    
-    $filtered->push(@filter);
-    
+    my @filter = grep { &$code } $self->records;
     my $results = __PACKAGE__->new(
         'package' => $self->package,
-        'results' => $filtered 
     );
-    
+    $results->results(\@filter);
     return $results;
-    
 }
 
 sub remove {
@@ -84,7 +87,7 @@ sub remove {
 
     try {
         
-        if ($self->results->is_empty) {
+        if ($self->has_no_records) {
             return 0
         }
 
@@ -104,7 +107,7 @@ sub update {
 
     try {
         
-        if ($self->results->is_empty) {
+        if ($self->has_no_records) {
             return 0
         }        
 

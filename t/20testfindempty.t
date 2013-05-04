@@ -24,6 +24,6 @@ my $persons = Example::Person->find_all(
     }
 );
 
-is( $persons->is_empty, 1, 'Empty!' );
-is( $persons->length,   0, 'Total results' );
+is( $persons->has_no_records, 1, 'Empty!' );
+is( $persons->records_found,  0, 'Total results' );
 

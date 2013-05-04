@@ -9,13 +9,12 @@ use Exporter qw(import);
 use Carp qw(croak);
 use Data::Dumper qw(Dumper);
 use Gideon::Error;
-use Set::Array;
 
 my $__virtual_store = {};
 
 has 'driver' => ( is => 'rw' );
 has 'class' => ( is => 'rw', isa => 'Str' );
-has 'results' => ( is => 'rw', isa => 'Set::Array' );
+has 'results' => ( is => 'rw', isa => 'Gideon::Virtual::Results' );
 
 sub execute {
     

@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Example::Person;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
@@ -36,6 +36,18 @@ my $mock_session = DBD::Mock::Session->new(
             [ 5,                  30,                   'AR',                    'Brad' ],
             [ 6,                  10,                   'AR',                    'Bill' ],
         ]
+    },
+    {
+        statement =>
+          'SELECT person.person_country as `person.person_country`, person.person_city as `person.person_city`, person.person_name as `person.person_name`, person.person_type as `person.person_type`, person.person_id as `person.person_id` FROM person WHERE ( person.person_country = ? )',
+        bound_params => ['AR'],
+        results      => [
+            [ 'person.person_id', 'person.person_type', 'person.person_country', 'person.person_name' ],
+            [ 3,                  20,                   'AR',                    'Joe' ],
+            [ 3,                  20,                   'AR',                    'Joe' ],
+            [ 3,                  20,                   'AR',                    'Joe' ],
+            [ 3,                  20,                   'AR',                    'Joe' ],
+        ]
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -46,9 +58,12 @@ Gideon->register_store( 'master', $dbh );
 
 my @results = Example::Person->find_all( country => 'AR' )->distinct('type');
 is( scalar @results, 3,  'Only record with distinct type' );
-is( $results[0],     30, 'Type 30 in unique' );
-is( $results[2],     20, 'Type 20 in unique' );
-is( $results[1],     10, 'Type 10 in unique' );
+is( $results[0],     10, 'Type 10 in unique' );
+is( $results[1],     20, 'Type 20 in unique' );
+is( $results[2],     30, 'Type 30 in unique' );
 
 my $results = Example::Person->find_all( country => 'AR' )->distinct('type');
 is( scalar @$results, 3,  'Only record with distinct type as ref' );
+
+my @distinct = Example::Person->find_all( country => 'AR' )->distinct;
+is( scalar @distinct, 1,  'Filter distinct records' );

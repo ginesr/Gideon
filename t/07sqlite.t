@@ -9,7 +9,8 @@ use Cwd;
 
 if ( sqlite_not_installed() ) {
     plan skip_all => 'SQLite driver not installed';
-} else {
+}
+else {
     plan tests => 3;
 }
 
@@ -31,7 +32,8 @@ $dbh->do(
        person_city TEXT,
        person_country TEXT,
        person_type INTEGER
-)");
+)"
+);
 
 $dbh->do("insert into person (person_name,person_city,person_country,person_type) values ('John Doe','Las Vegas','US',10)");
 $dbh->do("insert into person (person_name,person_city,person_country,person_type) values ('John John','San Francisco','US',10)");
@@ -44,13 +46,12 @@ Gideon->register_store( 'master', Example::Driver::SQLite->new( db => 'db/test.d
 my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
-is( $persons->is_empty, 0,           'Not empty!' );
-is( $persons->length,   2,           'Total results' );
-is( $first->name,       'John John', 'Results as object' );
+is( $persons->has_no_records, 0,           'Not empty!' );
+is( $persons->records_found,  2,           'Total results' );
+is( $first->name,             'John John', 'Results as object' );
 
 sub sqlite_not_installed {
 
-    try { use DBD::SQLite; return undef }
-    catch { return 1 };
+    try { use DBD::SQLite; return undef } catch { return 1 };
 
 }
