@@ -9,7 +9,6 @@ use MongoDB;
 use Try::Tiny;
 use Carp qw(cluck croak);
 use Data::Dumper qw(Dumper);
-use Gideon::Results;
 use Moose;
 use Set::Array;
 use Gideon::Filters::Mongo;

@@ -9,10 +9,8 @@ use Gideon::Filters::Storable;
 use Try::Tiny;
 use Storable qw();
 use Carp qw(cluck carp croak);
-use Data::Dumper qw(Dumper);
-use Gideon::Results;
 use Moose;
-use Set::Array;
+use Gideon::Storable::Results;
 
 our $VERSION = '0.02';
 my $cache = {};
@@ -130,7 +128,7 @@ sub find_all {
         #my $fields = $class->get_columns_from_meta;
         #my $map    = $class->map_args_with_meta($args);
 
-        my $results = Set::Array->new;
+        my $results = Gideon::Storable::Results->new(package => $class);
         
         if ( my $found = $class->search_in_hash($args) ) {
             
@@ -140,13 +138,13 @@ sub find_all {
                 my $obj = $class->new(@construct_args);
                 $obj->is_stored(1);
                 
-                $results->push($obj);
+                $results->add_record($obj);
             
             }
         
         }
         
-        return wantarray ? $results->flatten() : $results;
+        return wantarray ? $results->records : $results;
         
 
     }
@@ -315,4 +313,4 @@ sub _from_store_ref {
     
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

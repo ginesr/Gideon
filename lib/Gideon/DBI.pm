@@ -20,6 +20,9 @@ use Moose;
 our $VERSION = '0.02';
 our $DBI_DEBUG = 0;
 
+use constant FALSE => undef;
+use constant TRUE => 1;
+
 extends 'Gideon';
 
 has '__dbh' => ( is => 'rw' );
@@ -35,7 +38,7 @@ sub remove {
         return $self->remove_all(@_);
     }
 
-    return undef unless $self->is_stored;
+    return FALSE unless $self->is_stored;
 
     try {
 
@@ -56,7 +59,7 @@ sub remove {
         $self->is_stored(0);
         $self->is_modified(0);
 
-        return;
+        return TRUE;
 
     }
     catch {
@@ -138,7 +141,7 @@ sub save {
         Gideon::Error->throw('save() is not a static method');
     }
 
-    return undef if ( $self->is_stored and not $self->is_modified );
+    return FALSE if ( $self->is_stored and not $self->is_modified );
 
     try {
 
@@ -179,7 +182,7 @@ sub save {
         $self->is_stored(1);
         $self->is_modified(0);
 
-        return;
+        return TRUE;
 
     }
     catch {
@@ -247,6 +250,7 @@ sub find {
                 my @construct_args = $class->args_for_new_object($row);
                 $obj = $class->new(@construct_args);
                 $obj->is_stored(1);
+                $obj->is_modified(0);
                 $obj->conn($pool) if $pool;
 
             }
@@ -316,6 +320,8 @@ sub find_all {
                 my $obj            = $class->new(@construct_args);
 
                 $obj->is_stored(1);
+                $obj->is_modified(0);
+                
                 $results->add_record($obj);
 
             }
@@ -817,4 +823,4 @@ sub _function_to_query {
     
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

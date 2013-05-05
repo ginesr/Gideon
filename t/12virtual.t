@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 10;
+plan tests => 13;
 
 use_ok(qw(Gideon::Virtual));
 use_ok(qw(Gideon::Virtual::Provider));
@@ -45,11 +45,17 @@ my $results = Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
 my $first   = $results->first;
 my $last    = $results->last;
 
-is( $first->name,     'person 1',              'From join first record name' );
-is( $first->address,  'person1 first address', 'From join first record address' );
-is( $last->name,      'person 1',              'From join last record name' );
-is( $last->address,   'person1 third address', 'From join last record address' );
-is( $results->records_found, 3,                'Total results' );
+is( $first->name,            'person 1',              'From join first record name' );
+is( $first->address,         'person1 first address', 'From join first record address' );
+is( $last->name,             'person 1',              'From join last record name' );
+is( $last->address,          'person1 third address', 'From join last record address' );
+is( $results->records_found, 3,                       'Total results' );
+
+my $no_address = $results->grep( sub { $_->address =~ /no address/ } );
+
+is( $no_address->get_record(0)->name,    'person 1',        'From join then map' );
+is( $no_address->get_record(0)->address, 'have no address', 'From join then map' );
+is( $no_address->records_found,          1,                 'Only one with no address' );
 
 # Auxiliary test functions -----------------------------------------------------
 
@@ -74,15 +80,10 @@ sub prepare_test_data {
     }
 
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 1, "person1 first address" );
-
-    $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 1, "person1 second address" );
-
+    $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 1, "have no address" );
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 1, "person1 third address" );
-
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 5, "person5 first address" );
-
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 5, "person5 other address" );
-
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 7, "person7 first address" );
 }
 

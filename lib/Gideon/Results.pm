@@ -1,129 +1,148 @@
-
 package Gideon::Results;
 
 use strict;
 use warnings;
-use Class::Accessor::Fast qw(moose-like);
-use Data::Dumper qw(Dumper);
+use Moose::Role;
 use Try::Tiny;
+use List::MoreUtils qw(uniq);
+use Gideon::Error::DBI;
 
-has 'rows'      => ( is => 'rw' );
-has 'sth'       => ( is => 'rw' );
-has 'fields'    => ( is => 'rw' );
-has 'row_index' => ( is => 'rw' );
-has 'builder'   => ( is => 'rw' );
-has 'columns'   => ( is => 'rw' );
-has '__cache'   => ( is => 'rw' );
-
-sub new {
-
-    my $class = shift;
-    my @args  = @_;
-
-    my $self = {@args};
-    bless $self, $class;
-    $self->_init(@args);
-
-    return $self;
-
-}
-
-sub size {
-    my $self = shift;
-    return $self->rows;
-}
+has 'results' => (
+    traits  => ['Array'],
+    is      => 'rw',
+    isa     => 'ArrayRef',
+    handles => {
+        has_no_records => 'is_empty',
+        filter_records => 'grep',
+        clear_results  => 'clear',
+        count_records  => 'count',        
+        uniq_records   => 'uniq',
+        sort_records   => 'sort',
+        find_record    => 'first',
+        map_records    => 'map',
+        records_found  => 'count',
+        add_record     => 'push',
+        get_record     => 'get',
+        records        => 'elements',
+    },
+    lazy => 1,
+    default => sub { return [] }
+);
+has 'package' => ( is => 'rw', isa => 'Str' );
+has 'conn'    => ( is => 'rw', isa => 'Maybe[Str]' );
+has 'where'   => ( is => 'rw', isa => 'Maybe[HashRef]' );
 
 sub first {
     my $self = shift;
-    unless ( exists $self->__cache->{0} ) {
-
-        #row was not fetched
-    }
-    return $self->__cache->{0};
+    return $self->get_record(0)
 }
-
-sub by_index {
-    my $self = shift;
-    my $ind  = shift;
-
-    unless ( exists $self->__cache->{$ind} ) {
-
-        #row was not fetched
-    }
-    return $self->__cache->{$ind};
-}
-
 sub last {
     my $self = shift;
-    my $last = $self->size - 1;
-    unless ( exists $self->__cache->{$last} ) {
-
-        #row was not fetched
-    }
-    return $self->__cache->{$last};
+    return $self->get_record(-1)
 }
 
-sub next {
+sub distinct {
 
-    my $self  = shift;
-    my $index = $self->row_index;
-
-    if ( $index > $self->rows ) {
-
-        #end
-        return undef;
+    my $self     = shift;
+    my $property = shift;
+    
+    if ($property) {
+        # TODO: validate property
+        return $self->distinct_property($property)
     }
+    
+    my @uniq = $self->uniq_records;
+    my $pkg = ref $self;
+    my $results = $pkg->new(
+        'where'   => $self->where,
+        'package' => $self->package,
+        'conn'    => $self->conn,
+    );
+    $results->results(\@uniq);
 
-    unless ( exists $self->__cache->{$index} ) {
-        $self->add_row_to_result();
-    }
-
-    my $row = $self->__cache->{$index}->{obj};
-    $self->increment_index_count();
-    return $row;
-
+    return $results;    
+    
 }
 
-sub increment_index_count {
-    my $self  = shift;
-    my $index = $self->row_index();
-    $index++;
-    $self->row_index($index);
+sub distinct_property {
+    my $self     = shift;
+    my $property = shift;
+    my @filtered = ();
+
+    foreach my $i ( $self->records ) {
+        if ( $i->can($property) ) {
+            push @filtered, $i->$property;
+        }
+        else {
+            Gideon::Error->throw("object can't $property");
+        }
+    }
+    my @uniq = uniq @filtered;
+    return wantarray ? @uniq : [@uniq];    
 }
 
-sub add_row_to_result {
+sub map {
 
     my $self = shift;
-    my $index = $self->row_index() || 0;
+    my $code = shift;
 
-    try {
-
-        my $fetch = $self->sth->fetch;
-        my $raw_data = [ map { $_ } @{$fetch} ];
-
-        my $block = $self->builder();
-        my $obj = &$block( $self->columns, $raw_data );
-
-        $self->__cache->{$index}->{raw} = $raw_data;
-        $self->__cache->{$index}->{obj} = $obj;
-
+    unless ( ref($code) ) {
+        Gideon::Error->throw('map() needs a fuction as argument');
     }
-    catch {
-        warn "oh no! " . $_;
-    };
+    if ( ref($code) ne 'CODE' ) {
+        Gideon::Error->throw('map() argument is not a function reference');
+    }
 
+    my @filter = grep { defined $_ } map { (&$code) ? $_ : undef } $self->records;
+    my $pkg = ref $self;
+    my $results = $pkg->new(
+        'where'   => $self->where,
+        'package' => $self->package,
+        'conn'    => $self->conn,
+    );
+    $results->results(\@filter);
+    return $results;
 }
 
-# Private ----------------------------------------------------------------------
-
-sub _init {
+sub grep {
 
     my $self = shift;
-    my $args = {@_};
+    my $code = shift;
 
-    $self->row_index(0);
-    $self->__cache( {} );
+    unless ( ref($code) ) {
+        Gideon::Error->throw('grep() needs a fuction as argument');
+    }
+    if ( ref($code) ne 'CODE' ) {
+        Gideon::Error->throw('grep() argument is not a function reference');
+    }
 
+    my @filter = grep { &$code } $self->records;
+    my $pkg = ref $self;
+    my $results = $pkg->new(
+        'where'   => $self->where,
+        'package' => $self->package,
+        'conn'    => $self->conn,
+    );
+    $results->results(\@filter);
+    return $results;
 }
+
+sub as_hash {
+
+    my $self = shift;
+    my $key = shift || Gideon::Error::DBI->throw('provide a key to return a hash');
+
+    my @list = $self->records;
+    my $hash = {};
+
+    foreach my $i (@list) {
+        $hash->{ $i->$key } = $i;
+    }
+
+    return $hash;
+}
+
+sub update {}
+sub remove {}
 
 1;

@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 12;
+plan tests => 15;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -69,6 +69,14 @@ $find_again->name('not so new');
 $find_again->save();
 
 is( $find_again->id, 11, 'Again after save' );
+
+my $test_all = Example::Test->find_all;
+my $hash = $test_all->as_hash('id');
+
+is( $hash->{1}->id, 1, 'From hash id 1' );
+is( $hash->{2}->value, 'value of 2', 'From hash value 2' );
+is( $hash->{3}->name, 'rec 3', 'From hash name 3' );
+
 
 # Auxiliary test functions -----------------------------------------------------
 
