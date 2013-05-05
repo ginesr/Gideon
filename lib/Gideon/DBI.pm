@@ -476,6 +476,23 @@ sub dbh {
 
 }
 
+sub begin_work {
+    my $self = shift;
+    $self->dbh->{AutoCommit} = 0;
+    $self->dbh->begin_work;
+}
+
+sub commit {
+    my $self = shift;
+    $self->dbh->commit;
+}
+
+sub rollback {
+    my $self = shift;
+    $self->dbh->rollback;
+    $self->dbh->{AutoCommit} = 1;
+}
+
 sub eq {
     my $class  = shift;
     my $string = shift;
@@ -560,6 +577,63 @@ sub order_from_config {
         $order = [$order_clause];
     }
     return $order;
+}
+
+sub function {
+    
+    my $class = shift;
+    my $function = shift;
+    my $attr = shift;
+    
+    if ( ref($class) ) {
+        Gideon::Error->throw($function . 'max is a static method');
+    }
+    if ( !$attr ) {
+        Gideon::Error->throw('missing attribute');
+    }    
+    if ( ref($attr) ) {
+        Gideon::Error->throw('first argument is not valid');
+    }
+    
+    my $column = $class->get_colum_for_attribute($attr);
+    
+    if (not $column and $attr ne '*') {
+        Gideon::Error->throw('invalid attribute ' . $attr);
+    }
+    if (not $column and $attr eq '*') {
+        $column = $attr
+    }
+
+    my ( $args, $config ) = $class->decode_params(@_);
+    $args = $class->filter_rules($args);
+    
+    try {
+        
+        my $where = $class->where_stmt_from_args($args);
+        my $pool  = $config->{conn} || '';
+        my $fields = $class->_function_to_query($function,$column);
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->get_store_destination(), $fields, $where, undef, undef);
+
+        my $num = 0;
+        my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
+            'dbh'   => $class->dbh($pool),
+            'debug' => $DBI_DEBUG,
+            'query' => $stmt,
+            'bind'  => [@bind],
+            'block' => sub {
+                my $row = shift;
+                $num = $row->{$function} || 0;
+            }
+        );
+        return $num;
+        
+    }
+    catch {
+        my $e = shift;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
+        croak "Error calling function ($function) for attribute '$attr', " . $e;
+    }
+    
 }
 
 # Private ----------------------------------------------------------------------
@@ -740,63 +814,6 @@ sub _filter_fields {
     }
     return @fields;
 
-}
-
-sub function {
-    
-    my $class = shift;
-    my $function = shift;
-    my $attr = shift;
-    
-    if ( ref($class) ) {
-        Gideon::Error->throw($function . 'max is a static method');
-    }
-    if ( !$attr ) {
-        Gideon::Error->throw('missing attribute');
-    }    
-    if ( ref($attr) ) {
-        Gideon::Error->throw('first argument is not valid');
-    }
-    
-    my $column = $class->get_colum_for_attribute($attr);
-    
-    if (not $column and $attr ne '*') {
-        Gideon::Error->throw('invalid attribute ' . $attr);
-    }
-    if (not $column and $attr eq '*') {
-        $column = $attr
-    }
-
-    my ( $args, $config ) = $class->decode_params(@_);
-    $args = $class->filter_rules($args);
-    
-    try {
-        
-        my $where = $class->where_stmt_from_args($args);
-        my $pool  = $config->{conn} || '';
-        my $fields = $class->_function_to_query($function,$column);
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->get_store_destination(), $fields, $where, undef, undef);
-
-        my $num = 0;
-        my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
-            'dbh'   => $class->dbh($pool),
-            'debug' => $DBI_DEBUG,
-            'query' => $stmt,
-            'bind'  => [@bind],
-            'block' => sub {
-                my $row = shift;
-                $num = $row->{$function} || 0;
-            }
-        );
-        return $num;
-        
-    }
-    catch {
-        my $e = shift;
-        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
-        croak "Error calling function ($function) for attribute '$attr', " . $e;
-    }
-    
 }
 
 sub _function_to_query {

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib 'xlib';
-use Test::More tests => 17;
+use Test::More tests => 20;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -77,7 +77,10 @@ $first_person->name('Bill');
 
 is( $first_person->is_modified, 1, 'Trigger works' );
 is( $first_person->is_stored, 1, 'Still stored' );
+is( $first_person->name, 'Bill', 'The new name' );
 
 is_deeply($first_person->save, 1, 'Got confirmation is stored now');
 
 is( $first_person->is_modified, 0, 'Trigger works again' );
+is( $first_person->name, 'Bill', 'Name persists' );
+is( $first_person->is_modified, 0, 'Just called the method without setting a value' );
