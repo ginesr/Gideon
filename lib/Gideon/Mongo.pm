@@ -10,10 +10,13 @@ use Try::Tiny;
 use Carp qw(cluck croak);
 use Data::Dumper qw(Dumper);
 use Moose;
-use Set::Array;
+use Gideon::Mongo::Results;
 use Gideon::Filters::Mongo;
 
 our $VERSION = '0.02';
+
+use constant FALSE => undef;
+use constant TRUE => 1;
 
 extends 'Gideon';
 has '_mongo_id' => ( is => 'rw', isa => 'MongoDB::OID' );
@@ -26,7 +29,7 @@ sub remove {
         Gideon::Error->throw('remove() is not a static method');
     }
 
-    return undef unless $self->is_stored;
+    return FALSE unless $self->is_stored;
 
     try {
         
@@ -41,7 +44,7 @@ sub remove {
         $self->is_stored(0);
         $self->is_modified(0);
 
-        return;
+        return TRUE;
 
     }
     catch {
@@ -59,7 +62,7 @@ sub save {
         Gideon::Error->throw('save() is not a static method');
     }
 
-    return undef if ( $self->is_stored and not $self->is_modified );
+    return FALSE if ( $self->is_stored and not $self->is_modified );
 
     try {
 
@@ -91,9 +94,12 @@ sub save {
 
             my $id = $obj->insert( \%map );
             $self->_mongo_id($id);
+            $self->is_stored(1);
+            $self->is_modified(0);
+            
         }
 
-        return;
+        return TRUE;
 
     }
     catch {
@@ -128,11 +134,12 @@ sub find {
             my $obj = $class->new(@construct_args);
             $obj->is_stored(1);
             $obj->_mongo_id($mongo_id);
+            $obj->is_modified(0);
 
             return $obj;
         }
         
-        return;
+        return FALSE;
 
     }
     catch {
@@ -157,7 +164,7 @@ sub find_all {
     try {
 
         my $obj     = $class->mongo_conn( $class->get_store_destination() );
-        my $results = Set::Array->new;
+        my $results = Gideon::Mongo::Results->new(package => $class);
         my $all     = $obj->find($args);
 
         while ( my $doc = $all->next ) {
@@ -168,11 +175,12 @@ sub find_all {
             my $obj = $class->new(@construct_args);
             $obj->is_stored(1);
             $obj->_mongo_id($mongo_id);
+            $obj->is_modified(0);
 
-            $results->push($obj);
+            $results->add_record($obj);
         }
 
-        return wantarray ? $results->flatten() : $results;
+        return wantarray ? $results->records : $results;
 
     }
     catch {
@@ -186,10 +194,10 @@ sub mongo_conn {
     my $class   = shift;
     my $table   = shift;
     my $db      = $class->get_store_id();
-    my $db_conn = $class->_from_store_conn()->$db;
+    my $db_conn = $class->_from_store_conn()->get_database($db);
 
     if ($table) {
-        return $db_conn->$table;
+        return $db_conn->get_collection($table);
     }
 
     return $db_conn;

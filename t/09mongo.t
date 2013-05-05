@@ -22,8 +22,8 @@ use_ok(qw(MongoDB) );
 # Prepare test data ------------------------------------------------------------
 
 my $conn    = MongoDB::Connection->new;
-my $db      = $conn->gideon;
-my $persons = $db->person;
+my $db      = $conn->get_database('gideon');
+my $persons = $db->get_collection('person');
 
 $persons->drop;
 
@@ -78,7 +78,7 @@ my $stored = Mongo::Person->find( name => 'Bar' );
 is( $stored->name,        'Bar',   'Using find() name' );
 is( $stored->city,        'Miami', 'Using find() city' );
 is( $stored->is_stored,   1,       'Using find() is stored' );
-is( $stored->is_modified, undef,   'Using find() was changed' );
+is( $stored->is_modified, 0,       'Using find() was changed' );
 
 lives_ok(
     sub {
