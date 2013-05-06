@@ -198,9 +198,8 @@ sub last_inserted_id {
     my $self = shift;
     my $pool = $self->conn;
     my $query = "select last_insert_id() as last";
-    my $dbh_info = $self->dbh($pool)->get_info(17);
     
-    if ( $dbh_info and index( $dbh_info, 'SQLite' ) >= 0 ) {
+    if ( $self->_is_sqlite ) {
         my $t = $self->get_store_destination();
         $query = "SELECT ROWID as last from $t order by ROWID DESC limit 1";
     }
@@ -479,6 +478,9 @@ sub dbh {
 sub begin_work {
     my $self = shift;
     $self->dbh->{AutoCommit} = 0;
+    if ( $self->_is_sqlite ) {
+        return;
+    }
     $self->dbh->begin_work;
 }
 
@@ -838,6 +840,16 @@ sub _function_to_query {
     
     return sprintf $map->{uc($function)}, $column, $function
     
+}
+
+sub _is_sqlite {
+    my $self = shift;
+    my $pool = $self->conn;
+    my $dbh_info = $self->dbh($pool)->get_info(17);
+    if ( $dbh_info and index( $dbh_info, 'SQLite' ) >= 0 ) {
+        return 1;
+    }
+    return 0;
 }
 
 __PACKAGE__->meta->make_immutable();
