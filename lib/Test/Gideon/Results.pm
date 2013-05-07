@@ -12,6 +12,7 @@ $VERSION = eval $VERSION;
 
 has 'session'       => ( is => 'rw', isa => 'ArrayRef' );
 has 'destroyerrstr' => ( is => 'rw', isa => 'Str' );
+has 'sessionerrors' => ( is => 'rw', isa => 'Num', default => 0 );
 
 sub mock {
     my $self = shift;
@@ -36,6 +37,9 @@ sub count_left {
 DESTROY {
     my $self    = shift;
     my $session = $self->session;
+    if (my $errcount = $self->sessionerrors) {
+        Gideon::Error->throw("\nSession ended with errors ($errcount session not found)");
+    }
     unless ($session) {
         return;
     }

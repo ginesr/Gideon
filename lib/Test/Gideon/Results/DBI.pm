@@ -24,6 +24,11 @@ sub errstr {
     return "This is an error";
 }
 
+sub get_info {
+    my $self = shift;
+    return;
+}
+
 sub prepare {
 
     my $self  = shift;
@@ -44,7 +49,8 @@ sub prepare {
         }
         else {
             $msg = 'session not found';
-            $result = -1
+            $result = -1;
+            $self->sessionerrors( $self->sessionerrors + 1 );
         }
         
         ok( $query, 'query: ' . substr( $query, 0, 50 ) . ' ...' );
@@ -95,6 +101,10 @@ sub prepare {
             }
 
             my $r = shift $session;
+            if ( scalar(@$r) != scalar(@$cols) ) {
+                print STDERR "Invalid result, colums mismatch\n";
+                die;
+            }
             foreach (@$r) {
                 $row{ $cols->[$c] } = $_;
                 if ( ref $bound->[$c] eq 'SCALAR' ) {
