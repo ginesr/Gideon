@@ -27,6 +27,12 @@ sub get_next_session {
     return $next;
 }
 
+sub count_left {
+    my $self    = shift;
+    my $session = $self->session;
+    return scalar @{$session};
+}
+
 DESTROY {
     my $self    = shift;
     my $session = $self->session;

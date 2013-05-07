@@ -8,8 +8,11 @@ use Gideon::Error;
 use Gideon::Error::DBI;
 use Moose;
 use Test::MockObject;
+use Test::More;
 
 extends 'Test::Gideon::Results';
+
+my $times = 0;
 
 sub connect {
     my $self = shift;
@@ -18,19 +21,41 @@ sub connect {
 
 sub errstr {
     my $self = shift;
-    return "This is an error"
+    return "This is an error";
 }
 
 sub prepare {
 
     my $self  = shift;
     my $query = shift;
-    
-    if($query =~ /insert into/i){
-        return $self->prepare_to_insert();
-    }
 
     my $session = $self->get_next_session;
+    $times ++;
+
+    subtest __PACKAGE__ . " - Subtest $times passed" => sub { 
+        plan tests => 3;
+        
+        my $result = 0;
+        my $msg = 'found session';
+        my $left = $self->count_left;
+        
+        if ($session and scalar @{$session}) {
+           $result = scalar @{$session} - 1;
+        }
+        else {
+            $msg = 'session not found';
+            $result = -1
+        }
+        
+        ok( $query, 'query: ' . substr( $query, 0, 50 ) . ' ...' );
+        ok( 1, "$msg results ($result)" );
+        ok( 1, "sessions left $left");
+        
+    };
+
+    if ( $query =~ /insert into/i ) {
+        return $self->prepare_to_insert();
+    }
 
     if ( !$session ) {
         Gideon::Error::DBI->throw('Session exhausted');
@@ -92,7 +117,7 @@ sub prepare {
 }
 
 sub prepare_to_insert {
-    
+
     my $self = shift;
     my $sth  = Test::MockObject->new();
 

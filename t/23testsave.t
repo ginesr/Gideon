@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 9;
 use Data::Dumper qw(Dumper);
 use Test::Gideon::Results::DBI;
 use Test::Exception;
@@ -29,3 +29,6 @@ lives_ok(
     },
     'Save changes'
 );
+
+is( $country->is_stored,   1,       'Now it is' );
+is( $country->is_modified, 0,       'Reset modified flag' );

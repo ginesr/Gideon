@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 7;
+use Test::More tests => 9;
 use Data::Dumper qw(Dumper);
 use Test::Gideon::Results::DBI;
 
