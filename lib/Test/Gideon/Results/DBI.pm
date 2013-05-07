@@ -44,7 +44,7 @@ sub prepare {
         my $msg = 'found session';
         my $left = $self->count_left;
         
-        if ($session and scalar @{$session}) {
+        if ($session and scalar @{$session} >= 0) {
            $result = scalar @{$session} - 1;
         }
         else {

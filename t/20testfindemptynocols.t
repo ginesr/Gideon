@@ -9,7 +9,9 @@ use Test::Gideon::Results::DBI;
 use_ok qw(Example::Person);
 
 my $mock = Test::Gideon::Results::DBI->new;
-$mock->mock( [[]] );
+$mock->mock( [[
+    [ 'person.person_id', 'person.person_country', 'person.person_name' ]
+]]);
 
 # END Mock --------------------------------------------------------------------
 
