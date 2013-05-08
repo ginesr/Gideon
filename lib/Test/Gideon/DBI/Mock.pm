@@ -171,7 +171,7 @@ sub prepare_no_fetch {
                 ok( 1, 'no need for session' );
                 ok( 1, "class found $class" );
                 ok( 1, "function found $function()" );
-                ok( 1, "params = " . scalar(@bind) . "\n" . join('\n', @bind) );
+                ok( 1, "params = " . scalar(@bind) . "\n" . join("\n", @bind) );
             };
             
             return 1;
