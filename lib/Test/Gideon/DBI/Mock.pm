@@ -54,7 +54,7 @@ sub prepare {
     }
 
     if ( $query =~ /insert into/i or $query =~ /^update/i or $query =~ /^delete/i ) {
-        return $self->prepare_to_insert($query,$candidate_class,$function);
+        return $self->prepare_no_fetch($query,$candidate_class,$function);
     }
 
     subtest __PACKAGE__ . " - Subtest $times passed" => sub {
@@ -149,7 +149,7 @@ sub prepare {
     return $sth;
 }
 
-sub prepare_to_insert {
+sub prepare_no_fetch {
 
     my $self = shift;
     my $query = shift;
@@ -158,19 +158,22 @@ sub prepare_to_insert {
 
     my $sth  = Test::MockObject->new();
 
-    subtest __PACKAGE__ . " - Subtest $times passed" => sub {
-        plan tests => 4;
-
-        ok( $query, 'query: ' . substr( $query, 0, $query_str_limit ) . ' ...' );
-        ok( 1, 'no need for session' );
-        ok( 1, "class found $class" );
-        ok( 1, "function found $function()" );
-    };
-
     $sth->mock(
         'execute',
         sub {
             my $class = shift;
+            my @bind = @_;
+            
+            subtest __PACKAGE__ . " - Subtest $times passed" => sub {
+                plan tests => 5;
+        
+                ok( $query, 'query: ' . substr( $query, 0, $query_str_limit ) . ' ...' );
+                ok( 1, 'no need for session' );
+                ok( 1, "class found $class" );
+                ok( 1, "function found $function()" );
+                ok( 1, "params = " . scalar(@bind) . "\n" . join('\n', @bind) );
+            };
+            
             return 1;
         }
     );
