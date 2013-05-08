@@ -80,62 +80,62 @@ Gideon->register_store( 'master', $dbh );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => 'arg' );
+        $record = Example::Country->find_all( name => 'arg' );
     },
     'One straight filter produces: country_name = ?'
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { like => 'arg' } );
+        $record = Example::Country->find_all( name => { like => 'arg' } );
     },
     'One like filter produces: country_name LIKE ?'
 );
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { like => 'arg', gte => 'AR' } );
+        $record = Example::Country->find_all( name => { like => 'arg', gte => 'AR' } );
     },
     'Two filters like + gte produces: country_name LIKE ? OR country_name >= ?'
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { like => [ 'arg', 'ent' ], gte => 'AR' } );
+        $record = Example::Country->find_all( name => { like => [ 'arg', 'ent' ], gte => 'AR' } );
     },
     'Two filters with 2 like + 1 gte produces: ( country_name LIKE ? OR country_name LIKE ? ) OR country_name >= ? '
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { lt => 1 } );
+        $record = Example::Country->find_all( name => { lt => 1 } );
     },
     'One lt filter produces: country_name < ?'
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { lte => 1 }, name => { gt => 20 } );
+        $record = Example::Country->find_all( name => { lte => 1 }, name => { gt => 20 } );
     },
     'Two lt + gt filter with multi filter produces: country_name <= ? OR country_name > ?'
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { like => 'Afr', lte => 1 }, name => { gt => 20 } );
+        $record = Example::Country->find_all( name => { like => 'Afr', lte => 1 }, name => { gt => 20 } );
     },
     'like with lt + nested gt with multi filter on same column produces: ( country_name LIKE ? AND country_name <= ? ) OR country_name > ?'
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => { eq => ['Argentina','Uruguay'] } );
+        $record = Example::Country->find_all( name => { eq => ['Argentina','Uruguay'] } );
     },
     'One eq filter with multiple values produces: country_name = ? OR country_name = ?'
 );
 
 lives_ok(
     sub {
-        $record = Example::Country->find( name => 'Argentina', name => 'Uruguay' );
+        $record = Example::Country->find_all( name => 'Argentina', name => 'Uruguay' );
     },
     'Two filters without operands produces: country_name = ? OR country_name = ?'
 );

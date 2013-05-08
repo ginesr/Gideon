@@ -224,6 +224,8 @@ sub find {
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
+    
+    $args = $class->filter_rules($args);
 
     try {
 
