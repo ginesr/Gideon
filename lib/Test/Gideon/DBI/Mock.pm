@@ -153,7 +153,7 @@ sub prepare_no_fetch {
 
     my $self = shift;
     my $query = shift;
-    my $class = shift;
+    my $class_found = shift;
     my $function = shift;
 
     my $sth  = Test::MockObject->new();
@@ -169,7 +169,7 @@ sub prepare_no_fetch {
         
                 ok( $query, 'query: ' . substr( $query, 0, $query_str_limit ) . ' ...' );
                 ok( 1, 'no need for session' );
-                ok( 1, "class found $class" );
+                ok( 1, "class found $class_found" );
                 ok( 1, "function found $function()" );
                 ok( 1, "params = " . scalar(@bind) . "\n" . join("\n", @bind) );
             };
