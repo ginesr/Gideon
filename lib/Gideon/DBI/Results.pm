@@ -7,6 +7,7 @@ use Try::Tiny;
 use Moose;
 use Gideon::Filters::DBI;
 use Gideon::Error::DBI;
+use Gideon::Error::DBI::Results;
 use List::MoreUtils qw(uniq);
 
 with 'Gideon::Results';
@@ -29,12 +30,16 @@ sub remove {
 
         my $dbh  = $self->package->dbh( $self->conn );
         my $sth  = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 
         return $rows
 
     }
+    catch {
+        my $e = shift;
+        Gideon::Error::DBI::Results->throw($e);
+    };
 
 }
 
@@ -56,13 +61,16 @@ sub update {
 
         my $dbh  = $self->package->dbh( $self->conn );
         my $sth  = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 
         return $rows
 
     }
-
+    catch {
+        my $e = shift;
+        Gideon::Error::DBI::Results->throw($e);
+    };
 }
 
 __PACKAGE__->meta->make_immutable();

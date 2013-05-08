@@ -11,7 +11,7 @@ use Test::MockObject;
 use Test::More;
 use Carp qw(cluck);
 
-my @known_methods = qw(find_all find delete update function last_inserted_id save);
+my @known_methods = qw(find_all find delete update function last_inserted_id save remove);
 
 extends 'Test::Gideon::Results';
 
@@ -52,7 +52,7 @@ sub prepare {
         Gideon::Error::DBI->throw("You said $session->{class} and $candidate_class was found");
     }
 
-    if ( $query =~ /insert into/i or $query =~ /^update/i ) {
+    if ( $query =~ /insert into/i or $query =~ /^update/i or $query =~ /^delete/i ) {
         return $self->prepare_to_insert($query,$candidate_class,$function);
     }
 
