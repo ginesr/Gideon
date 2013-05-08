@@ -16,6 +16,7 @@ my @known_methods = qw(find_all find delete update function last_inserted_id sav
 extends 'Test::Gideon::Results';
 
 my $times = 0;
+our $query_str_limit = 50;
 
 sub connect {
     my $self = shift;
@@ -72,7 +73,7 @@ sub prepare {
             $self->sessionerrors( $self->sessionerrors + 1 );
         }
 
-        ok( $query, 'query: ' . substr( $query, 0, 50 ) . ' ...' );
+        ok( $query, 'query: ' . substr( $query, 0, $query_str_limit ) . ' ...' );
         ok( 1,      "$msg results ($result)" );
         ok( 1,      "sessions left $left" );
         is( $session->{class}, $candidate_class, 'class matches');
@@ -160,7 +161,7 @@ sub prepare_to_insert {
     subtest __PACKAGE__ . " - Subtest $times passed" => sub {
         plan tests => 4;
 
-        ok( $query, 'query: ' . substr( $query, 0, 50 ) . ' ...' );
+        ok( $query, 'query: ' . substr( $query, 0, $query_str_limit ) . ' ...' );
         ok( 1, 'no need for session' );
         ok( 1, "class found $class" );
         ok( 1, "function found $function()" );
