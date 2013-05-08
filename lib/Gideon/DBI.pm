@@ -314,7 +314,6 @@ sub find_all {
             'block' => sub {
 
                 my $row = shift;
-
                 my @construct_args = $class->args_for_new_object($row);
                 my $obj            = $class->new(@construct_args);
 

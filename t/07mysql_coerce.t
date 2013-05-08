@@ -54,8 +54,8 @@ $person->save;
 
 my $person_again = Example::My::Lastlog->find( name => 'John' );
 
-is( $person_again->lastlog, '2012-01-02 10:11:12', 'Last log was updated' );
-is( $person_again->lastlog->year, 2012, 'Last log is coerced' );
+is( $person_again->lastlog, '2001-01-02 10:11:12', 'Last log was updated' );
+is( $person_again->lastlog->year, 2001, 'Last log is coerced' );
 
 $person_again->datetime(undef);
 $person_again->save;
