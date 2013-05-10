@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 12;
+use Test::More tests => 14;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 
@@ -57,8 +57,10 @@ is( $record->id,      123,   'Person ID using restore' );
 my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
-is( $persons->has_no_records, 0,     'Not empty!' );
-is( $persons->records_found,  2,     'Total results' );
+is( $persons->has_no_records, 0,   'Not empty! has_no_records()' );
+is( $persons->is_empty,       0,   'Not empty! is_empty()' );
+is( $persons->records_found,  2,   'Total results records_found()' );
+is( $persons->record_count,   2,   'Total results record_count()' );
 is( $first->name,           'Foo', 'Results as object' );
 
 $persons = Example::Person->find_all( type => { gt => 0 } );
