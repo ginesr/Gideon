@@ -4,19 +4,30 @@ use strict;
 use warnings;
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
+use Moose;
+use Gideon::DBI;
 use Gideon::Error;
 use Gideon::Error::DBI;
-use Moose;
 use Test::MockObject;
 use Test::More;
 use Carp qw(cluck);
 
 my @known_methods = qw(find_all find delete update function last_inserted_id save remove);
 
-extends 'Test::Gideon::Results';
-
 my $times = 0;
+my $last_insert = 0;
+
 our $query_str_limit = 50;
+
+BEGIN {
+  no warnings 'redefine';
+  *Gideon::DBI::last_inserted_id = sub {
+      $last_insert++;
+      return $last_insert;
+  }
+}
+
+extends 'Test::Gideon::Results';
 
 sub connect {
     my $self = shift;
@@ -47,6 +58,7 @@ sub prepare {
         Gideon::Error::DBI->throw("Session exhausted for class $candidate_class called using $function()");
     }
 
+    Gideon::Error::DBI->throw("Can\'t find know class in stack") if not $candidate_class;
     Gideon::Error::DBI->throw("Missing class name in mock, did you mean $candidate_class ?") if not $session->{class};
 
     if ($candidate_class and $session->{class} ne $candidate_class) {
@@ -55,6 +67,9 @@ sub prepare {
 
     if ( $query =~ /insert into/i or $query =~ /^update/i or $query =~ /^delete/i ) {
         return $self->prepare_no_fetch($query,$candidate_class,$function);
+    }
+    if ( $query =~ /select last_insert_id\(\) as last/ or $query =~ /SELECT ROWID as last/ ) {
+        return $self->prepare_for_functions($query);
     }
 
     subtest __PACKAGE__ . " - Subtest $times passed" => sub {
@@ -76,7 +91,7 @@ sub prepare {
         ok( $query, 'query: ' . substr( $query, 0, $query_str_limit ) . ' ...' );
         ok( 1,      "$msg results ($result)" );
         ok( 1,      "sessions left $left" );
-        is( $session->{class}, $candidate_class, 'class matches');
+        is( $session->{class}, $candidate_class, 'class matches ' . $candidate_class);
         ok( 1,      "function_found $function()" );
 
     };
@@ -85,8 +100,8 @@ sub prepare {
         Gideon::Error::DBI->throw('Session exhausted');
     }
 
-    my @fields  = $self->columns_with_table_as_list($session);
-    my $colhash = $self->get_columns_hash( $session->{class} );
+    my @fields  = $self->_columns_with_table_as_list($session);
+    my $colhash = $self->_get_columns_hash( $session->{class} );
     my $sth     = Test::MockObject->new();
     my $bound   = [];
 
@@ -162,7 +177,12 @@ sub prepare_no_fetch {
         'execute',
         sub {
             my $class = shift;
-            my @bind = @_;
+            my @bind;
+            
+            foreach (@_) {
+                $_ = '<_NULL_>' if not defined $_;
+                push @bind, $_
+            }
             
             subtest __PACKAGE__ . " - Subtest $times passed" => sub {
                 plan tests => 5;
@@ -239,7 +259,7 @@ sub find_class_in_stack {
     return $candidate_class;
 }
 
-sub columns_with_table_as_list {
+sub _columns_with_table_as_list {
 
     my $self = shift;
     my $session = shift;
@@ -264,7 +284,7 @@ sub columns_with_table_as_list {
     return map { $table . '.' . $_ } @columns;
 }
 
-sub get_columns_hash {
+sub _get_columns_hash {
 
     my $self    = shift;
     my $class   = shift;

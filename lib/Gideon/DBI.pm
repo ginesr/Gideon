@@ -257,7 +257,7 @@ sub find {
             }
         );
 
-        Gideon::Error::DBI::NotFound->throw('no results found') unless $obj;
+        Gideon::Error::DBI::NotFound->throw('no results found ' . $class) unless $obj;
         return $obj;
 
     }
