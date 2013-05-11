@@ -4,3 +4,4 @@
 /.externalToolBuilders
 t/db/
 ./t/db/
+/.settings

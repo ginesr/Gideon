@@ -182,7 +182,7 @@ sub save {
         $self->is_stored(1);
         $self->is_modified(0);
 
-        return TRUE;
+        return $self;
 
     }
     catch {
