@@ -29,4 +29,19 @@ sub get_dbi_string {
     
 }
 
+sub begin_work {
+    my $self = shift;
+    $self->connect->begin_work;
+}
+
+sub commit {
+    my $self = shift;
+    $self->connect->commit;
+}
+
+sub rollback {
+    my $self = shift;
+    $self->connect->rollback;
+}
+
 __PACKAGE__->meta->make_immutable();

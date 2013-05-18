@@ -63,6 +63,14 @@ sub register_store {
     $class;    
 }
 
+sub transaction {
+    my $class = shift;
+    my $store_name = shift;
+    my $ref = $stores{$store_name};
+    die "$store_name is not registered or name is invalid" if not $ref;
+    return $ref;
+}
+
 sub register_cache {
     my $class = shift;
     my $module = shift;
@@ -661,8 +669,10 @@ sub get_value_for_attribute_key {
     my $key       = shift;
     my $meta      = $__meta->{$class} || $class->get_all_meta;
 
-    if ( exists $meta->{attributes}->{$attribute}->{$key} ) {
-        return $meta->{attributes}->{$attribute}->{$key};
+    if ( exists $meta->{attributes}->{$attribute} ) {
+        if ( exists $meta->{attributes}->{$attribute}->{$key} ) {
+            return $meta->{attributes}->{$attribute}->{$key};
+        }
     }
     return;
     
