@@ -187,7 +187,7 @@ sub save {
     }
     catch {
         my $e = shift;
-        cluck ref($e);# if $Gideon::EXCEPTION_DEBUG;
+        cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
         croak $e;
     }
 
