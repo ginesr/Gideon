@@ -18,6 +18,11 @@ sub connect {
     
 }
 
+sub connect_isolated {
+    my $self = shift;
+    Gideon::Error::Simple->throw('can\'t connect_isolated(), is not supported by your driver');
+}
+
 sub get_dbi_string {
     
     my $self = shift;
@@ -31,17 +36,20 @@ sub get_dbi_string {
 
 sub begin_work {
     my $self = shift;
-    $self->connect->begin_work;
+    $self->connect_isolated->begin_work;
+    return $self->isolated;
 }
 
 sub commit {
     my $self = shift;
-    $self->connect->commit;
+    $self->isolated->commit;
+    $self->disconnect;
 }
 
 sub rollback {
     my $self = shift;
-    $self->connect->rollback;
+    $self->isolated->rollback;
+    $self->disconnect;
 }
 
 __PACKAGE__->meta->make_immutable();

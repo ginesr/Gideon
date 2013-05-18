@@ -16,22 +16,50 @@ has 'password' => ( is => 'rw', isa => 'Str' );
 has 'host'     => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'port'     => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'type'     => ( is => 'ro', isa => 'Str', default  => 'MYSQL' );
+has 'isolated' => ( is => 'rw', isa => 'Maybe[DBI::db]' );
 
 our $_mysql_cache_dbh = {};
 
 sub connect {
     my $self = shift;
 
+    if ($self->isolated) {
+        return $self->isolated
+    }
     if ( my $dbh = $self->is_cached ) {
         return $dbh;
     }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password,
-    { RaiseError => 0, PrintError => 0 }    
+    { RaiseError => 0, PrintError => 0, AutoCommit => 1 }    
      ) ) {
         $_mysql_cache_dbh->{$self->cache_key} = $dbh;
         return $dbh;
     }
     Example::Error::Simple->throw($DBI::errstr);
+}
+
+sub connect_isolated {
+    my $self = shift;
+
+    if ($self->isolated) {
+        return $self->isolated
+    }
+
+    if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password, {
+        RaiseError => 0, PrintError => 0, AutoCommit => 0
+    } ) ) {
+        $dbh->{'mysql_auto_reconnect'} = 1;
+        $dbh->{'mysql_enable_utf8'} = 1;
+        $self->isolated($dbh);
+        return $dbh;
+    }
+    Gideon::Error->throw($DBI::errstr);
+}
+
+sub disconnect {
+    my $self = shift;
+    $self->isolated->disconnect;
+    return $self->isolated(undef)
 }
 
 sub is_cached {
