@@ -562,6 +562,15 @@ sub get_columns_hash {
     return $hash;
 }
 
+sub as_hash {
+    
+    my $self = shift;
+    my $columns = $self->get_columns_hash;
+    my $hash = { map { $_ => $self->$_ } keys %{ $columns } };
+    return $hash;
+    
+}
+
 sub get_key_columns_hash {
     my $class = shift;
     return $class->get_columns_hash('filter_keys');
