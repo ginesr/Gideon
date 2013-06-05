@@ -526,6 +526,12 @@ sub lte {
     return $string;
 }
 
+sub ne {
+    my $class  = shift;
+    my $string = shift;
+    return $string;
+}
+
 sub execute_and_array {
 
     my $class  = shift;

@@ -185,7 +185,13 @@ sub stringify_fields {
 sub like {
     my $class = shift;
     my $string = shift || "";
-    return '%' . $string . '%';
+    return $string;
+}
+
+sub nlike {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
 }
 
 sub gte {
@@ -200,32 +206,28 @@ sub lte {
     return '<=' . $string;
 }
 
-sub not {
+sub ne {
     my $class = shift;
     my $string = shift || "";
-    return '<>' . $string;
-
+    return '!' . $string;
 }
 
 sub gt {
     my $class = shift;
     my $string = shift || "";
     return '>' . $string;
-
 }
 
 sub lt {
     my $class = shift;
     my $string = shift || "";
     return '<' . $string;
-
 }
 
 sub eq {
     my $class = shift;
     my $string = shift || "";
     return '=' . $string;
-
 }
 
 sub validate_order_by {
@@ -864,13 +866,14 @@ sub _transform_filter {
     my @filters = @_;
 
     my %map = (
-        'like' => '-like',
-        'eq'   => '=',
-        'gt'   => '>',
-        'lt'   => '<',
-        'not'  => '!',
-        'gte'  => '>=',
-        'lte'  => '<=',
+        'like'  => '-like',
+        'nlike' => '-not_like',
+        'eq'    => '=',
+        'gt'    => '>',
+        'lt'    => '<',
+        'ne'    => '!=',
+        'gte'   => '>=',
+        'lte'   => '<=',
     );
 
     foreach my $filter_type ( keys %{$filter} ) {
@@ -878,9 +881,10 @@ sub _transform_filter {
             or $filter_type eq 'gt'
             or $filter_type eq 'eq'
             or $filter_type eq 'lt'
-            or $filter_type eq 'not'
+            or $filter_type eq 'ne'
             or $filter_type eq 'gte'
-            or $filter_type = 'lte' ) {
+            or $filter_type eq 'lte'
+            or $filter_type eq 'nlike' ) {
 
             push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
 
