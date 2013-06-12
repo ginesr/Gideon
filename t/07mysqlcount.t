@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 4;
+plan tests => 5;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -36,10 +36,13 @@ my $driver = Example::Driver::MySQL->new(
 Gideon->register_store( 'mysql_server', $driver );
 
 my $count = Example::Test->function( count => '*' );
-cmp_ok($count,'==',5,'Count records from db');
+cmp_ok($count,'==',6,'Count records from db');
 
 my $distinct = Example::Test->function( count_distinct => 'value' );
-cmp_ok($distinct,'==',1,'Distinct count from db');
+cmp_ok($distinct,'==',2,'Distinct count from db');
+
+my $count_where = Example::Test->function( count => '*', value => { eq => 'bar' } );
+cmp_ok($count_where,'==',1,'Count records from db using where');
 
 # Auxiliary test functions -----------------------------------------------------
 
@@ -56,6 +59,8 @@ sub prepare_test_data {
     for ( 1 .. 5 ) {
         $dbh->do( "insert into gideon_t1 (name,value) values(?,?)", undef, "rec $_", "foo" );
     }
+    
+    $dbh->do( "insert into gideon_t1 (name,value) values(?,?)", undef, "rec bar", "bar" );
 
 }
 
