@@ -73,7 +73,7 @@ my $rec_lte = $lte->first;
 
 is( $rec_lte->id, 1, 'Find using lte' );
 
-my $not = Example::Flat->find_all( value => { not => 'pre generated' } );
+my $not = Example::Flat->find_all( value => { ne => 'pre generated' } );
 my $rec_not = $not->first;
 
 is( $rec_not->id, 2, 'Find using not' );

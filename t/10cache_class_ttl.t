@@ -11,7 +11,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 10;
+    plan tests => 9;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -31,29 +31,25 @@ my $driver = Example::Driver::MySQL->new(
 Gideon->register_store( 'mysql_server', $driver );
 Gideon->register_cache( 'Gideon::Cache' );
 
+Gideon::Cache->add_class_ttl('Example::Cache', 2);
+
 my $test_data = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first     = $test_data->first;
 
 is( $first->id, 5, 'Record from db using like' );
 
-is( Gideon::Cache->count, 1, 'One key in the cache' );
+is( Gideon::Cache->count, 1, 'One key stored in cache' );
 is( Gideon::Cache->hits, 0, 'No hits' );
 
-my $more_data = Example::Cache->find_all( value => { like => '%test 6' } );
-
-my @list = Gideon::Cache->class_keys('Example::Cache'); 
-
-is( scalar @list, 2, 'Keys for class' );
-
-empty_table();
+sleep(3);
 
 my $cached_data  = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first_cached = $cached_data->first;
 
-is( $first_cached->id, 5, 'Record from cache' );
+is( $first_cached->id, 5, 'Cache expired' );
 
-is( Gideon::Cache->hits, 1, 'One hit after running same search' );
-is( Gideon::Cache->count, 2, 'Still one key in the cache' );
+is( Gideon::Cache->hits, 0, 'No hits after ttl pass' );
+is( Gideon::Cache->count, 1, 'One new key in cache after expire' );
 
 # Auxiliary test functions -----------------------------------------------------
 

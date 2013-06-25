@@ -58,6 +58,10 @@ sub remove {
         $sth->finish;
         $self->is_stored(0);
         $self->is_modified(0);
+        
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear(ref $self);
+        }
 
         return TRUE;
 
@@ -92,7 +96,11 @@ sub update {
         my $sth = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
         $sth->finish;
-
+        
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear($class);
+        }
+        
         return $rows;
 
     }
@@ -123,6 +131,10 @@ sub remove_all {
         my $sth = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
+
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear($class);
+        }
 
         return $rows;
 
@@ -181,6 +193,10 @@ sub save {
 
         $self->is_stored(1);
         $self->is_modified(0);
+        
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear(ref $self);
+        }
 
         return $self;
 
@@ -228,6 +244,8 @@ sub find {
     $args = $class->filter_rules($args);
 
     try {
+        
+        my $cache_key;
 
         my $fields = $class->get_columns_from_meta();
         my $map    = $class->map_args_with_meta($args);
@@ -238,8 +256,16 @@ sub find {
 
         my ( $stmt, @bind ) =
           Gideon::Filters::DBI->format( 'select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
-
+          
         my $obj;
+
+        if ( $class->cache_registered ) {
+            $cache_key = $class->generate_cache_key( $stmt, @bind );
+            if ( my $cached_obj = $class->cache_lookup($cache_key) ) {
+                $obj = $cached_obj;
+                return $obj;
+            }
+        }
 
         my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
             'dbh'   => $class->dbh($pool),
@@ -258,6 +284,11 @@ sub find {
         );
 
         Gideon::Error::DBI::NotFound->throw('no results found ' . $class) unless $obj;
+
+        if ($cache_key) {
+            $class->cache_store( $cache_key, $obj );
+        }
+        
         return $obj;
 
     }
@@ -347,8 +378,10 @@ sub cache_store {
     my $self = shift;
     my $key  = shift;
     my $what = shift;
+    
+    my $class = (ref $self) ? ref $self : $self;
 
-    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60 );
+    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60, $class );
 
 }
 

@@ -11,7 +11,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 10;
+    plan tests => 13;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -39,21 +39,27 @@ is( $first->id, 5, 'Record from db using like' );
 is( Gideon::Cache->count, 1, 'One key in the cache' );
 is( Gideon::Cache->hits, 0, 'No hits' );
 
-my $more_data = Example::Cache->find_all( value => { like => '%test 6' } );
+my @list = Gideon::Cache->class_keys('Example::Cache');
 
-my @list = Gideon::Cache->class_keys('Example::Cache'); 
-
-is( scalar @list, 2, 'Keys for class' );
-
-empty_table();
+is( scalar @list, 1, 'Keys for class' );
 
 my $cached_data  = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first_cached = $cached_data->first;
 
 is( $first_cached->id, 5, 'Record from cache' );
 
+$first_cached->value('modified');
+$first_cached->save;
+
+my @list_after = Gideon::Cache->class_keys('Example::Cache');
+
 is( Gideon::Cache->hits, 1, 'One hit after running same search' );
-is( Gideon::Cache->count, 2, 'Still one key in the cache' );
+is( Gideon::Cache->count, 0, 'No more key in the cache' );
+is( scalar @list_after, 0, 'Keys after clear' );
+
+my $after = Example::Cache->find( id => $first_cached->id );
+is( $after->value, 'modified', 'Retrieve modified' );
+is( Gideon::Cache->count, 1, 'One key in the cache' );
 
 # Auxiliary test functions -----------------------------------------------------
 

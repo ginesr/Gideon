@@ -65,7 +65,7 @@ lives_ok(
 is( $country->is_modified, 0,           'Now is not modified anymore' );
 is( $country->is_stored,   1,           'And is stored' );
 
-my $persons = Example::Person->find_all( country => 'US', name => { like => 'joe' } );
+my $persons = Example::Person->find_all( country => 'US', name => { like => '%joe%' } );
 my $first_person = $persons->get_record(0); 
 
 is( $first_person->is_modified, 0, 'From DB not changed' );
@@ -79,7 +79,7 @@ is( $first_person->is_modified, 1, 'Trigger works' );
 is( $first_person->is_stored, 1, 'Still stored' );
 is( $first_person->name, 'Bill', 'The new name' );
 
-is_deeply($first_person->save, 1, 'Got confirmation is stored now');
+ok($first_person->save, 'Got confirmation is stored now');
 
 is( $first_person->is_modified, 0, 'Trigger works again' );
 is( $first_person->name, 'Bill', 'Name persists' );

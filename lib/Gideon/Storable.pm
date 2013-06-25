@@ -81,35 +81,30 @@ sub gt {
     my $class = shift;
     my $string = shift || "";
     return $string;
-
 }
 
 sub lt {
     my $class = shift;
     my $string = shift || "";
     return $string;
-
 }
 
-sub not {
+sub ne {
     my $class = shift;
     my $string = shift || "";
     return $string;
-
 }
 
 sub lte {
     my $class = shift;
     my $string = shift || "";
     return $string;
-
 }
 
 sub gte {
     my $class = shift;
     my $string = shift || "";
     return $string;
-
 }
 
 sub find_all {
@@ -235,36 +230,55 @@ sub test_filters {
             }
         }
         
+        my $operand;
+        my $compare;
+        
+        if (ref($option) and ref($option) eq 'HASH') {
+            my @keys = keys %$option;
+            $operand = $keys[0];
+            $compare = $option->{$operand};
+        }
+        
         if (ref($option) and ref($option) eq 'ARRAY') {
             
-            my $operand = $option->[0];
-            
+            $operand = $option->[0];
+            $compare = $option->[1];
+
+        }
+        
+        if ($operand and $compare) {
             if ($operand eq '!') {
-                if ($value ne $option->[1]) {
+                if ($value ne $compare) {
+                    return 1;
+                }
+            }
+            if ($operand eq '!=') {
+                if ($value ne $compare) {
                     return 1;
                 }
             }
             if ($operand eq '>') {
-                if ($value gt $option->[1]) {
+                if ($value gt $compare) {
                     return 1;
                 }
             }
             if ($operand eq '<') {
-                if ($value lt $option->[1]) {
+                if ($value lt $compare) {
                     return 1;
                 }
             }
             if ($operand eq '>=') {
-                if ($value >= $option->[1]) {
+                if ($value >= $compare) {
                     return 1;
                 }
             }
             if ($operand eq '<=') {
-                if ($value <= $option->[1]) {
+                if ($value <= $compare) {
                     return 1;
                 }
-            }
+            }            
         }
+        
     }
     
     return;

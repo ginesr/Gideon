@@ -123,10 +123,21 @@ sub cache_store {
     my $key = shift;
     my $what = shift;
     my $secs = shift;
+    my $class = shift;
+    
+    $class = (ref $self) ? ref $self : $self if not $class;
     
     my $module = $self->get_cache_module;
-    return $module->set( $key, $what, $secs);
+    return $module->set( $key, $what, $secs, $class);
 
+}
+
+sub cache_clear {
+    my $self = shift;
+    my $class = shift;
+    my $module = $self->get_cache_module;
+    return $module->clear( $class );
+    
 }
 
 sub filter_rules {
