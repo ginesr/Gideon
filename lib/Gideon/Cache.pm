@@ -7,7 +7,8 @@ use Digest::MD5;
 use 5.012_001;
 use Data::Dumper qw(Dumper);
 
-our $_cache = {};
+our $slot = '_DEFAULT_';
+our $_cache = { $slot => {} };
 our $_class_ttl = {};
 our $_class_keys = {};
 
@@ -25,7 +26,7 @@ sub get {
     my $self = shift;
     my $key  = shift;
     $self->expire;
-    if ( my $cached = $_cache->{$key}->{content} ) {
+    if ( my $cached = $_cache->{$slot}->{$key}->{content} ) {
         $hits++;
         return $cached;
     }
@@ -41,14 +42,14 @@ sub set {
     my $class    = shift;
     
     $_class_keys->{$class}->{$key} = 1;
-    $_cache->{$key}->{content} = $contents;
+    $_cache->{$slot}->{$key}->{content} = $contents;
     
-    if (not exists $_cache->{$key}->{ttl}) {
+    if (not exists $_cache->{$slot}->{$key}->{ttl}) {
         if (exists $_class_ttl->{$class} and $_class_ttl->{$class} > 0) {
             $ttl = $_class_ttl->{$class}
         }
-        $_cache->{$key}->{ttl} = $ttl;
-        $_cache->{$key}->{stamp} = time();
+        $_cache->{$slot}->{$key}->{ttl} = $ttl;
+        $_cache->{$slot}->{$key}->{stamp} = time();
     }
     
     return;
@@ -59,9 +60,9 @@ sub expire {
     my $self = shift;
     my $now = time();
 
-    foreach my $k (keys $_cache) {
-        my $stamp = $_cache->{$k}->{stamp};
-        my $ttl = $_cache->{$k}->{ttl};
+    foreach my $k (keys %{ $_cache->{$slot} }) {
+        my $stamp = $_cache->{$slot}->{$k}->{stamp};
+        my $ttl = $_cache->{$slot}->{$k}->{ttl};
         my $expire = $stamp + $ttl;
 
         if ($expire < $now) {
@@ -99,18 +100,18 @@ sub class_keys {
 sub delete {
     my $self = shift;
     my $key = shift;
-    delete $_cache->{$key};
+    delete $_cache->{$slot}->{$key};
     return 1
 }
 
 sub count {
     my $self = shift;
-    return scalar keys %{$_cache};
+    return scalar keys %{ $_cache->{$slot} };
 }
 
 sub content {
     my $self = shift;
-    return $_cache;
+    return $_cache->{$slot};
 }
 
 sub hits {
@@ -121,7 +122,7 @@ sub hits {
 sub detect {
     my $self = shift;
     my $key  = shift;
-    return exists $_cache->{$key} ? 1 : 0;
+    return exists $_cache->{$slot}->{$key} ? 1 : 0;
 }
 
 sub add_class_ttl {
@@ -130,6 +131,18 @@ sub add_class_ttl {
     my $ttl = shift || 1;
     $_class_ttl->{$class} = $ttl;
     return $self;
+}
+
+sub default_slot {
+    my $self = shift;
+    $slot = '_DEFAULT_';
+    return $self
+}
+
+sub set_slot {
+    my $self = shift;
+    $slot = shift;
+    return $self
 }
 
 1;
