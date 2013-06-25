@@ -164,9 +164,6 @@ sub find {
         
         $args = Gideon::Filters::Storable->format( $class->filter_rules($args) );
         
-        #my $fields = $class->get_columns_from_meta;
-        #my $map    = $class->map_args_with_meta($args);
-        
         if ( my $found = $class->search_in_hash($args) ) {
 
             my @construct_args = map { $_, $found->[0]->{$_} } keys %{$found->[0]};
