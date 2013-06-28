@@ -12,7 +12,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 12;
+    plan tests => 15;
 }
 
 my $memdtest = Test::Memcached->new( options => { user => 'nobody' } );
@@ -20,6 +20,7 @@ $memdtest->start;
 my $port = $memdtest->option('tcp_port');
 
 ok( $memdtest, 'Memcache daemon' );
+ok( $port, "Memcache port is $port" );
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Cache));
@@ -45,12 +46,14 @@ Gideon::Cache::Memcache->set_servers( ["127.0.0.1:$port"] );
 
 # ------------------------------------------------------------------------------
 
+is( Gideon::Cache::Memcache->count, 0, 'Nothing in mem' );
+
 my $test_data = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first = $test_data->first;
 
 is( $first->id, 5, 'Record from db using like' );
 
-is( Gideon::Cache::Memcache->count, 2, 'One key in the cache + one more key for class cache' );
+is( Gideon::Cache::Memcache->count, 2, 'One key in the cache + class key' );
 is( Gideon::Cache::Memcache->hits,  0, 'No hits' );
 
 my $more_data = Example::Cache->find_all( value => { like => '%test 6' } );
@@ -59,15 +62,20 @@ my @list = Gideon::Cache::Memcache->class_keys('Example::Cache');
 
 is( scalar @list, 2, 'Keys for class' );
 
-empty_table();
-
 my $cached_data = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first_cached = $cached_data->first;
 
 is( $first_cached->id, 5, 'Record from cache' );
 
+$first_cached->value('modified');
+$first_cached->save; # triggers clear keys for this class
+
 is( Gideon::Cache::Memcache->hits,  1, 'One hit after running same search' );
-is( Gideon::Cache::Memcache->count, 3, 'Two key in cache + one more key for class cache' );
+is( Gideon::Cache::Memcache->count, 1, 'No more keys in cache and one key user by class cache' );
+
+my @list_after = Gideon::Cache::Memcache->class_keys('Example::Cache');
+
+is( scalar @list_after, 0, 'Keys for class after' );
 
 lives_ok( sub { $memdtest->stop } , 'Stop daemon' );
 

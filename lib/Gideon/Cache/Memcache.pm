@@ -15,7 +15,6 @@ our $slot    = '_DEFAULT_';
 our $servers = ["127.0.0.1:11211"];
 
 our $_class_ttl = {};
-our $_class_keys = {};
 
 my $memd;
 my $hits = 0;
@@ -42,11 +41,15 @@ sub set {
     my $ttl      = shift;
     my $class    = shift;
     
-    $_class_keys->{$class}->{$key} = 1;
+    
+    my $class_keys = $self->_get_class_cache;
+    $class_keys->{$class}->{$key} = 1;
     
     if (exists $_class_ttl->{$class} and $_class_ttl->{$class} > 0) {
         $ttl = $_class_ttl->{$class}
     }
+    
+    $self->_update_class_cache($class_keys);
     
     my $slot_plus_key = $slot . '_' . $key;
     $memd->set($slot_plus_key, $contents, $ttl);    
@@ -63,8 +66,10 @@ sub delete {
 sub clear {
     my $self = shift;
     my $class = shift;
+    
+    my $class_keys = $self->_get_class_cache;
 
-    if (exists $_class_keys->{$class}) {
+    if (exists $class_keys->{$class}) {
         my @keys = $self->class_keys($class);
         foreach my $k (@keys) { 
             my $found = $self->delete($k);
@@ -72,9 +77,10 @@ sub clear {
                 #warn "$k not found in cache"
             }
             else {
-                delete $_class_keys->{$class}->{$k};
+                delete $class_keys->{$class}->{$k};
             }
         }
+        $self->_update_class_cache($class_keys);
         return 1;
     }
     return 0;
@@ -118,7 +124,11 @@ sub set_servers {
 sub count {
     return $memd->stats('misc')->{total}->{curr_items};
 }
-sub content {}
+
+sub content {
+    # not implemented
+    return {}
+}
 
 sub hits {
     my $self = shift;
@@ -126,11 +136,15 @@ sub hits {
 }
 
 sub class_keys {
+    
     my $self = shift;
     my $class = shift;
+    
     my @list = ();
-    if (exists $_class_keys->{$class}) {
-        @list = keys $_class_keys->{$class};
+    my $class_keys = $self->_get_class_cache;
+    
+    if (exists $class_keys->{$class}) {
+        @list = keys $class_keys->{$class};
     }
     return @list;
 }
@@ -159,7 +173,7 @@ sub get_slot {
     return $slot;
 }
 
-# private
+# private ----------------------------------------------------------------------
 
 sub _connect {
     my $self = shift;
@@ -168,6 +182,17 @@ sub _connect {
         'debug'              => MEMCACHE_DEBUG,
         'compress_threshold' => COMPRESS_TRESH,
     };
+}
+
+sub _get_class_cache {
+    my $self = shift;
+    return $memd->get('__gdn_priv_class_cache');
+}
+
+sub _update_class_cache {
+    my $self = shift;
+    my $hash = shift || {};
+    return $memd->set('__gdn_priv_class_cache',$hash);
 }
 
 1;
