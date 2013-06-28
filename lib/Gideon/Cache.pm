@@ -145,4 +145,13 @@ sub set_slot {
     return $self
 }
 
+sub get_slot {
+    return $slot;
+}
+
+sub set_servers {
+    my $self = shift;
+    return $self;
+}
+
 1;

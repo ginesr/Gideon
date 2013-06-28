@@ -155,6 +155,10 @@ sub set_slot {
     return $self
 }
 
+sub get_slot {
+    return $slot;
+}
+
 # private
 
 sub _connect {

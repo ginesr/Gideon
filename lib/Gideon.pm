@@ -34,6 +34,7 @@ my $__store = {};
 my $__relations = {};
 my $__stricts = {};
 my $__cache = undef;
+our $__obj_cache = 1;
 our %stores = ();
 our $__pool  = undef;
 
@@ -107,11 +108,19 @@ sub remove_all {
     # overload in subclass    
 }
 
+sub disable_cache {
+    $__obj_cache = 0;
+}
+
+sub enable_cache {
+    $__obj_cache = 1;
+}
+
 sub cache_lookup {
     
     my $self = shift;
     my $key = shift;
-    
+    return if $__obj_cache == 0;
     my $module = $self->get_cache_module;
     return $module->get($key);
     
@@ -125,6 +134,8 @@ sub cache_store {
     my $secs = shift;
     my $class = shift;
     
+    return if $__obj_cache == 0;
+    
     $class = (ref $self) ? ref $self : $self if not $class;
     
     my $module = $self->get_cache_module;
@@ -135,6 +146,7 @@ sub cache_store {
 sub cache_clear {
     my $self = shift;
     my $class = shift;
+    return if $__obj_cache == 0;
     my $module = $self->get_cache_module;
     return $module->clear( $class );
     
