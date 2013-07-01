@@ -26,6 +26,9 @@ sub get {
     my $self = shift;
     my $key  = shift;
     $self->expire;
+    if ( !$self->detect($key) ) {
+        return;
+    }
     if ( my $cached = $_cache->{$slot}->{$key}->{content} ) {
         $hits++;
         return $cached;
@@ -64,7 +67,12 @@ sub expire {
         my $stamp = $_cache->{$slot}->{$k}->{stamp};
         my $ttl = $_cache->{$slot}->{$k}->{ttl};
         my $expire = $stamp + $ttl;
-
+        
+        if (!$stamp or !$ttl) {
+            warn "$slot $k no ttl defined to expire, will keep it forever";
+            next;
+        }
+    
         if ($expire < $now) {
             $self->delete($k);
         }
