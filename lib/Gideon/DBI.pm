@@ -260,7 +260,7 @@ sub find {
         my $obj;
 
         if ( $class->cache_registered ) {
-            $cache_key = $class->generate_cache_key( $stmt, @bind );
+            $cache_key = $class->generate_cache_key( 'find', $stmt, @bind );
             if ( my $cached_obj = $class->cache_lookup($cache_key) ) {
                 $obj = $cached_obj;
                 return $obj;
@@ -333,7 +333,7 @@ sub find_all {
         );
 
         if ( $class->cache_registered ) {
-            $cache_key = $class->generate_cache_key( $stmt, @bind );
+            $cache_key = $class->generate_cache_key( 'fall', $stmt, @bind );
             if ( my $cached_results = $class->cache_lookup($cache_key) ) {
                 $results = $cached_results;
                 return wantarray ? $results->records : $results;
@@ -388,11 +388,12 @@ sub cache_store {
 sub generate_cache_key {
 
     my $self = shift;
+    my $from = shift;
     my $stmt = shift;
     my @args = @_;
-
+    
     my $vals = join( '_', @args );
-    my $key = $self->signature_for_cache . $stmt . $vals;    # uniqueness generated with sql query and filters
+    my $key = $self->signature_for_cache . $from . $stmt . $vals;    # uniqueness generated with sql query and filters
 
     my $module = $self->get_cache_module;
     return $module->digest($key);
@@ -584,7 +585,7 @@ sub execute_and_array {
     }
 
     if ( $class->cache_registered ) {
-        $cache_key = $class->generate_cache_key( $stmt, @bind );
+        $cache_key = $class->generate_cache_key( 'earr', $stmt, @bind );
         $class->cache_lookup($cache_key);
     }
 

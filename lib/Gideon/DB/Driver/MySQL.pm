@@ -9,13 +9,14 @@ use Moose;
 
 extends 'Gideon::DB::Driver';
 
-has 'db'       => ( is => 'rw', isa => 'Str', required => 1 );
-has 'username' => ( is => 'rw', isa => 'Str', required => 1 );
-has 'password' => ( is => 'rw', isa => 'Str' );
-has 'host'     => ( is => 'rw', isa => 'Maybe[Str]' );
-has 'port'     => ( is => 'rw', isa => 'Maybe[Num]' );
-has 'type'     => ( is => 'ro', isa => 'Str', default  => 'MYSQL' );
-has 'isolated' => ( is => 'rw', isa => 'Maybe[DBI::db]' );
+has 'db'          => ( is => 'rw', isa => 'Str', required => 1 );
+has 'username'    => ( is => 'rw', isa => 'Str', required => 1 );
+has 'raise_error' => ( is => 'rw', isa => 'Bool', default => 1 );
+has 'password'    => ( is => 'rw', isa => 'Str' );
+has 'host'        => ( is => 'rw', isa => 'Maybe[Str]' );
+has 'port'        => ( is => 'rw', isa => 'Maybe[Num]' );
+has 'type'        => ( is => 'ro', isa => 'Str', default  => 'MYSQL' );
+has 'isolated'    => ( is => 'rw', isa => 'Maybe[DBI::db]' );
 
 our $_mysql_cache_dbh = {};
 
@@ -29,7 +30,7 @@ sub connect {
         return $dbh;
     }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password, {
-        RaiseError => 0, PrintError => 0
+        RaiseError => $self->raise_error, PrintError => 0
     } ) ) {
         $dbh->{'mysql_auto_reconnect'} = 1;
         $dbh->{'mysql_enable_utf8'} = 1;
@@ -47,7 +48,7 @@ sub connect_isolated {
     }
 
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password, {
-        RaiseError => 1, PrintError => 0, AutoCommit => 0
+        RaiseError => $self->raise_error, PrintError => 0, AutoCommit => 0
     } ) ) {
         $dbh->{'mysql_auto_reconnect'} = 1;
         $dbh->{'mysql_enable_utf8'} = 1;
