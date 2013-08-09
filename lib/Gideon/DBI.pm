@@ -522,6 +522,7 @@ sub begin_work {
 sub commit {
     my $self = shift;
     $self->dbh->commit;
+    $self->dbh->{AutoCommit} = 1;
 }
 
 sub rollback {

@@ -30,7 +30,7 @@ sub connect {
         return $dbh;
     }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password, {
-        RaiseError => $self->raise_error, PrintError => 0
+        RaiseError => $self->raise_error, PrintError => 0, AutoCommit => 1
     } ) ) {
         $dbh->{'mysql_auto_reconnect'} = 1;
         $dbh->{'mysql_enable_utf8'} = 1;
@@ -42,13 +42,13 @@ sub connect {
 
 sub connect_isolated {
     my $self = shift;
-
+    
     if ($self->isolated) {
         return $self->isolated
     }
 
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password, {
-        RaiseError => $self->raise_error, PrintError => 0, AutoCommit => 0
+        RaiseError => $self->raise_error, PrintError => 0, AutoCommit => 1
     } ) ) {
         $dbh->{'mysql_auto_reconnect'} = 1;
         $dbh->{'mysql_enable_utf8'} = 1;
