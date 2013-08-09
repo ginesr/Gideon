@@ -23,6 +23,7 @@ has 'results' => (
         map_records    => 'map',
         records_found  => 'count',
         record_count   => 'count',
+        shift_record   => 'shift',
         add_record     => 'push',
         get_record     => 'get',
         records        => 'elements',
