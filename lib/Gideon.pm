@@ -608,7 +608,7 @@ sub get_attributes_from_meta {
     my $meta  = $__meta->{$pkg} || $class->get_all_meta;
 
     my @map = map { $_ } ( keys %{ $meta->{attributes} } );
-    return \@map;
+    return wantarray ? @map : \@map;
 }
 
 sub get_attribute_for_column {
@@ -786,6 +786,43 @@ sub get_cache_module {
         return $__cache
     }
     return;
+}
+
+sub clone {
+    my $self = shift;
+
+    if (not blessed($self)) {
+        die "can't clone if not an object";
+    }
+
+    my @attrs = $self->get_attributes_from_meta;
+    my $serial = $self->get_serial_attr_hash;
+
+    if ( $self->is_stored ) {
+        foreach my $attr (keys %$serial) {
+            my @indexes = grep { $attrs[$_] eq $attr } 0..scalar $#attrs;
+            splice(@attrs, $indexes[0], 1);
+        }
+    }
+    
+    my $class = ref $self;
+    my %params = ();
+    
+    foreach my $attr (@attrs) {
+        if (blessed($self->$attr)) {
+            if ($self->can('clone')) {
+                $params{$attr} = $self->$attr->clone
+            }
+        }
+        else {
+            if (defined $self->$attr) {
+                $params{$attr} = $self->$attr
+            }
+        }
+    }
+
+    my $cloned = $class->new(%params);
+    return $cloned;
 }
 
 # Imports ----------------------------------------------------------------------

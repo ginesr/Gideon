@@ -13,6 +13,15 @@ sub new {
 
 }
 
+sub clone {
+    my $self = shift;
+    return __PACKAGE__->new(
+            year     => $self->year,
+            month    => $self->month,
+            day      => $self->day,
+    )
+}
+
 sub from_mysql_string {
 
     my $self       = shift;
