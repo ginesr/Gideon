@@ -42,12 +42,20 @@ sub begin_work {
 
 sub commit {
     my $self = shift;
+    if (!$self->isolated) {
+        warn "called commit() when no trasaction is running";
+        return $self;
+    }
     $self->isolated->commit;
     $self->disconnect;
 }
 
 sub rollback {
     my $self = shift;
+    if (!$self->isolated) {
+        warn "called rollback() when no trasaction is running";
+        return $self;
+    }
     $self->isolated->rollback;
     $self->disconnect;
 }
