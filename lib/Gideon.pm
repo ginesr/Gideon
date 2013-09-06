@@ -931,10 +931,12 @@ sub _transform_filter {
         'eq'    => '=',
         'gt'    => '>',
         'lt'    => '<',
-        'ne'    => '!=',
         'gte'   => '>=',
         'lte'   => '<=',
+        'ne'    => '!=',
     );
+    
+    my $hash = {};
 
     foreach my $filter_type ( keys %{$filter} ) {
         if (   $filter_type eq 'like'
@@ -945,14 +947,14 @@ sub _transform_filter {
             or $filter_type eq 'gte'
             or $filter_type eq 'lte'
             or $filter_type eq 'nlike' ) {
-
-            push @filters, { $map{$filter_type} => $class->transform_filter_values( $filter_type, $filter->{$filter_type} ) };
+                
+            $hash->{ $map{$filter_type} } = $class->transform_filter_values( $filter_type, $filter->{$filter_type} );
 
         } else {
             Gideon::Error->throw( $filter_type . ' is not a valid filter' );
         }
     }
-
+    push @filters, $hash;
     return @filters;
 }
 

@@ -26,13 +26,13 @@ my $mock_session = DBD::Mock::Session->new(
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name LIKE ? OR country.country_name >= ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name LIKE ? AND country.country_name >= ? ) )',
         bound_params => [ 'arg%', 'AR' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? OR country.country_name LIKE ? ) OR country.country_name >= ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? OR country.country_name LIKE ? ) AND country.country_name >= ? ) )',
         bound_params => [ 'arg%', 'ent%', 'AR' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
@@ -113,14 +113,14 @@ lives_ok(
     sub {
         $record = Example::Country->find( name => { like => 'arg%', gte => 'AR' } );
     },
-    'Two filters like + gte produces: country_name LIKE ? OR country_name >= ?'
+    'Two filters like + gte produces: country_name LIKE ? AND country_name >= ?'
 );
 
 lives_ok(
     sub {
         $record = Example::Country->find( name => { like => [ 'arg%', 'ent%' ], gte => 'AR' } );
     },
-    'Two filters with 2 like + 1 gte produces: ( country_name LIKE ? OR country_name LIKE ? ) OR country_name >= ? '
+    'Two filters with 2 like + 1 gte produces: ( country_name LIKE ? OR country_name LIKE ? ) AND country_name >= ? '
 );
 
 lives_ok(
