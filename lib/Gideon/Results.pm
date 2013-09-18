@@ -33,7 +33,7 @@ has 'results' => (
 );
 has 'package' => ( is => 'rw', isa => 'Str' );
 has 'conn'    => ( is => 'rw', isa => 'Maybe[Str]' );
-has 'where'   => ( is => 'rw', isa => 'Maybe[HashRef]' );
+has 'where'   => ( is => 'rw' );
 
 sub first {
     my $self = shift;

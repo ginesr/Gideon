@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Gideon;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
@@ -68,7 +68,12 @@ my $mock_session = DBD::Mock::Session->new(
         bound_params => [ 'Argentina', 'Uruguay' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ], [ 'UY', 'Uruguay' ] ]
 
-    }
+    },
+    {
+        statement => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name = ? AND ( country.country_iso = ? OR country.country_name != ? ) ) )',
+        bound_params => [ 'arg', 'AR', 'AR'  ],
+        results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]        
+    }    
 );
 $dbh->{mock_session} = $mock_session;
 
@@ -140,3 +145,9 @@ lives_ok(
     'Two filters without operands produces: country_name = ? OR country_name = ?'
 );
 
+lives_ok(
+    sub {
+        $record = Example::Country->find_all( -or => { name => { ne => 'AR' }, iso => 'AR' }, name => 'arg' );
+    },
+    'Two different filters inside -or + one simple filter produces: ( country_name = ? OR country_iso = ? ) AND country_name = ?'
+);
