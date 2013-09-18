@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 12;
+use Test::More tests => 15;
 use Gideon;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
@@ -87,6 +87,23 @@ my $mock_session = DBD::Mock::Session->new(
         bound_params => [ '%Argentina%'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'UY', 'Uruguay' ] ]
     },
+    {
+        statement =>
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_iso = ? AND country.country_name = ? ) )',
+        bound_params => [ 'AR', 'Argentina'  ],
+        results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]
+    },
+    {
+        statement =>
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_iso = ? OR country.country_name = ? ) )',
+        bound_params => [ 'AR', 'AR'  ],
+        results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]
+    },    
+    {
+        statement => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name = ? AND ( country.country_iso = ? OR country.country_name != ? ) ) )',
+        bound_params => [ 'arg', 'AR', 'AR'  ],
+        results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]        
+    }
 );
 $dbh->{mock_session} = $mock_session;
 
@@ -179,4 +196,23 @@ lives_ok(
     'Using not with like produces: country_name NOT LIKE ? and param is wrapped in %'
 );
 
+lives_ok(
+    sub {
+        $record = Example::Country->find( name => 'Argentina', iso => 'AR' );
+    },
+    'Two different filters without operands produces: country_name = ? AND country_iso = ?'
+);
 
+lives_ok(
+    sub {
+        $record = Example::Country->find( -or => { name => { eq => 'AR' }, iso => 'AR' } );
+    },
+    'Two different filters inside -or produces: country_name = ? OR country_iso = ?'
+);
+
+lives_ok(
+    sub {
+        $record = Example::Country->find( -or => { name => { ne => 'AR' }, iso => 'AR' }, name => 'arg' );
+    },
+    'Two different filters inside -or + one simple filter produces: ( country_name = ? OR country_iso = ? ) AND country_name = ?'
+);

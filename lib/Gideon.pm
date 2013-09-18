@@ -158,10 +158,21 @@ sub filter_rules {
     my $args    = shift;
     my $options = shift || '';
 
-    foreach ( keys %{$args} ) {
-        $class->check_meta($_) unless $options =~ /skip_meta_check/;
-        my $value_filtered = $class->trans_filters( $args->{$_} );
-        $args->{$_} = $value_filtered;
+    foreach my $attribute ( keys %{$args} ) {
+        if ($attribute eq '-or' and ref $args->{$attribute} eq 'HASH' ) {
+            my @attributes = ();
+            push @attributes, map { $_ } keys %{ $args->{$attribute} };
+            foreach (@attributes) {
+                $class->check_meta($_);
+                my $value_filtered = $class->trans_filters( $args->{$attribute}->{$_} );
+                $args->{$attribute}->{$_} = $value_filtered
+            }    
+        }
+        else {
+            $class->check_meta($attribute) unless $options =~ /skip_meta_check/;
+            my $value_filtered = $class->trans_filters( $args->{$attribute} );
+            $args->{$attribute} = $value_filtered
+        }
     }
 
     return $args;
@@ -654,17 +665,24 @@ sub _map_args_with_metadata {
     my $pkg    = $class->_get_pkg_name;
 
     foreach my $arg ( keys %{$args} ) {
-        
+        if ($arg eq '-or' and ref $args->{$arg} eq 'HASH' ) {
+            foreach my $attr ( keys %{ $args->{$arg} } ) {
+                if ( my $col = $class->$getter($attr)) {
+                    $map->{$arg}{$col} = $attr;
+                    next
+                }
+                Gideon::Error->throw("invalid argument $attr inside $arg for $pkg");
+            }
+            next
+        }
         if ( my $col = $class->$getter($arg)) {
             $map->{$col} = $arg;
             next
         }
-        
         Gideon::Error->throw('invalid argument ' . $arg . ' for ' . $pkg);
-        
     }
 
-    return $map;
+    return $map
     
 }
 

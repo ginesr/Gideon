@@ -433,8 +433,36 @@ sub add_table_to_order {
 sub where_stmt_from_args {
     my $class = shift;
     my $args  = shift;
+    
     my $map   = $class->map_args_with_meta($args);
-    my %where = $class->add_table_to_where( ( map { $_ => $args->{ $map->{$_} } } ( sort keys %{$map} ) ) );
+    my $table = $class->get_store_destination();
+    
+    my %where = ();
+    my @where = ();
+    
+    foreach my $attr (sort keys %$map) {
+        if ($attr eq '-or' and ref $map->{$attr} eq 'HASH') {
+            my $sub_map = $map->{$attr};
+            foreach my $sub_attr (sort keys %$sub_map) {
+                my $or = {};
+                $or->{$table.'.'.$sub_attr} = $args->{ $attr }->{ $map->{$attr}->{$sub_attr} };
+                push @where, $or;
+            }
+        }
+        else {
+            $where{$table.'.'.$attr} = $args->{ $map->{$attr} }
+        }
+    }
+    
+    if (scalar @where) {
+        if (scalar keys %where) {
+            # for conditions + regular where: ( -or => { key => value, .... }, key => value .... )
+            return [ -and => [ \%where, [ -or => \@where ] ] ]
+        }
+        # for conditions where: ( -or => { key => value, .... }  )
+        return \@where
+    }
+    # regular where: { key => value, ..... }
     return \%where;
 }
 
