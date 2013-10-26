@@ -29,7 +29,7 @@ sub execute_with_bind_columns {
     my @bind = map { $_ } @{ $bind };
     $self->debug($debug,'Query', $stmt);
     
-    my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( "failed in prepare " . $dbh->errstr );
+    my $sth = $dbh->prepare_cached($stmt) or Gideon::Error::DBI->throw( "failed in prepare " . $dbh->errstr );
     $self->debug($debug,'Binding',\@bind);
     
     my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => "failed while executing " . ( $sth->errstr ? $sth->errstr : 'no errstr returned' ), stmt => $stmt, params => \@bind );

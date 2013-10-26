@@ -29,7 +29,7 @@ sub remove {
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $destination, $where );
 
         my $dbh  = $self->package->dbh( $self->conn );
-        my $sth  = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
+        my $sth  = $dbh->prepare_cached($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 

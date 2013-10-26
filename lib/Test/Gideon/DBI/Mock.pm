@@ -44,6 +44,10 @@ sub get_info {
     return;
 }
 
+sub prepare_cached {
+    return shift->prepare(@_)
+}
+
 sub prepare {
 
     my $self  = shift;
