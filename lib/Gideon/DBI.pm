@@ -294,6 +294,7 @@ sub find {
     }
     catch {
         my $e = shift;
+        Gideon::DBI::Common->finish;
         cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
         croak $e;
     }
@@ -367,6 +368,7 @@ sub find_all {
     }
     catch {
         my $e = shift;
+        Gideon::DBI::Common->finish;
         cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
         croak $e;
     };
@@ -633,6 +635,8 @@ sub execute_and_array {
         my %rec = map { $_, $row{$_} } keys %row;
         $results->add_record( \%rec );
     }
+    
+    $sth->finish;
 
     if ($cache_key) {
         $class->cache_store( $cache_key, $results );

@@ -7,6 +7,8 @@ use Gideon::Error;
 use Gideon::Error::DBI;
 use Data::Dumper qw(Dumper);
 
+my $class_sth;
+
 sub execute_one_with_bind_columns {
 
     my $self  = shift;
@@ -36,15 +38,23 @@ sub execute_with_bind_columns {
     my %row;
 
     $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) ) if @{ $sth->{NAME_lc} };
+    $class_sth = $sth;
 
     while ( $sth->fetch ) {
         &$block(\%row);
         last if $only_one;
     }
     $sth->finish;
-    
     return $rows;
     
+}
+
+sub finish {
+    my $class = shift;
+    # in case of execptions call finish to cleanup
+    if ($class_sth and $class_sth->can('finish')) {
+        $class_sth->finish;
+    }
 }
 
 sub debug {

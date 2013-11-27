@@ -17,10 +17,11 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 15;
+plan tests => 18;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
+use_ok(qw(Example::TestInvalid));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
@@ -77,6 +78,10 @@ is( $hash->{1}->id, 1, 'From hash id 1' );
 is( $hash->{2}->value, 'value of 2', 'From hash value 2' );
 is( $hash->{3}->name, 'rec 3', 'From hash name 3' );
 
+dies_ok(sub{my $invalid = Example::TestInvalid->find_all},'Invalid class attribute');
+
+my $all = Example::Test->find_all;
+is($all->record_count,11,'All count');
 
 # Auxiliary test functions -----------------------------------------------------
 
