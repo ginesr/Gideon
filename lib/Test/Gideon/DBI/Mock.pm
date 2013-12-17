@@ -253,6 +253,7 @@ sub find_class_in_stack {
                     my @args = split ',', $params;
                     my $pkg = shift @args;
                     $pkg =~ s/\'//g; # remove single quote from param list
+                    $pkg =~ s/\"//g; # remove double quote from param list
                     $pkg =~ s/(.*?)=HASH.*/$1/g; # remove references for objects
                     $candidate_class = $pkg;
                 }
