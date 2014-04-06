@@ -11,7 +11,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 9;
+    plan tests => 10;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -30,6 +30,7 @@ my $driver = Example::Driver::MySQL->new(
 
 Gideon->register_store( 'mysql_server', $driver );
 Gideon->register_cache( 'Gideon::Cache' );
+Gideon->set_cache_ttl( 3600 ); # one hour
 
 Gideon::Cache->add_class_ttl('Example::Cache', 2);
 
@@ -38,6 +39,7 @@ my $first     = $test_data->first;
 
 is( $first->id, 5, 'Record from db using like' );
 
+is( Gideon->cache_ttl, 3600, 'Time to live in cache' );
 is( Gideon::Cache->count, 1, 'One key stored in cache' );
 is( Gideon::Cache->hits, 0, 'No hits' );
 

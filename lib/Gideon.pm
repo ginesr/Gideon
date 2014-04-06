@@ -29,6 +29,8 @@ $VERSION = eval $VERSION;
 
 our $EXCEPTION_DEBUG = 0;
 
+use constant CACHE_DEFAULT_TTL => 300; # default expire seconds
+
 my $__meta  = undef;
 my $__store = {};
 my $__relations = {};
@@ -36,7 +38,8 @@ my $__stricts = {};
 my $__cache = undef;
 our $__obj_cache = 1;
 our %stores = ();
-our $__pool  = undef;
+our $__pool = undef;
+our $_cache_ttl = undef;
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
@@ -108,12 +111,31 @@ sub remove_all {
     # overload in subclass    
 }
 
+sub update_all {
+    my $class = shift;
+    # overload in subclass    
+}
+
 sub disable_cache {
     $__obj_cache = 0;
 }
 
 sub enable_cache {
     $__obj_cache = 1;
+}
+
+sub set_cache_ttl {
+    my $self = shift;
+    my $secs = shift || undef;
+    $_cache_ttl = $secs;
+}
+
+sub cache_ttl {
+    my $self = shift;
+    if ($_cache_ttl) {
+        return $_cache_ttl
+    }
+    return CACHE_DEFAULT_TTL
 }
 
 sub cache_lookup {
@@ -131,10 +153,10 @@ sub cache_store {
     my $self = shift;
     my $key = shift;
     my $what = shift;
-    my $secs = shift;
     my $class = shift;
     
     return if $__obj_cache == 0;
+    my $secs = $self->cache_ttl;
     
     $class = (ref $self) ? ref $self : $self if not $class;
     

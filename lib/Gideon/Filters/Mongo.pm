@@ -1,4 +1,3 @@
-
 package Gideon::Filters::Mongo;
 
 use strict;
@@ -30,7 +29,7 @@ sub _transform_from_hash {
         if ($t eq '-like') {
             $filters->{$field} = $filters->{$field}->{$t};
         }
-        if ($t eq '!') {
+        if ($t eq '!=') {
             $filters->{$field} = { '$ne' => $filters->{$field}->{$t} };
         }
         if ($t eq '>') {

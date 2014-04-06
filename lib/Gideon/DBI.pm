@@ -1,4 +1,3 @@
-
 package Gideon::DBI;
 
 use strict;
@@ -27,8 +26,6 @@ extends 'Gideon';
 
 has '__dbh' => ( is => 'rw' );
 has 'conn' => ( is => 'rw', isa => 'Maybe[Str]' );
-
-use constant CACHE_MINS_TTL => 5;
 
 sub remove {
 
@@ -109,6 +106,8 @@ sub update {
     }
 
 }
+
+sub update_all {}
 
 sub remove_all {
 
@@ -383,7 +382,7 @@ sub cache_store {
     
     my $class = (ref $self) ? ref $self : $self;
 
-    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60, $class );
+    return Gideon->cache_store( $key, $what, $class );
 
 }
 

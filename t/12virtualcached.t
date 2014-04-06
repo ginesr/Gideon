@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 13;
+plan tests => 14;
 
 use_ok(qw(Gideon::Virtual));
 use_ok(qw(Gideon::Virtual::Provider));
@@ -39,6 +39,8 @@ my $driver = Gideon::DB::Driver::MySQL->new(
 
 my $provider = Example::Virtual::Provider->new;
 $provider->driver($driver);
+
+is( Gideon->cache_ttl, 300, 'Dafault time to live in cache' );
 
 Gideon->register_store( 'my_virtual_store', $provider );
 Gideon->register_cache('Gideon::Cache');

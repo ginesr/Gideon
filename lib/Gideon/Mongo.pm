@@ -1,4 +1,3 @@
-
 package Gideon::Mongo;
 
 use strict;
@@ -44,6 +43,10 @@ sub remove {
         $self->is_stored(0);
         $self->is_modified(0);
 
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear(ref $self);
+        }        
+
         return TRUE;
 
     }
@@ -53,6 +56,9 @@ sub remove {
     }
 
 }
+
+sub update_all {}
+sub remove_all { die 'not implemented' }
 
 sub save {
 
@@ -85,7 +91,8 @@ sub save {
             }
             $obj->update( { "_id" => $self->_mongo_id }, { '$set' => \%map } );
 
-        } else {
+        }
+        else {
 
             if ( my $serial = $self->get_serial_attr() ) {
                 my $next_id = $self->increment_serial($table);
@@ -95,11 +102,15 @@ sub save {
             my $id = $obj->insert( \%map );
             $self->_mongo_id($id);
             $self->is_stored(1);
-            $self->is_modified(0);
+            $self->is_modified(0);            
             
         }
 
-        return TRUE;
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear(ref $self);
+        }        
+
+        return $self;
 
     }
     catch {
@@ -122,9 +133,19 @@ sub find {
     
     try {
 
+        my $cache_key;
+
         my $table  = $class->get_store_destination();
         my $db     = $class->mongo_conn($table);
         my $fields = $class->get_attributes_from_meta();
+
+        if ( $class->cache_registered ) {
+            $cache_key = $class->generate_cache_key( 'find', $table, $args );
+            if ( my $cached_obj = $class->cache_lookup($cache_key) ) {
+                my $obj = $cached_obj;
+                return $obj;
+            }
+        }
         
         if ( my $data = $db->find( $args )->next ) {
 
@@ -135,6 +156,10 @@ sub find {
             $obj->is_stored(1);
             $obj->_mongo_id($mongo_id);
             $obj->is_modified(0);
+
+            if ($cache_key) {
+                $class->cache_store( $cache_key, $obj );
+            }
 
             return $obj;
         }
@@ -163,9 +188,19 @@ sub find_all {
     
     try {
 
-        my $obj     = $class->mongo_conn( $class->get_store_destination() );
+        my $cache_key;
+        my $store   = $class->get_store_destination();
+        my $obj     = $class->mongo_conn( $store );
         my $results = Gideon::Mongo::Results->new(package => $class);
         my $all     = $obj->find($args);
+
+        if ( $class->cache_registered ) {
+            $cache_key = $class->generate_cache_key( 'fall', $store, $args );
+            if ( my $cached_results = $class->cache_lookup($cache_key) ) {
+                $results = $cached_results;
+                return wantarray ? $results->records : $results;
+            }
+        }
 
         while ( my $doc = $all->next ) {
 
@@ -179,7 +214,9 @@ sub find_all {
 
             $results->add_record($obj);
         }
-
+        if ($cache_key) {
+            $class->cache_store( $cache_key, $results );
+        }
         return wantarray ? $results->records : $results;
 
     }
@@ -223,6 +260,33 @@ sub increment_serial {
 
 }
 
+sub cache_store {
+
+    my $self = shift;
+    my $key  = shift;
+    my $what = shift;
+    
+    my $class = (ref $self) ? ref $self : $self;
+
+    return Gideon->cache_store( $key, $what, $class );
+
+}
+
+sub generate_cache_key {
+
+    my $self = shift;
+    my $from = shift;
+    my $tabl = shift;
+    my $flds = shift;
+    
+    my $vals = join( '_', map { $flds->{$_} } keys %$flds );
+    my $key = $self->signature_for_cache . $from . $tabl . $vals;    # uniqueness generated with sql query and filters
+
+    my $module = $self->get_cache_module;
+    return $module->digest($key);
+
+}
+
 sub like {
     my $class = shift;
     my $string = shift || "";
@@ -253,7 +317,7 @@ sub lte {
     return $string;
 }
 
-sub not {
+sub ne {
     my $class = shift;
     my $string = shift || "";
     return $string;
@@ -296,4 +360,4 @@ sub _from_store_conn {
 
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

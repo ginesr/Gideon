@@ -6,38 +6,52 @@ use Test::More;
 use Try::Tiny;
 use Data::Dumper qw(Dumper);
 use Test::Exception;
+use Test::Memcached;
 
 if ( mongo_not_installed() ) {
     plan skip_all => 'MongoDB module not installed';
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 25;
+    plan tests => 33;
 }
 
 use_ok(qw(Example::Driver::Mongo));
 use_ok(qw(Mongo::Person));
-use_ok(qw(MongoDB) );
+use_ok(qw(MongoDB));
+use_ok(qw(Gideon::Cache::Memcache));
+
+# Test memcache daemon
+my $memdtest = Test::Memcached->new( options => { user => 'nobody' } );
+$memdtest->start;
+ok($memdtest,'Memcached running');
+my $port = $memdtest->option('tcp_port');
+
+# Register cache
+Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
+Gideon->register_cache( 'Gideon::Cache::Memcache' );
+
+Gideon::Cache::Memcache->set_servers( ["127.0.0.1:$port"] );
 
 # Prepare test data ------------------------------------------------------------
 
-my $conn    = MongoDB::Connection->new;
-my $db      = $conn->get_database('gideon');
-my $persons = $db->get_collection('person');
+my $conn   = MongoDB::Connection->new;
+my $db     = $conn->get_database('gideon');
+my $person = $db->get_collection('person');
 
-$persons->drop;
+$person->drop;
 
-$persons->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US', type => 10 } );
-$persons->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
-$persons->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
+$person->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US', type => 10 } );
+$person->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
+$person->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
 
-sleep(2); # i know this is stupid, sorry
+is($person->count,3,'Three test records');
+
+#sleep(2); # i know this is stupid, sorry
 
 # END Prepare test data --------------------------------------------------------
 
-Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
-
-$persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
+my $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
 is( $persons->has_no_records, 0,     'Not empty!' );
@@ -48,6 +62,11 @@ $first->name('John');
 
 is( $first->is_stored,   1, 'Object is stored' );
 is( $first->is_modified, 1, 'Object was changed' );
+
+my $hash = Gideon::Cache::Memcache->_get_class_cache;
+my $classes = scalar keys %$hash;
+
+is($classes,1,'One class found in cache');
 
 lives_ok(
     sub {
@@ -114,6 +133,19 @@ is( $eq->records_found,   1, 'Total results using eq' );
 
 my $lte = Mongo::Person->find_all( type => { lte => 11 } );
 is( $lte->records_found,   2, 'Total results using lte' );
+
+my $jane = Mongo::Person->find( name => 'Jane' );
+is($jane->name,'Jane','Find record');
+
+my $total_keys = scalar Gideon::Cache::Memcache->class_keys('Mongo::Person');
+is($total_keys,8,'Total keys in cache');
+
+$person->drop;
+
+is($person->count,0,'No test records');
+
+my $jane_cached = Mongo::Person->find( name => 'Jane' );
+is($jane_cached->name,'Jane','Find cached record');
 
 # Prerequisites for running tests ----------------------------------------------
 

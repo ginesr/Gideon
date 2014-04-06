@@ -9,8 +9,6 @@ use Gideon::Virtual::Results;
 
 extends 'Gideon';
 
-use constant CACHE_MINS_TTL => 1;
-
 sub find_all {
 
     my $class = shift;
@@ -69,7 +67,9 @@ sub cache_store {
     my $key  = shift;
     my $what = shift;
 
-    return Gideon->cache_store( $key, $what, CACHE_MINS_TTL * 60 );
+    my $class = (ref $self) ? ref $self : $self;
+
+    return Gideon->cache_store( $key, $what, $class );
 
 }
 
