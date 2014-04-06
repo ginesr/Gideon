@@ -38,7 +38,7 @@ sub remove {
 
         my $obj = $self->mongo_conn( $self->get_store_destination() );
 
-        $obj->remove( { "_id" => $self->_mongo_id } );
+        $obj->remove( { "_id" => $self->_mongo_id }, 1 );
 
         $self->is_stored(0);
         $self->is_modified(0);
@@ -58,7 +58,33 @@ sub remove {
 }
 
 sub update_all {}
-sub remove_all { die 'not implemented' }
+sub remove_all {
+
+    my $class = shift;
+    my ( $args, $config ) = $class->decode_params(@_);
+
+    if ( ref($class) ) {
+        Gideon::Error->throw('remove_all() is a static method');
+    }
+
+    $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
+
+    try {
+
+        my $obj = $class->mongo_conn( $class->get_store_destination() );
+        my $all = $obj->remove($args);
+
+        if ( Gideon->cache_registered ) {
+            Gideon->cache_clear($class);
+        }
+
+        return $all;
+
+    }
+    catch {
+        croak shift;
+    }
+}
 
 sub save {
 
@@ -170,7 +196,7 @@ sub find {
     catch {
         cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
         croak $_;
-    };
+    }
 
 }
 
@@ -223,7 +249,7 @@ sub find_all {
     catch {
         cluck ref($_) if $Gideon::EXCEPTION_DEBUG;
         croak $_;
-    };
+    }
 }
 
 sub mongo_conn {

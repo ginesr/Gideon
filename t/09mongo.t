@@ -21,15 +21,15 @@ use_ok(qw(MongoDB) );
 
 # Prepare test data ------------------------------------------------------------
 
-my $conn    = MongoDB::Connection->new;
-my $db      = $conn->get_database('gideon');
-my $persons = $db->get_collection('person');
+my $conn   = MongoDB::Connection->new;
+my $db     = $conn->get_database('gideon');
+my $person = $db->get_collection('person');
 
-$persons->drop;
+$person->drop;
 
-$persons->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US', type => 10 } );
-$persons->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
-$persons->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
+$person->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US', type => 10 } );
+$person->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
+$person->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
 
 sleep(2); # i know this is stupid, sorry
 
@@ -37,7 +37,7 @@ sleep(2); # i know this is stupid, sorry
 
 Gideon->register_store( 'gideon', Example::Driver::Mongo->new );
 
-$persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
+my $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;
 
 is( $persons->has_no_records, 0,     'Not empty!' );
@@ -114,6 +114,12 @@ is( $eq->records_found,   1, 'Total results using eq' );
 
 my $lte = Mongo::Person->find_all( type => { lte => 11 } );
 is( $lte->records_found,   2, 'Total results using lte' );
+
+is($person->count,4,'Total test records');
+
+my $rows = Mongo::Person->remove_all( city => 'New York' );
+
+is($person->count,2,'Total after remove all');
 
 # Prerequisites for running tests ----------------------------------------------
 
