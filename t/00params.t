@@ -1,4 +1,4 @@
-#perl
+#!perl
 
 use lib 'xlib';
 use strict;

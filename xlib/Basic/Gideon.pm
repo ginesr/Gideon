@@ -1,5 +1,4 @@
-
-package Test::Gideon;
+package Basic::Gideon;
 
 use strict;
 use Gideon;
@@ -9,4 +8,4 @@ extends qw(Gideon);
 
 store 'test:destination';
 
-1;
+__PACKAGE__->meta->make_immutable();
