@@ -50,7 +50,7 @@ my $more_data = Example::Fast->find_all( value => { like => '%test 6' } );
 my @list = Gideon::Cache::Memcache::Fast->class_keys('Example::Fast');
 
 is( $more_data->records_found, 1, 'One record found' );
-is( scalar @list, 2, 'Keys for class' );
+is( scalar @list, 1, 'Keys for class' );
 
 empty_table();
 

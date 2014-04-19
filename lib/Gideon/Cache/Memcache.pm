@@ -41,7 +41,6 @@ sub set {
     my $ttl      = shift;
     my $class    = shift;
     
-    
     my $class_keys = $self->_get_class_cache;
     $class_keys->{$class}->{$key} = 1;
     
@@ -109,6 +108,11 @@ sub start {
         }
     }
     return $memd;
+}
+
+sub get_servers {
+    my $self = shift;
+    return $servers;
 }
 
 sub set_servers {
