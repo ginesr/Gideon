@@ -126,7 +126,16 @@ sub set_servers {
 }
 
 sub count {
-    return $memd->stats('misc')->{total}->{curr_items};
+    my $self = shift;
+    # return $memd->stats('misc')->{total}->{curr_items};
+    my @list = ();
+    my $class_keys = $self->_get_class_cache;
+
+    foreach my $class (keys %$class_keys) {
+        push @list, keys $class_keys->{$class};
+    }
+    return scalar @list;
+
 }
 
 sub content {

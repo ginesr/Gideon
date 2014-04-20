@@ -50,7 +50,7 @@ my $first = $test_data->first;
 
 is( $first->id, 5, 'Record from db using like' );
 
-is( Gideon::Cache::Memcache->count, 2, 'One key in the cache + one more key for class cache' );
+is( Gideon::Cache::Memcache->count, 1, 'One key in the cache' );
 is( Gideon::Cache::Memcache->hits,  0, 'No hits' );
 
 my $more_data = Example::Cache->find_all( value => { like => '%test 6' } );
@@ -67,7 +67,7 @@ my $first_cached = $cached_data->first;
 is( $first_cached->id, 5, 'Record from cache' );
 
 is( Gideon::Cache::Memcache->hits,  1, 'One hit after running same search' );
-is( Gideon::Cache::Memcache->count, 3, 'Two key in cache + one more key for class cache' );
+is( Gideon::Cache::Memcache->count, 2, 'Two key in cache' );
 
 lives_ok( sub { $memdtest->stop } , 'Stop daemon' );
 

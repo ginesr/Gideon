@@ -50,7 +50,7 @@ Gideon::Cache::Memcache->set_slot('TEST_1');
 my $first_slot1 = Example::Cache->find_all( id => 1 )->first;
 is( $first_slot1->id, 1, 'Record from db' );
 
-is( Gideon::Cache::Memcache->count, 2, 'One key stored in cache (slot 1) + class cache key' );
+is( Gideon::Cache::Memcache->count, 1, 'One key stored in cache (slot 1)' );
 is( Gideon::Cache::Memcache->hits, 0, 'No hits (slot 1)' );
 
 Gideon::Cache::Memcache->set_slot('TEST_2');
@@ -58,11 +58,12 @@ Gideon::Cache::Memcache->set_slot('TEST_2');
 my $first_slot2 = Example::Cache->find_all( id => 2 )->first;
 is( $first_slot2->id, 2, 'Record from db' );
 
-is( Gideon::Cache::Memcache->count, 3, 'Two keys stored in cache (slot 1 + slot 2) + class cache key' );
+is( Gideon::Cache::Memcache->count, 2, 'Two keys stored in cache (slot 1 + slot 2)' );
 is( Gideon::Cache::Memcache->hits, 0, 'No hits (slot 2)' );
 
 # clear db ---------------------------------------------------------------------
 empty_table();
+# ------------------------------------------------------------------------------
 
 my $first_slot2_cached = Example::Cache->find_all( id => 2 )->first;
 
@@ -78,17 +79,17 @@ is( Gideon::Cache::Memcache->hits, 2, 'Two hits (slot 1 + slot 2)' );
 $first_slot1_cached->value('modified');
 $first_slot1_cached->save;
 
-is( Gideon::Cache::Memcache->count, 2, 'Clear keys in cache (slot 1 none, one key remains in slot 2) + extra key for class cache' );
+is( Gideon::Cache::Memcache->count, 1, 'Clear keys in cache (slot 1 none, one key remains in slot 2)' );
 
 Gideon::Cache::Memcache->set_slot('TEST_2');
 
-is( Gideon::Cache::Memcache->count, 2, 'Got keys count from cache (slot 2 only, slot 1 is empty now) + extra key for class' );
+is( Gideon::Cache::Memcache->count, 1, 'Got keys count from cache (slot 2 only, slot 1 is empty now)' );
 
 # clear all slots
 $first_slot2_cached->value('modified two');
 $first_slot2_cached->save;
 
-is( Gideon::Cache::Memcache->count, 1, 'No keys in cache (all slots empty) one key used by class cache' );
+is( Gideon::Cache::Memcache->count, 0, 'No keys in cache (all slots empty)' );
 
 Gideon::Cache::Memcache->default_slot;
 

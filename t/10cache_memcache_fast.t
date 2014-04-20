@@ -15,7 +15,7 @@ elsif ( memcached_fast_installed() ) {
     plan skip_all => 'Memcached Fast not installed';
 }
 else {
-    plan tests => 9;
+    plan tests => 10;
 }
 
 my $memdtest = Test::Memcached->new( options => { user => 'nobody' } );
@@ -59,6 +59,10 @@ my $first_cached = $cached_data->first;
 
 is( $cached_data->records_found, 1, 'One record found' );
 is( $first_cached->id, 6, 'Record from cache' );
+
+my $count = Gideon::Cache::Memcache::Fast->count;
+
+is ($count, 1, 'Cache keys count');
 
 lives_ok( sub { $memdtest->stop } , 'Stop daemon' );
 
