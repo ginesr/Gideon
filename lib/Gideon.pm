@@ -23,6 +23,7 @@ use Moose;
 use Class::MOP::Attribute;
 use Hash::MultiValue;
 use 5.008_001;
+use JSON::XS;
 
 our $VERSION = '0.02';
 $VERSION = eval $VERSION;
@@ -40,6 +41,10 @@ our $__obj_cache = 1;
 our %stores = ();
 our $__pool = undef;
 our $_cache_ttl = undef;
+
+use overload
+    '""' => \&to_string,
+    fallback => 1;
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
@@ -587,6 +592,22 @@ sub get_serial_attr_hash {
     
 }
 
+sub get_primary_key_hash {
+
+    my $class = shift;
+    my $pkg   = $class->_get_pkg_name;
+    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
+    my $hash  = {};
+
+    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        next unless defined $meta->{attributes}->{$attribute}->{key};
+        $hash->{$attribute} = $attribute;
+    }
+
+    return scalar keys %{$hash} == 1 ? $hash : undef;
+    
+}
+
 sub get_serial_columns_hash {
 
     my $class = shift;
@@ -826,6 +847,39 @@ sub get_cache_module {
         return $__cache
     }
     return;
+}
+
+sub to_string {
+
+    my $self = shift;
+
+    my @attrs = $self->get_attributes_from_meta;
+    my $primary_keys = $self->get_primary_key_hash;
+    my $primary_key;
+
+    if ( $self->is_stored ) {
+        foreach my $attr (keys %$primary_keys) {
+            $primary_key = $self->$attr
+        }
+    }
+
+    my $class = ref $self;
+    my %params = ();
+
+    foreach my $attr (@attrs) {
+        if ($self->can($attr)) {
+            $params{$attr} = $self->$attr
+        }        
+    }
+
+    my $pkg_name = $class;
+
+    if ($primary_key) {
+        $pkg_name = "$class ($primary_key)"
+    }
+
+    return $pkg_name . " " .  encode_json(\%params)
+
 }
 
 sub clone {
