@@ -49,4 +49,27 @@ has 'datetime' => (
     coerce    => 1
 );
 
+has '_properties' => (
+    traits => ['Array'],
+    is => 'rw',
+    isa => 'ArrayRef',
+    handles => {
+        add_property => 'push',
+        has_properties => 'count',
+        search_property => 'first',
+        index_property => 'first_index',
+        delete_property => 'delete',
+        properties_is_empty => 'is_empty',
+        properties => 'elements',
+        property => 'get',
+    },
+    builder => '_build_properties',
+    lazy => 1,
+);
+
+sub _build_properties {
+    my $self = shift;
+    return []
+}
+
 __PACKAGE__->meta->make_immutable();

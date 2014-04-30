@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 18;
+plan tests => 21;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -82,6 +82,12 @@ dies_ok(sub{my $invalid = Example::TestInvalid->find_all},'Invalid class attribu
 
 my $all = Example::Test->find_all;
 is($all->record_count,11,'All count');
+
+my $no_result = Example::Test->find_all(name=>'foo');
+is($no_result->record_count,0,'No results using find_all()');
+
+throws_ok(sub { Example::Test->find(name=>'foo') },'Gideon::Error::DBI::NotFound','No results exception using find()');
+throws_ok(sub { Example::Test->find(name=>'foo') },qr/no results found Example::Test/,'No results text');
 
 # Auxiliary test functions -----------------------------------------------------
 

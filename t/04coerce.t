@@ -9,7 +9,7 @@ use Cwd;
 use DBI;
 use Test::Exception;
 
-plan tests => 9;
+plan tests => 12;
 
 use_ok(qw(Example::My::Lastlog));
 
@@ -39,3 +39,7 @@ my $meta_as_object = $coerce->get_all_meta;
 
 ok($meta_as_class,'Metadata as class method');
 ok($meta_as_object,'Metadata as object method');
+
+is((scalar keys %{$meta_as_class->{attributes}}),4,'All attributes for given class');
+is($meta_as_class->{attributes}->{lastlog}->{column},'timestamp','Column name for Gideon attribute');
+is((not exists $meta_as_class->{attributes}->{_properties}),1,'Not a Gideon attribute');

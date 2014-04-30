@@ -676,7 +676,8 @@ sub get_attribute_for_column {
     my $meta   = $__meta->{$pkg} || $class->get_all_meta;
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( $column and $class->get_colum_for_attribute($attribute) eq $column ) {
+        my $val = $class->get_colum_for_attribute($attribute);
+        if ( $column and $val and ( $val eq $column ) ) {
             return $attribute;
         }
     }
@@ -790,7 +791,12 @@ sub get_all_meta {
 
         my $name = $attribute->name;
         my $meta_attr = {};
-        if ( ref($attribute) =~ /Moose::Meta::Attribute/ ) {
+
+        if ( $name =~ /^\_/ ) {
+            next;
+        }
+
+        if ( ref($attribute) !~ /Gideon::Meta/ ) {
             next;
         }
 
