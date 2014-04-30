@@ -921,7 +921,7 @@ sub strigify {
     }
 
     my $json = JSON::XS->new
-        ->utf8
+        ->utf8(0)
         ->pretty(0)
         ->space_after
         ->allow_blessed(0)
