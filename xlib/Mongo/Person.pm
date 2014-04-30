@@ -1,4 +1,3 @@
-
 package Mongo::Person;
 
 use strict;
@@ -27,4 +26,4 @@ has 'city'    => ( is => 'rw', isa => 'Str', metaclass => 'Gideon' );
 has 'country' => ( is => 'rw', isa => 'Str', metaclass => 'Gideon' );
 has 'type'    => ( is => 'rw', isa => 'Num', metaclass => 'Gideon' );
 
-1;
+__PACKAGE__->meta->make_immutable();

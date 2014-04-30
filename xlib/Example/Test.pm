@@ -1,4 +1,3 @@
-
 package Example::Test;
 
 use strict;
@@ -34,4 +33,4 @@ has 'value' => (
     metaclass => 'Gideon'
 );
 
-1;
+__PACKAGE__->meta->make_immutable();

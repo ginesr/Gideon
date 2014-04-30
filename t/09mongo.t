@@ -12,7 +12,7 @@ if ( mongo_not_installed() ) {
 } elsif ( mongo_not_running() ) {
     plan skip_all => 'Mongo daemon not running on localhost';
 } else {
-    plan tests => 25;
+    plan tests => 27;
 }
 
 use_ok(qw(Example::Driver::Mongo));

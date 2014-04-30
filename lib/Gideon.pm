@@ -766,7 +766,8 @@ sub get_value_for_attribute_key {
     my $class     = shift;
     my $attribute = shift;
     my $key       = shift;
-    my $meta      = $__meta->{$class} || $class->get_all_meta;
+    my $package   = ref $class ? ref $class : $class;
+    my $meta      = $__meta->{$package} || $class->get_all_meta;
 
     if ( exists $meta->{attributes}->{$attribute} ) {
         if ( exists $meta->{attributes}->{$attribute}->{$key} ) {
@@ -806,6 +807,10 @@ sub get_all_meta {
                     $meta_attr->{$internal} = $attribute->$internal
                 }
             }
+        }
+
+        if ($attribute->is_lazy) {
+            $meta_attr->{lazy} = 1;
         }
 
         $cache_meta->{$class_name}->{attributes}->{$name} = $meta_attr;
@@ -882,35 +887,38 @@ sub strigify {
     my %params = ();
 
     foreach my $attr (@attrs) {
-        if ($self->can($attr)) {
-            if( blessed($self->$attr) ) {
-                if ($self->$attr->can('to_string')) {
-                    $params{$attr} = $self->$attr->to_string
-                }
-                elsif ($self->$attr->can('stringify')) {
-                    $params{$attr} = $self->$attr->stringify
-                }
-                elsif ($self->$attr->can('as_string')) {
-                    $params{$attr} = $self->$attr->as_string
-                }
-                else {
-                    if (defined $self->$attr) {
-                        $params{$attr} = $self->$attr . ''
-                    }
-                    else {
-                        $params{$attr} = undef
-                    }
-                }
-            }
-            elsif ($self->$attr) {
+        if ($self->get_value_for_attribute_key($attr,'lazy')) {
+            if ( $self->is_stored ) {
                 $params{$attr} = $self->$attr;
             }
-            elsif (not defined $self->$attr) {
-                $params{$attr} =  undef;
+            else {
+                # do not trigger lazy attributes
+                $params{$attr."[lazy]"} = undef;
+                next;
+            }
+        }
+        if ( blessed($self->$attr) ) {
+            # convert objects to strings
+            if ($self->$attr->can('to_string')) {
+                $params{$attr} = $self->$attr->to_string
+            }
+            elsif ($self->$attr->can('stringify')) {
+                $params{$attr} = $self->$attr->stringify
+            }
+            elsif ($self->$attr->can('as_string')) {
+                $params{$attr} = $self->$attr->as_string
             }
             else {
-                $params{$attr} = '';
+                if (defined $self->$attr) {
+                    $params{$attr} = $self->$attr . ''
+                }
+                else {
+                    $params{$attr} = undef
+                }
             }
+        }
+        else {
+            $params{$attr} = $self->$attr
         }
     }
 

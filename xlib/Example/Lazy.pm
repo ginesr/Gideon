@@ -1,13 +1,11 @@
-package Example::Test2;
+package Example::Lazy;
 
-use strict;
-use warnings;
 use Gideon::DBI;
 use Gideon::Meta::Attribute::DBI;
 use Moose;
 
 extends 'Gideon::DBI';
-store 'mysql_server:gideon_t1';
+store 'mysql:gideon_t4';
 
 has 'id' => (
     is          => 'rw',
@@ -26,11 +24,17 @@ has 'name' => (
     metaclass => 'Gideon'
 );
 
-has 'value' => (
+has 'order' => (
     is        => 'rw',
-    isa       => 'Str',
-    column    => 'value',
-    metaclass => 'Gideon'
+    isa       => 'Num',
+    column    => 'order',
+    metaclass => 'Gideon',
+    lazy      => 1,
+    default   => sub {
+        my $self = shift;
+        my $max = __PACKAGE__->function('max', 'order' );
+        return $max + 1;
+    }
 );
 
 __PACKAGE__->meta->make_immutable();
