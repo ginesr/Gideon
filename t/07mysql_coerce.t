@@ -97,6 +97,8 @@ is( $two_result->records_found, 2, 'Got two results for given range' );
 is( $two_result->get_record(0)->name, 'Past', 'Got first result in range' );
 is( $two_result->get_record(1)->name, 'Future', 'Got second result in range' );
 
+#warn $two_result;
+
 # Auxiliary test functions -----------------------------------------------------
 
 sub prepare_test_data {

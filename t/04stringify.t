@@ -30,4 +30,4 @@ Gideon->register_store( 'master', $dbh );
 my $person = Example::Person->find( id => 123 );
 
 like($person, qr/^Example::Person \(123\)/, 'Stringify class name with key');
-like($person, qr/"country":"AR"/, 'Stringify JSON text');
+like($person, qr/"country": "AR"/, 'Stringify JSON text');

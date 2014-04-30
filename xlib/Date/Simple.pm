@@ -81,7 +81,7 @@ sub to_string {
 
 sub is_void {
     my $self = shift;
-    if (!$self->year and !$self->mon and !$self->day) {
+    if (!$self->year and !$self->month and !$self->day) {
         return 0
     }
     return 1;

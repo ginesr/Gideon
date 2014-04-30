@@ -43,7 +43,7 @@ our $__pool = undef;
 our $_cache_ttl = undef;
 
 use overload
-    '""' => \&to_string,
+    '""' => \&strigify,
     fallback => 1;
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
@@ -584,6 +584,7 @@ sub get_serial_attr_hash {
     my $hash  = {};
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        next unless exists $meta->{attributes}->{$attribute}->{primary_key};
         next unless defined $meta->{attributes}->{$attribute}->{serial};
         $hash->{$attribute} = $attribute;
     }
@@ -600,7 +601,8 @@ sub get_primary_key_hash {
     my $hash  = {};
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        next unless defined $meta->{attributes}->{$attribute}->{key};
+        next unless exists $meta->{attributes}->{$attribute}->{primary_key};
+        next unless defined $meta->{attributes}->{$attribute}->{primary_key};
         $hash->{$attribute} = $attribute;
     }
 
@@ -616,6 +618,7 @@ sub get_serial_columns_hash {
     my $hash  = {};
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
+        next unless exists $meta->{attributes}->{$attribute}->{serial};
         next unless defined $meta->{attributes}->{$attribute}->{serial};
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
     }
@@ -633,7 +636,7 @@ sub get_columns_hash {
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
         if ( $options =~ /filter_keys/ ) {
-            next unless defined $meta->{attributes}->{$attribute}->{key};
+            next unless defined $meta->{attributes}->{$attribute}->{primary_key};
         }
         $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
     }
@@ -775,10 +778,10 @@ sub get_value_for_attribute_key {
 
 sub get_all_meta {
 
-    my $class = shift;
-
+    my $class      = shift;
     my $meta       = $class->meta;
     my $cache_meta = {};
+    my $class_name = ref $class ? ref $class : $class;
 
     for my $attribute (
         map { $meta->get_attribute($_) }
@@ -786,19 +789,25 @@ sub get_all_meta {
       ) {
 
         my $name = $attribute->name;
+        my $meta_attr = {};
         if ( ref($attribute) =~ /Moose::Meta::Attribute/ ) {
             next;
         }
 
-        $cache_meta->{$class}->{attributes}->{$name}->{key}    = $attribute->primary_key if ( $attribute->can('primary_key') );
-        $cache_meta->{$class}->{attributes}->{$name}->{column} = $attribute->column if ( $attribute->can('column') );
-        $cache_meta->{$class}->{attributes}->{$name}->{alias}  = $attribute->alias if ( $attribute->can('alias') );
-        $cache_meta->{$class}->{attributes}->{$name}->{serial} = $attribute->serial if ( $attribute->can('serial') );
+        foreach my $internal ('primary_key','column','alias','serial') {
+            if ( $attribute->can($internal) ) {
+                if (defined $attribute->$internal) {
+                    $meta_attr->{$internal} = $attribute->$internal
+                }
+            }
+        }
+
+        $cache_meta->{$class_name}->{attributes}->{$name} = $meta_attr;
     }
 
     $__meta = $cache_meta;
 
-    return $cache_meta->{$class};
+    return $cache_meta->{$class_name};
 }
 
 sub get_columns_from_meta {
@@ -849,7 +858,7 @@ sub get_cache_module {
     return;
 }
 
-sub to_string {
+sub strigify {
 
     my $self = shift;
 
@@ -868,17 +877,52 @@ sub to_string {
 
     foreach my $attr (@attrs) {
         if ($self->can($attr)) {
-            $params{$attr} = $self->$attr
-        }        
+            if( blessed($self->$attr) ) {
+                if ($self->$attr->can('to_string')) {
+                    $params{$attr} = $self->$attr->to_string
+                }
+                elsif ($self->$attr->can('stringify')) {
+                    $params{$attr} = $self->$attr->stringify
+                }
+                elsif ($self->$attr->can('as_string')) {
+                    $params{$attr} = $self->$attr->as_string
+                }
+                else {
+                    if (defined $self->$attr) {
+                        $params{$attr} = $self->$attr . ''
+                    }
+                    else {
+                        $params{$attr} = undef
+                    }
+                }
+            }
+            elsif ($self->$attr) {
+                $params{$attr} = $self->$attr;
+            }
+            elsif (not defined $self->$attr) {
+                $params{$attr} =  undef;
+            }
+            else {
+                $params{$attr} = '';
+            }
+        }
     }
 
     my $pkg_name = $class;
 
     if ($primary_key) {
-        $pkg_name = "$class ($primary_key)"
+        $pkg_name = "$pkg_name ($primary_key)"
     }
 
-    return $pkg_name . " " .  encode_json(\%params)
+    my $json = JSON::XS->new
+        ->utf8
+        ->pretty(0)
+        ->space_after
+        ->allow_blessed(0)
+        ->convert_blessed(0)
+        ->encode(\%params);
+
+    return $pkg_name . " " .  $json
 
 }
 
