@@ -24,8 +24,8 @@ sub find_all {
 
         my $cache_key;
 
-        my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_alias($args);
+        my $fields = $class->metadata->get_columns_from_meta();
+        my $map    = $class->metadata->map_args_with_alias($args);
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
 
@@ -95,7 +95,7 @@ sub map_meta_with_row {
 
     foreach my $r ( keys %{$row} ) {
         my ( $table, $col ) = split( /\./, $r );
-        my $attribute = $class->get_attribute_for_column($col);
+        my $attribute = $class->metadata->get_attribute_for_column($col);
         next unless $attribute;
         $map->{$attribute} = $r;
     }

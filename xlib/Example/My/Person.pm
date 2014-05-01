@@ -1,14 +1,8 @@
 package Example::My::Person;
 
-use strict;
-use warnings;
+use Moose;
 use Gideon::DBI;
 use Gideon::Meta::Attribute::DBI;
-use Moose;
-use Try::Tiny;
-use Carp qw(croak);
-use Data::Dumper qw(Dumper);
-use Class::MOP::Attribute;
 
 extends 'Gideon::DBI';
 store 'mysql_master:gideon_j1';
@@ -36,4 +30,4 @@ has_many 'Example::My::Address' => (
     join_on   => [ 'id', 'person_id' ],
 );
 
-1;
+__PACKAGE__->meta->make_immutable();

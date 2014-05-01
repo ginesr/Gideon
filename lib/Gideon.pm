@@ -24,6 +24,7 @@ use Class::MOP::Attribute;
 use Hash::MultiValue;
 use 5.008_001;
 use JSON::XS;
+use Gideon::Meta;
 
 our $VERSION = '0.02';
 $VERSION = eval $VERSION;
@@ -32,7 +33,6 @@ our $EXCEPTION_DEBUG = 0;
 
 use constant CACHE_DEFAULT_TTL => 300; # default expire seconds
 
-my $__meta  = undef;
 my $__store = {};
 my $__relations = {};
 my $__stricts = {};
@@ -48,6 +48,7 @@ use overload
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
+has '_metadata' => ( is => 'rw', isa => 'Gideon::Meta', lazy => 1, default => sub { my $self = shift; Gideon::Meta->new(package_name => $self->_get_pkg_name($self) ) } );
 
 sub BUILD {
 
@@ -163,7 +164,7 @@ sub cache_store {
     return if $__obj_cache == 0;
     my $secs = $self->cache_ttl;
     
-    $class = (ref $self) ? ref $self : $self if not $class;
+    $class = $self->_get_pkg_name if not $class;
     
     my $module = $self->get_cache_module;
     return $module->set( $key, $what, $secs, $class);
@@ -190,13 +191,13 @@ sub filter_rules {
             my @attributes = ();
             push @attributes, map { $_ } keys %{ $args->{$attribute} };
             foreach (@attributes) {
-                $class->check_meta($_);
+                $class->metadata->check_meta($_);
                 my $value_filtered = $class->trans_filters( $args->{$attribute}->{$_} );
                 $args->{$attribute}->{$_} = $value_filtered
             }    
         }
         else {
-            $class->check_meta($attribute) unless $options =~ /skip_meta_check/;
+            $class->metadata->check_meta($attribute) unless $options =~ /skip_meta_check/;
             my $value_filtered = $class->trans_filters( $args->{$attribute} );
             $args->{$attribute} = $value_filtered
         }
@@ -304,8 +305,8 @@ sub validate_order_by {
         $config = $class->_transform_sort_by_from_hash( $config, $options );
     }
     unless ( ref($config) ) {
-        $class->check_meta($config) unless $options =~ /skip_meta_check/;
-        $config = $class->get_colum_for_attribute($config);
+        $class->metadata->check_meta($config) unless $options =~ /skip_meta_check/;
+        $config = $class->metadata->get_column_for_attribute($config);
     }
 
     return $config;
@@ -435,7 +436,8 @@ sub get_store_destination {
     return $dest;
 }
 
-sub stores_for {
+sub stores_for_foreign {
+
     my $self = shift;
     my $other = shift;
     my @stores = ();
@@ -444,24 +446,10 @@ sub stores_for {
     push @stores, $other->get_store_destination;
     
     return wantarray ? @stores : join ',', @stores;
-    
+
 }
 
-sub columns_meta_for {
-    
-    my $self = shift;
-    my $other = shift;
-    my @fields = ();
-    
-    my $myfields = $self->get_columns_from_meta();
-    my $foreing = $other->get_columns_from_meta();
-    
-    push @fields, @{$myfields};
-    push @fields, @{$foreing};
-    
-    return wantarray ? @fields : join ',', @fields;    
-    
-}
+sub columns_meta_for_foreign {}
 
 sub get_store_args {
     
@@ -533,309 +521,33 @@ sub store($) {
 }
 
 sub has_many($%) {
-    my $foreing = shift || return undef;
+    my $foreign = shift || return undef;
     my $params = {@_};
     my $caller = caller;
-    $__relations->{$caller}{foreing} = $foreing;
-    load($foreing);
+
+    $__relations->{$caller}{foreign} = $foreign;
+    load($foreign);
     load(Gideon::Extensions::Join);
     $__relations->{$caller}{params} = $params;
-    $caller->meta->add_method( $params->{predicate} => sub { return Gideon::Extensions::Join->join_with(@_) } );
-    
+
+    die if not $params->{predicate};
+
+    $caller->meta->add_method(
+        $params->{predicate} => sub {
+            return Gideon::Extensions::Join->join_with(@_)
+        }
+    )
 }
+
 sub get_relations {
     my $self = shift;
     my $pkg = $self->_get_pkg_name;
     return $__relations->{$pkg};
 }
 
-sub check_meta {
-
-    my $class     = shift;
-    my $pkg       = $class->_get_pkg_name;
-    my $meta      = $__meta->{$pkg} || $class->get_all_meta;
-    my $attribute = shift;
-
-    unless ( exists $meta->{attributes}->{$attribute} ) {
-        Gideon::Error->throw('invalid meta data \'' . $attribute . '\' for class ' . $pkg);
-    }
-
-    return $meta->{attributes}->{$attribute};
-
-}
-
-sub get_serial_attr {
-    my $class = shift;
-    if (my $serials = $class->get_serial_attr_hash) {
-        my $attr;
-        foreach (sort keys %{ $serials }) {
-            $attr = $_;
-            last;
-        }
-        return $attr;
-    }
-}
-
-sub get_serial_attr_hash {
-
-    my $class = shift;
-    my $pkg   = $class->_get_pkg_name;
-    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
-    my $hash  = {};
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        next unless exists $meta->{attributes}->{$attribute}->{primary_key};
-        next unless defined $meta->{attributes}->{$attribute}->{serial};
-        $hash->{$attribute} = $attribute;
-    }
-
-    return scalar keys %{$hash} == 1 ? $hash : undef;
-    
-}
-
-sub get_primary_key_hash {
-
-    my $class = shift;
-    my $pkg   = $class->_get_pkg_name;
-    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
-    my $hash  = {};
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        next unless exists $meta->{attributes}->{$attribute}->{primary_key};
-        next unless defined $meta->{attributes}->{$attribute}->{primary_key};
-        $hash->{$attribute} = $attribute;
-    }
-
-    return scalar keys %{$hash} == 1 ? $hash : undef;
-    
-}
-
-sub get_serial_columns_hash {
-
-    my $class = shift;
-    my $pkg   = $class->_get_pkg_name;
-    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
-    my $hash  = {};
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        next unless exists $meta->{attributes}->{$attribute}->{serial};
-        next unless defined $meta->{attributes}->{$attribute}->{serial};
-        $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
-    }
-
-    return scalar keys %{$hash} == 1 ? $hash : undef;
-}
-
-sub get_columns_hash {
-
-    my $class   = shift;
-    my $options = shift || '';
-    my $pkg     = $class->_get_pkg_name;
-    my $meta    = $__meta->{$pkg} || $class->get_all_meta;
-    my $hash    = {};
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( $options =~ /filter_keys/ ) {
-            next unless defined $meta->{attributes}->{$attribute}->{primary_key};
-        }
-        $hash->{$attribute} = $class->get_colum_for_attribute($attribute);
-    }
-
-    return $hash;
-}
-
 sub as_hash {
-    
     my $self = shift;
-    my $columns = $self->get_columns_hash;
-    my $hash = { map { $_ => $self->$_ } keys %{ $columns } };
-    return $hash;
-    
-}
-
-sub get_key_columns_hash {
-    my $class = shift;
-    return $class->get_columns_hash('filter_keys');
-}
-
-sub get_attributes_from_meta {
-
-    my $class = shift;
-    my $pkg   = $class->_get_pkg_name;
-    my $meta  = $__meta->{$pkg} || $class->get_all_meta;
-
-    my @map = map { $_ } ( keys %{ $meta->{attributes} } );
-    return wantarray ? @map : \@map;
-}
-
-sub get_attribute_for_column {
-
-    my $class  = shift;
-    my $column = shift;
-    my $pkg    = $class->_get_pkg_name;
-    my $meta   = $__meta->{$pkg} || $class->get_all_meta;
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        my $val = $class->get_colum_for_attribute($attribute);
-        if ( $column and $val and ( $val eq $column ) ) {
-            return $attribute;
-        }
-    }
-
-    return undef;
-}
-
-sub get_attribute_for_alias {
-
-    my $class  = shift;
-    my $column = shift;
-    my $pkg    = $class->_get_pkg_name;
-    my $meta   = $__meta->{$pkg} || $class->get_all_meta;
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( $column and $class->get_alias_for_attribute($attribute) eq $column ) {
-            return $attribute;
-        }
-    }
-
-    return undef;
-}
-
-sub _map_args_with_metadata {
-    
-    my $class  = shift;
-    my $args   = shift;
-    my $getter = shift; 
-    
-    my $meta   = $__meta || {};
-    my $map    = {};
-    my $pkg    = $class->_get_pkg_name;
-
-    foreach my $arg ( keys %{$args} ) {
-        if ($arg eq '-or' and ref $args->{$arg} eq 'HASH' ) {
-            foreach my $attr ( keys %{ $args->{$arg} } ) {
-                if ( my $col = $class->$getter($attr)) {
-                    $map->{$arg}{$col} = $attr;
-                    next
-                }
-                Gideon::Error->throw("invalid argument $attr inside $arg for $pkg");
-            }
-            next
-        }
-        if ( my $col = $class->$getter($arg)) {
-            $map->{$col} = $arg;
-            next
-        }
-        Gideon::Error->throw('invalid argument ' . $arg . ' for ' . $pkg);
-    }
-
-    return $map
-    
-}
-
-sub map_args_with_alias {
-
-    my $class = shift;
-    my $args  = shift;
-    return $class->_map_args_with_metadata($args,'get_alias_for_attribute');
-    
-}
-
-sub map_args_with_meta {
-
-    my $class = shift;
-    my $args  = shift;
-    return $class->_map_args_with_metadata($args,'get_colum_for_attribute');
-
-}
-
-sub get_alias_for_attribute {
-    my $class     = shift;
-    my $attribute = shift;
-    return $class->get_value_for_attribute_key($attribute,'alias');
-}
-
-sub get_colum_for_attribute {
-    my $class     = shift;
-    my $attribute = shift;
-    return $class->get_value_for_attribute_key($attribute,'column');
-}
-
-sub get_value_for_attribute_key {
-    
-    my $class     = shift;
-    my $attribute = shift;
-    my $key       = shift;
-    my $package   = ref $class ? ref $class : $class;
-    my $meta      = $__meta->{$package} || $class->get_all_meta;
-
-    if ( exists $meta->{attributes}->{$attribute} ) {
-        if ( exists $meta->{attributes}->{$attribute}->{$key} ) {
-            return $meta->{attributes}->{$attribute}->{$key};
-        }
-    }
-    return;
-    
-}
-
-sub get_all_meta {
-
-    my $class      = shift;
-    my $meta       = $class->meta;
-    my $cache_meta = {};
-    my $class_name = ref $class ? ref $class : $class;
-
-    for my $attribute (
-        map { $meta->get_attribute($_) }
-        sort $meta->get_attribute_list
-      ) {
-
-        my $name = $attribute->name;
-        my $meta_attr = {};
-
-        if ( $name =~ /^\_/ ) {
-            next;
-        }
-
-        if ( ref($attribute) !~ /Gideon::Meta/ ) {
-            next;
-        }
-
-        foreach my $internal ('primary_key','column','alias','serial') {
-            if ( $attribute->can($internal) ) {
-                if (defined $attribute->$internal) {
-                    $meta_attr->{$internal} = $attribute->$internal
-                }
-            }
-        }
-
-        if ($attribute->is_lazy) {
-            $meta_attr->{lazy} = 1;
-        }
-
-        $cache_meta->{$class_name}->{attributes}->{$name} = $meta_attr;
-    }
-
-    $__meta = $cache_meta;
-
-    return $cache_meta->{$class_name};
-}
-
-sub get_columns_from_meta {
-
-    my $class = shift;
-
-    my $meta = $__meta->{$class} || $class->get_all_meta;
-    my @columns = ();
-
-    foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        if ( exists $meta->{attributes}->{$attribute}->{column} ) {
-            push @columns, $meta->{attributes}->{$attribute}->{column};
-        }
-    }
-
-    return wantarray ? @columns : \@columns;
-
+    return { map { $_ => $self->$_ } keys %{ $self->metadata->get_columns_hash } };
 }
 
 sub store_registered {
@@ -873,8 +585,8 @@ sub strigify {
 
     my $self = shift;
 
-    my @attrs = $self->get_attributes_from_meta;
-    my $primary_keys = $self->get_primary_key_hash;
+    my @attrs = $self->metadata->get_attributes_from_meta;
+    my $primary_keys = $self->metadata->get_primary_key_hash;
     my $primary_key;
 
     if ( $self->is_stored ) {
@@ -887,7 +599,7 @@ sub strigify {
     my %params = ();
 
     foreach my $attr (@attrs) {
-        if ($self->get_value_for_attribute_key($attr,'lazy')) {
+        if ($self->metadata->get_value_for_attribute_key($attr,'lazy')) {
             unless ( $self->is_stored ) {
                 # do not trigger lazy attributes
                 $params{$attr."[lazy]"} = undef;
@@ -944,8 +656,8 @@ sub clone {
         die "can't clone if not an object";
     }
 
-    my @attrs = $self->get_attributes_from_meta;
-    my $serial = $self->get_serial_attr_hash;
+    my @attrs = $self->metadata->get_attributes_from_meta;
+    my $serial = $self->metadata->get_serial_attr_hash;
 
     if ( $self->is_stored ) {
         foreach my $attr (keys %$serial) {
@@ -972,6 +684,18 @@ sub clone {
 
     my $cloned = $class->new(%params);
     return $cloned;
+}
+
+# Metadata----------------------------------------------------------------------
+
+our $metadata = {};
+
+sub metadata {
+    my $class = shift;
+    return $class->_metadata if blessed $class;
+    my $pkg = $class->_get_pkg_name;
+    $metadata->{$pkg} ||= Gideon::Meta->new( package_name => $pkg );
+    return $metadata->{$pkg};
 }
 
 # Imports ----------------------------------------------------------------------
@@ -1013,8 +737,8 @@ sub _transform_sort_by_from_array {
             my $flat = $class->_transform_sort_by_from_hash( $clause, $options );
             push @{$flattened}, $flat;
         } else {
-            $class->check_meta($clause) unless $options =~ /skip_meta_check/;
-            push @{$flattened}, $class->get_colum_for_attribute($clause);
+            $class->metadata->check_meta($clause) unless $options =~ /skip_meta_check/;
+            push @{$flattened}, $class->metadata->get_column_for_attribute($clause);
         }
     }
 
@@ -1047,8 +771,8 @@ sub _transform_sort_by_from_hash {
 
             foreach ( @{ $config->{$clause} } ) {
                 my $attr = $_;
-                $class->check_meta($attr) unless $options =~ /skip_meta_check/;
-                my $column = $class->get_colum_for_attribute($attr);
+                $class->metadata->check_meta($attr) unless $options =~ /skip_meta_check/;
+                my $column = $class->metadata->get_column_for_attribute($attr);
                 push @{$columns}, $column;
             }
 
@@ -1057,8 +781,8 @@ sub _transform_sort_by_from_hash {
         } else {
 
             my $attr = $config->{$clause};
-            $class->check_meta($attr) unless $options =~ /skip_meta_check/;
-            my $column = $class->get_colum_for_attribute($attr);
+            $class->metadata->check_meta($attr) unless $options =~ /skip_meta_check/;
+            my $column = $class->metadata->get_column_for_attribute($attr);
             push @{$flattened}, { $direction => $column };
 
         }
@@ -1108,8 +832,8 @@ sub _transform_filter {
 }
 
 sub _get_pkg_name {
-    my $self  = shift;
-    my $pkg   = ref($self) ? ref($self) : $self;
+    my $class = shift;
+    my $pkg  = ref($class) ? ref($class) : $class;
     return $pkg;    
 }
 
@@ -1119,7 +843,7 @@ sub _store_info {
     return wantarray ? ( $id, $dest ) : $id; 
 }
 
-1;
+__PACKAGE__->meta->make_immutable();
 
 __END__
 

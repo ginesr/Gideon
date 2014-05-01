@@ -19,8 +19,8 @@ if ( mysql_cant_connect() ) {
 
 plan tests => 10;
 
-use_ok(qw(Example::Driver::MySQL))
-;use_ok(qw(Example::Lazy));
+use_ok(qw(Example::Driver::MySQL));
+use_ok(qw(Example::Lazy));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();

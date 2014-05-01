@@ -29,7 +29,7 @@ sub save {
 
     try {
 
-        my $fields = $self->get_columns_hash();
+        my $fields = $self->metadata->get_columns_hash();
 
         unless ( $self->is_stored ) {
 
@@ -46,7 +46,7 @@ sub save {
             
         }
 
-        if ( my $serial = $self->get_serial_columns_hash ) {
+        if ( my $serial = $self->metadata->get_serial_columns_hash ) {
             my $serial_attribute = ( map { $_ } keys %{$serial} )[0];
             my $last_id = $self->last_inserted_id;
             $self->$serial_attribute($last_id);
@@ -120,9 +120,6 @@ sub find_all {
         
         $args = Gideon::Filters::Storable->format( $class->filter_rules($args) );
         
-        #my $fields = $class->get_columns_from_meta;
-        #my $map    = $class->map_args_with_meta($args);
-
         my $results = Gideon::Storable::Results->new(package => $class);
         
         if ( my $found = $class->search_in_hash($args) ) {

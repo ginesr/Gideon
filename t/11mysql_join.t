@@ -20,7 +20,6 @@ use_ok(qw(Example::My::Address));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
-
 # ------------------------------------------------------------------------------
 
 my $driver = Example::Driver::MySQL->new(
@@ -38,13 +37,13 @@ my $last    = $records->last;
 
 is( $first->{'gideon_j1.id'},      1,          'First record id' );
 is( $first->{'gideon_j1.name'},    'John',     'First record name' );
-is( $last->{'gideon_j2.id'},       2,          'First record foreing id' );
+is( $last->{'gideon_j2.id'},       2,          'First record foreign id' );
 is( $first->{'gideon_j2.address'}, 'Street 1', 'First record address' );
 is( $first->{'gideon_j2.city'},    'NY',       'First record city' );
 is( $records->records_found,       2,          'Total results' );
 
 is( $last->{'gideon_j1.id'},      1,          'Last record id' );
-is( $last->{'gideon_j2.id'},      2,          'Last record foreing id' );
+is( $last->{'gideon_j2.id'},      2,          'Last record foreign id' );
 is( $last->{'gideon_j2.address'}, 'Street 2', 'Last record address' );
 
 my $record = Example::My::Person->find( id => 1 );
@@ -56,7 +55,7 @@ is( $address->person_id, 1, 'From mysql one record other table' );
 throws_ok( sub { my $invalid = Example::My::Person->find_by_address( address => 1 ) }, 'Gideon::Error', 'Using invalid argument' );
 
 my $limited = Example::My::Person->find_by_address( 
-    id => 1,
+    id => 1, name => 'John',
     { 
         limit_fields => ['gideon_j2.city','gideon_j1.id' ] 
     } 
@@ -66,7 +65,7 @@ $first = $limited->first;
 
 is( $first->{'gideon_j1.id'},         1,     'Filtered record id' );
 is( $first->{'gideon_j1.name'},      undef,  'Filtered record name (filtered)' );
-is( $first->{'gideon_j2.id'},        undef,  'Filtered record foreing id (filtered)' );
+is( $first->{'gideon_j2.id'},        undef,  'Filtered record foreign id (filtered)' );
 is( $first->{'gideon_j2.person_id'}, undef,  'Filtered record person id (filtered)' );
 is( $first->{'gideon_j2.address'},   undef,  'Filtered record address (filtered)' );
 is( $first->{'gideon_j2.city'},      'NY',   'Filtered record city' );

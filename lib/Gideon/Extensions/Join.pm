@@ -21,9 +21,7 @@ sub join_with {
     my ( $args, $config ) = $package->decode_params(@_);
 
     if ( $relations->{params}->{type} eq 'DBI' ) {
-
-        return $class->_execute_dbi_join( $package, $args, $config, $relations->{foreing}, $relations->{params}->{join_on} );
-
+        return $class->_execute_dbi_join( $package, $args, $config, $relations->{foreign}, $relations->{params}->{join_on} );
     }
     else {
         Gideon::Error->throw( $relations->{params}->{type} . ' not implemented' );
@@ -37,7 +35,7 @@ sub _execute_dbi_join {
     my $package = shift;
     my $args    = shift;
     my $config  = shift;
-    my $foreing = shift;
+    my $foreign = shift;
     my $joinon  = shift;
     
     #TODO: support multiple keys
@@ -45,13 +43,13 @@ sub _execute_dbi_join {
     
     try {
 
-        my $foreing = $foreing;
+        my $foreign = $foreign;
         my $results = Gideon::DBI::Join->join_with(
             package  => $package,
             args     => $args,
             config   => $config,
-            joins    => [ { $package->get_column_with_table($joinon->[0]) => $foreing->get_column_with_table($joinon->[1]) } ],
-            foreings => [$foreing]
+            joins    => [ { $package->get_column_with_table($joinon->[0]) => $foreign->get_column_with_table($joinon->[1]) } ],
+            foreigns => [$foreign]
         );
 
         return wantarray ? $results->flatten() : $results;

@@ -34,8 +34,8 @@ is( $coerce->datetime->year, 2012, 'Date tame still an object' );
 like( $coerce, qr/Example::My::Lastlog/, 'Class name as string' );
 like( $coerce, qr/"lastlog": "2011-08-18 20:06:45"/, 'Date as json' );
 
-my $meta_as_class = Example::My::Lastlog->get_all_meta;
-my $meta_as_object = $coerce->get_all_meta;
+my $meta_as_class = Example::My::Lastlog->metadata->get_all_meta;
+my $meta_as_object = $coerce->metadata->get_all_meta;
 
 ok($meta_as_class,'Metadata as class method');
 ok($meta_as_object,'Metadata as object method');

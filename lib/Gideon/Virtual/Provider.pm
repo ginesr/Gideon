@@ -73,7 +73,7 @@ sub map_meta_with_row {
     my $map   = {};
 
     foreach my $col ( keys %{$row} ) {
-        my $attribute = $package->get_attribute_for_alias($col);
+        my $attribute = $package->metadata->get_attribute_for_alias($col);
         next unless $attribute;
         $map->{$attribute} = $col;
     }

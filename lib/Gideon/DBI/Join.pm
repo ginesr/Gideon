@@ -1,7 +1,6 @@
 package Gideon::DBI::Join;
 
-use strict;
-use warnings;
+use Moose;
 use Gideon::DBI;
 use Gideon::Error;
 use Gideon::Error::DBI;
@@ -17,12 +16,12 @@ sub join_with {
     my $args     = $options->{args};
     my $config   = $options->{config};
     my $joins    = $options->{joins};
-    my $foreings = $options->{foreings};
+    my $foreigns = $options->{foreigns};
 
-    my $foreing_class = $foreings->[0];
+    my $foreign_class = $foreigns->[0];
     
-    my $tables  = $package->stores_for($foreing_class);   
-    my @fields  = $package->columns_meta_for($foreing_class);
+    my $tables  = $package->stores_for_foreign($foreign_class);   
+    my @fields  = $package->columns_meta_for_foreign($foreign_class);
     my $where   = $package->where_stmt_from_args($args);
     my $order   = $package->order_from_config($config);
     my $joined  = $package->_translate_join_sql_abstract($joins);
@@ -40,10 +39,9 @@ sub join_with {
         push @fields, 'count(*) as _count';
         $group = $config->{grouped};
     }
-
     # TODO: find relationships autmatically?
-    $where = $self->_merge_where_and_join($where,$joined);   
-    return $package->execute_and_array($tables,\@fields,$where,$order,$group);
+    my $merged = $self->_merge_where_and_join($where,$joined);
+    return $package->execute_and_array($tables,\@fields,$merged,$order,$group);
     
 }
 
@@ -52,22 +50,23 @@ sub _merge_where_and_join {
     my $self = shift;
     my $where = shift;
     my $joined = shift;
-    my $final = shift;
+
+    my $final = {};
     
     # follow SQL-Abstract "where" syntax
     # check if same exists in both hashes
+
     foreach ( keys %{ $joined } ) {
         if (exists $where->{$_}) {
             $final->{$_} = [ -and => {'=', $where->{$_} }, [ $joined->{$_} ] ];
+            delete $where->{$_};
             next;
         }
         $final->{$_} = $joined->{$_}
     }
 
     # merge
-    my $merge = Hash::Merge->new()->merge($final,$where);
-    return $merge;
+    return Hash::Merge->new()->merge($final,$where);
 }
 
-1;
-
+__PACKAGE__->meta->make_immutable();

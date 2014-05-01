@@ -100,7 +100,7 @@ sub save {
 
         my $table  = $self->get_store_destination();
         my $obj    = $self->mongo_conn($table);
-        my $fields = $self->get_attributes_from_meta();
+        my $fields = $self->metadata->get_attributes_from_meta();
 
         unless ( $self->is_stored ) {
 
@@ -120,7 +120,7 @@ sub save {
         }
         else {
 
-            if ( my $serial = $self->get_serial_attr() ) {
+            if ( my $serial = $self->metadata->get_serial_attr() ) {
                 my $next_id = $self->increment_serial($table);
                 $map{$serial} = $next_id;
             }
@@ -163,7 +163,7 @@ sub find {
 
         my $table  = $class->get_store_destination();
         my $db     = $class->mongo_conn($table);
-        my $fields = $class->get_attributes_from_meta();
+        my $fields = $class->metadata->get_attributes_from_meta();
 
         if ( $class->cache_registered ) {
             $cache_key = $class->generate_cache_key( 'find', $table, $args );
@@ -354,7 +354,7 @@ sub remove_auto_columns_for_insert {
     my $self  = shift;
     my $field = shift;
 
-    my $serial = $self->get_serial_columns_hash;
+    my $serial = $self->metadata->get_serial_columns_hash;
     my $filter = [];
 
     foreach ( @{$field} ) {
