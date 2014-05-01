@@ -270,7 +270,7 @@ sub _columns_with_table_as_list {
     my $session = shift;
 
     my $class = $session->{class};
-    my $meta = $class->_metadata->get_all_meta;
+    my $meta = $class->metadata->get_all_meta;
     my $table = $class->get_store_destination();
     my @columns = ();
     my %ignored = ();
@@ -293,12 +293,12 @@ sub _get_columns_hash {
 
     my $self    = shift;
     my $class   = shift;
-    my $meta    = $class->_metadata->get_all_meta;
+    my $meta    = $class->metadata->get_all_meta;
     my $table   = $class->get_store_destination();
     my $hash    = {};
 
     foreach my $attribute ( keys %{ $meta->{attributes} } ) {
-        my $key = $table . '.' . $class->get_column_for_attribute($attribute);
+        my $key = $table . '.' . $class->metadata->get_column_for_attribute($attribute);
         $hash->{$key} = $attribute;
     }
 

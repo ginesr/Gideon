@@ -47,8 +47,6 @@ $person->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US',
 
 is($person->count,3,'Three test records');
 
-#sleep(2); # i know this is stupid, sorry
-
 # END Prepare test data --------------------------------------------------------
 
 my $persons = Mongo::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );

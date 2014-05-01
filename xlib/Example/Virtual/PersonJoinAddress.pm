@@ -1,4 +1,3 @@
-
 package Example::Virtual::PersonJoinAddress;
 
 use strict;
@@ -48,4 +47,4 @@ has 'address' => (
     metaclass => 'Gideon'
 );
 
-1;
+__PACKAGE__->meta->make_immutable();

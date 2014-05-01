@@ -39,10 +39,9 @@ sub join_with {
         push @fields, 'count(*) as _count';
         $group = $config->{grouped};
     }
-
     # TODO: find relationships autmatically?
-    $where = $self->_merge_where_and_join($where,$joined);   
-    return $package->execute_and_array($tables,\@fields,$where,$order,$group);
+    my $merged = $self->_merge_where_and_join($where,$joined);
+    return $package->execute_and_array($tables,\@fields,$merged,$order,$group);
     
 }
 
@@ -51,21 +50,23 @@ sub _merge_where_and_join {
     my $self = shift;
     my $where = shift;
     my $joined = shift;
-    my $final = shift;
+
+    my $final = {};
     
     # follow SQL-Abstract "where" syntax
     # check if same exists in both hashes
+
     foreach ( keys %{ $joined } ) {
         if (exists $where->{$_}) {
             $final->{$_} = [ -and => {'=', $where->{$_} }, [ $joined->{$_} ] ];
+            delete $where->{$_};
             next;
         }
         $final->{$_} = $joined->{$_}
     }
 
     # merge
-    my $merge = Hash::Merge->new()->merge($final,$where);
-    return $merge;
+    return Hash::Merge->new()->merge($final,$where);
 }
 
 __PACKAGE__->meta->make_immutable();

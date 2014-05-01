@@ -31,7 +31,7 @@ $person->insert( { id => 1, name => 'Joe',  city => 'Dallas',   country => 'US',
 $person->insert( { id => 2, name => 'Jane', city => 'New York', country => 'US', type => 20 } );
 $person->insert( { id => 3, name => 'Don',  city => 'New York', country => 'US', type => 30 } );
 
-sleep(2); # i know this is stupid, sorry
+sleep 1; # I know this is stupid, sorry
 
 # END Prepare test data --------------------------------------------------------
 
@@ -118,6 +118,8 @@ is( $lte->records_found,   2, 'Total results using lte' );
 is($person->count,4,'Total test records');
 
 my $rows = Mongo::Person->remove_all( city => 'New York' );
+
+sleep 1; #ajjj
 
 is($person->count,2,'Total after remove all');
 

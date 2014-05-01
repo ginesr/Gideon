@@ -39,7 +39,7 @@ sub remove {
 
     try {
 
-        my $fields = $self->get_key_columns_hash();
+        my $fields = $self->metadata->get_key_columns_hash();
 
         if ( scalar( keys %{$fields} ) == 0 ) {
             Gideon::Error->throw('can\'t delete without table primary key');
@@ -83,7 +83,7 @@ sub update {
 
     try {
 
-        my $map   = $class->map_args_with_meta($args);
+        my $map   = $class->metadata->map_args_with_column($args);
         my $where = $class->where_stmt_from_args($args);
         my $limit = $config->{limit} || '';
         my $pool  = $config->{conn} || '';
@@ -120,7 +120,7 @@ sub remove_all {
 
     try {
 
-        my $map   = $class->map_args_with_meta($args);
+        my $map   = $class->metadata->map_args_with_column($args);
         my $where = $class->where_stmt_from_args($args);
         my $limit = $config->{limit} || '';
         my $pool  = $config->{conn} || '';
@@ -157,7 +157,7 @@ sub save {
     try {
 
         my $where  = {};
-        my $fields = $self->get_columns_hash();
+        my $fields = $self->metadata->get_columns_hash();
 
         if ( $self->is_stored ) {
             $where = $self->get_key_columns_for_update();
@@ -184,7 +184,7 @@ sub save {
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
         $sth->finish;
 
-        if ( !$self->is_stored and my $serial = $self->get_serial_columns_hash ) {
+        if ( !$self->is_stored and my $serial = $self->metadata->get_serial_columns_hash ) {
             my $last_id = $self->last_inserted_id;
             my $serial_attribute = ( map { $_ } keys %{$serial} )[0];
             $self->$serial_attribute($last_id);
@@ -246,8 +246,8 @@ sub find {
         
         my $cache_key;
 
-        my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_meta($args);
+        my $fields = $class->get_columns_escaped_with_table();
+        my $map    = $class->metadata->map_args_with_column($args);
         my $where  = $class->where_stmt_from_args($args);
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
@@ -315,8 +315,8 @@ sub find_all {
 
         my $cache_key;
 
-        my $fields = $class->get_columns_from_meta();
-        my $map    = $class->map_args_with_meta($args);
+        my $fields = $class->get_columns_escaped_with_table();
+        my $map    = $class->metadata->map_args_with_column($args);
         my $where  = $class->where_stmt_from_args($args);
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
@@ -435,7 +435,7 @@ sub where_stmt_from_args {
     my $class = shift;
     my $args  = shift;
     
-    my $map   = $class->map_args_with_meta($args);
+    my $map   = $class->metadata->map_args_with_column($args);
     my $table = $class->get_store_destination();
     
     my %where = ();
@@ -473,7 +473,7 @@ sub get_column_with_table {
     my $attribute = shift;
 
     my $table  = $class->get_store_destination();
-    my $column = $class->get_column_for_attribute($attribute) || warn "failed $class $attribute";
+    my $column = $class->metadata->get_column_for_attribute($attribute) || warn "failed $class $attribute";
 
     return $table . '.' . $column;
 }
@@ -487,15 +487,15 @@ sub add_table_to_where {
     return map { $table . '.' . $_ => $where{$_} } sort keys %where;
 }
 
-sub get_columns_from_meta {
+sub get_columns_escaped_with_table {
 
     my $class = shift;
     my $table = $class->get_store_destination();
 
-    my $columns = $class->SUPER::get_columns_from_meta();
-    my @columns = map { $table . '.' . $_ . ' as `' . $table . '.' . $_ . '`' } @{$columns};
+    my @columns = $class->metadata->get_columns_from_meta();
+    my @escaped = map { $table . '.' . $_ . ' as `' . $table . '.' . $_ . '`' } @columns;
 
-    return wantarray ? @columns : \@columns;
+    return wantarray ? @escaped : \@escaped;
 }
 
 sub columns_with_table_as_list {
@@ -503,7 +503,7 @@ sub columns_with_table_as_list {
     my $class = shift;
     my $table = $class->get_store_destination();
 
-    my $columns = $class->SUPER::get_columns_from_meta();
+    my $columns = $class->metadata->get_columns_from_meta();
     my @columns = map { $table . '.' . $_ } @{$columns};
 
     return wantarray ? @columns : \@columns;
@@ -517,7 +517,7 @@ sub map_meta_with_row {
 
     foreach my $r ( keys %{$row} ) {
         my ( $table, $col ) = split( /\./, $r );
-        my $attribute = $class->get_attribute_for_column($col);
+        my $attribute = $class->metadata->get_attribute_for_column($col);
         next unless $attribute;
         $map->{$attribute} = $r;
     }
@@ -596,6 +596,21 @@ sub ne {
     return $string;
 }
 
+sub columns_meta_for_foreign {
+
+    my $self = shift;
+    my $other = shift;
+    my @fields = ();
+
+    my @myfields = $self->get_columns_escaped_with_table;
+    my @foreign = $other->get_columns_escaped_with_table;
+
+    push @fields, ( @myfields, @foreign );
+
+    return wantarray ? @fields : join ',', @fields;    
+
+}
+
 sub execute_and_array {
 
     my $class  = shift;
@@ -620,7 +635,6 @@ sub execute_and_array {
     }
 
     my $sth  = $class->dbh()->prepare_cached($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
-
     my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
     my %row;
 
@@ -671,7 +685,7 @@ sub function {
         Gideon::Error->throw('first argument is not valid');
     }
     
-    my $column = $class->get_column_for_attribute($attr);
+    my $column = $class->metadata->get_column_for_attribute($attr);
     
     if (not $column and $attr ne '*') {
         Gideon::Error->throw('invalid attribute ' . $attr);
@@ -751,7 +765,7 @@ sub remove_auto_columns_for_insert {
     my $self  = shift;
     my $field = shift;
 
-    my $serial = $self->get_serial_columns_hash;
+    my $serial = $self->metadata->get_serial_columns_hash;
 
     foreach ( keys %{$serial} ) {
         delete $field->{$_};
@@ -764,7 +778,7 @@ sub get_key_columns_for_update {
     my $self  = shift;
     my $where = {};
 
-    my $keys = $self->get_key_columns_hash;
+    my $keys = $self->metadata->get_key_columns_hash;
 
     if ( scalar( keys %{$keys} ) == 0 ) {
         Gideon::Error->throw('can\'t update without table primary key');

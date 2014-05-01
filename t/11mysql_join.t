@@ -55,7 +55,7 @@ is( $address->person_id, 1, 'From mysql one record other table' );
 throws_ok( sub { my $invalid = Example::My::Person->find_by_address( address => 1 ) }, 'Gideon::Error', 'Using invalid argument' );
 
 my $limited = Example::My::Person->find_by_address( 
-    id => 1,
+    id => 1, name => 'John',
     { 
         limit_fields => ['gideon_j2.city','gideon_j1.id' ] 
     } 

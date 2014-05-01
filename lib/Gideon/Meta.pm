@@ -48,6 +48,11 @@ sub get_value_for_attribute_key {
     
 }
 
+sub get_key_columns_hash {
+    my $self = shift;
+    return $self->get_columns_hash('filter_keys');
+}
+
 sub get_columns_hash {
 
     my $self    = shift;
@@ -229,11 +234,23 @@ sub get_all_meta {
     return $cache_meta;
 }
 
-sub _map_args_with_metadata {
+sub map_args_with_alias {
+    my $self = shift;
+    my $args  = shift;
+    return $self->map_args_with_metadata($args,'get_alias_for_attribute');
+}
+
+sub map_args_with_column {
+    my $self = shift;
+    my $args  = shift;
+    return $self->map_args_with_metadata($args,'get_column_for_attribute');
+}
+
+sub map_args_with_metadata {
     
     my $self   = shift;
     my $args   = shift;
-    my $getter = shift;    
+    my $getter = shift;
     my $map    = {};
     my $pkg    = $self->package_name;
 
