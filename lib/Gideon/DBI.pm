@@ -473,7 +473,7 @@ sub get_column_with_table {
     my $attribute = shift;
 
     my $table  = $class->get_store_destination();
-    my $column = $class->get_colum_for_attribute($attribute);
+    my $column = $class->get_column_for_attribute($attribute) || warn "failed $class $attribute";
 
     return $table . '.' . $column;
 }
@@ -620,6 +620,7 @@ sub execute_and_array {
     }
 
     my $sth  = $class->dbh()->prepare_cached($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+
     my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
     my %row;
 
@@ -670,7 +671,7 @@ sub function {
         Gideon::Error->throw('first argument is not valid');
     }
     
-    my $column = $class->get_colum_for_attribute($attr);
+    my $column = $class->get_column_for_attribute($attr);
     
     if (not $column and $attr ne '*') {
         Gideon::Error->throw('invalid attribute ' . $attr);

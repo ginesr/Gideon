@@ -1,7 +1,6 @@
 package Gideon::DBI::Join;
 
-use strict;
-use warnings;
+use Moose;
 use Gideon::DBI;
 use Gideon::Error;
 use Gideon::Error::DBI;
@@ -17,12 +16,12 @@ sub join_with {
     my $args     = $options->{args};
     my $config   = $options->{config};
     my $joins    = $options->{joins};
-    my $foreings = $options->{foreings};
+    my $foreigns = $options->{foreigns};
 
-    my $foreing_class = $foreings->[0];
+    my $foreign_class = $foreigns->[0];
     
-    my $tables  = $package->stores_for($foreing_class);   
-    my @fields  = $package->columns_meta_for($foreing_class);
+    my $tables  = $package->stores_for_foreign($foreign_class);   
+    my @fields  = $package->columns_meta_for_foreign($foreign_class);
     my $where   = $package->where_stmt_from_args($args);
     my $order   = $package->order_from_config($config);
     my $joined  = $package->_translate_join_sql_abstract($joins);
@@ -69,5 +68,4 @@ sub _merge_where_and_join {
     return $merge;
 }
 
-1;
-
+__PACKAGE__->meta->make_immutable();

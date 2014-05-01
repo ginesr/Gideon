@@ -1,4 +1,3 @@
-
 package Gideon::DBI::Common;
 
 use strict;

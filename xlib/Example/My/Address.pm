@@ -1,10 +1,8 @@
 package Example::My::Address;
 
-use strict;
-use warnings;
+use Moose;
 use Gideon::DBI;
 use Gideon::Meta::Attribute::DBI;
-use Moose;
 
 extends 'Gideon::DBI';
 store 'mysql_master:gideon_j2';
@@ -17,6 +15,7 @@ has 'id' => (
     primary_key => 1,
     metaclass   => 'Gideon'
 );
+
 has 'person_id' => (
     is        => 'rw',
     required  => 1,
@@ -41,4 +40,4 @@ has 'city' => (
     metaclass => 'Gideon'
 );
 
-1;
+__PACKAGE__->meta->make_immutable();
