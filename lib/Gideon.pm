@@ -888,10 +888,7 @@ sub strigify {
 
     foreach my $attr (@attrs) {
         if ($self->get_value_for_attribute_key($attr,'lazy')) {
-            if ( $self->is_stored ) {
-                $params{$attr} = $self->$attr;
-            }
-            else {
+            unless ( $self->is_stored ) {
                 # do not trigger lazy attributes
                 $params{$attr."[lazy]"} = undef;
                 next;
