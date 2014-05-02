@@ -25,19 +25,14 @@ use JSON::XS;
 use Gideon::Meta;
 use MooseX::ClassAttribute;
 use Gideon::Store;
+use Gideon::Cache;
 
 our $VERSION = '0.03';
 $VERSION = eval $VERSION;
 
 our $EXCEPTION_DEBUG = 0;
 
-use constant CACHE_DEFAULT_TTL => 300; # default expire seconds
-
 my $__relations = {};
-my $__cache = undef;
-our $__obj_cache = 1;
-our $_cache_ttl = undef;
-
 use overload
     '""' => \&strigify,
     fallback => 1;
@@ -47,6 +42,7 @@ has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
 
 class_has 'metadata' => ( is => 'rw', isa => 'Gideon::Meta', lazy => 1, default => sub { my $self = shift; Gideon::Meta->new } );
 class_has 'storage' => ( is => 'rw', isa => 'Gideon::Store', lazy => 1, default => sub { my $self = shift; Gideon::Store->new } );
+class_has 'cache' => ( is => 'rw', isa => 'Gideon::Cache', lazy => 1, default => sub { my $self = shift; Gideon::Cache->new } );
 
 sub BUILD {
 
@@ -77,9 +73,15 @@ sub register_store {
 }
 
 sub register_cache {
+
     my $class = shift;
     my $module = shift;
-    $__cache = $module;
+
+    die 'register_cache() is a class method' if blessed $class;
+    die 'invalid class name' if ($module eq __PACKAGE__ or $module eq 'Gideon::Cache');
+
+    return $class->cache->register($module)
+
 }
 
 sub find {
@@ -115,64 +117,6 @@ sub remove_all {
 sub update_all {
     my $class = shift;
     # overload in subclass    
-}
-
-sub disable_cache {
-    $__obj_cache = 0;
-}
-
-sub enable_cache {
-    $__obj_cache = 1;
-}
-
-sub set_cache_ttl {
-    my $self = shift;
-    my $secs = shift || undef;
-    $_cache_ttl = $secs;
-}
-
-sub cache_ttl {
-    my $self = shift;
-    if ($_cache_ttl) {
-        return $_cache_ttl
-    }
-    return CACHE_DEFAULT_TTL
-}
-
-sub cache_lookup {
-    
-    my $self = shift;
-    my $key = shift;
-    return if $__obj_cache == 0;
-    my $module = $self->get_cache_module;
-    return $module->get($key);
-    
-}
-
-sub cache_store {
-    
-    my $self = shift;
-    my $key = shift;
-    my $what = shift;
-    my $class = shift;
-    
-    return if $__obj_cache == 0;
-    my $secs = $self->cache_ttl;
-    
-    $class = $self->_get_pkg_name if not $class;
-    
-    my $module = $self->get_cache_module;
-    return $module->set( $key, $what, $secs, $class);
-
-}
-
-sub cache_clear {
-    my $self = shift;
-    my $class = shift;
-    return if $__obj_cache == 0;
-    my $module = $self->get_cache_module;
-    return $module->clear( $class );
-    
 }
 
 sub filter_rules {
@@ -451,26 +395,6 @@ sub as_hash {
     return { map { $_ => $self->$_ } keys %{ $self->metadata->get_columns_hash } };
 }
 
-sub cache_registered {
-    my $class = shift;
-    return ($__cache) ? 1 : 0;
-}
-
-sub signature_for_cache {
-    my $class = shift;
-    my $pkg = $class->_get_pkg_name;
-    my $id = $pkg . '_' . $class->storage->id;
-    return $id;
-}
-
-sub get_cache_module {
-    my $class = shift;
-    if ($class->cache_registered) {
-        return $__cache
-    }
-    return;
-}
-
 sub strigify {
 
     my $self = shift;
@@ -592,6 +516,13 @@ sub transaction($) {
     my $class = shift;
     return __PACKAGE__->storage->transaction(shift)
 }
+
+# Cache ------------------------------------------------------------------------
+
+before 'cache' => sub {
+    my $self = shift;
+    Gideon::Cache->who($self->_get_pkg_name);
+};
 
 # Metadata ---------------------------------------------------------------------
 

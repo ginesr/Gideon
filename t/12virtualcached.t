@@ -22,7 +22,7 @@ plan tests => 14;
 use_ok(qw(Gideon::Virtual));
 use_ok(qw(Gideon::Virtual::Provider));
 use_ok(qw(Gideon::DB::Driver::MySQL));
-use_ok(qw(Gideon::Cache));
+use_ok(qw(Gideon::Cache::Hash));
 use_ok(qw(Example::Virtual::PersonJoinAddress));
 use_ok(qw(Example::Virtual::Provider));
 
@@ -40,10 +40,10 @@ my $driver = Gideon::DB::Driver::MySQL->new(
 my $provider = Example::Virtual::Provider->new;
 $provider->driver($driver);
 
-is( Gideon->cache_ttl, 300, 'Dafault time to live in cache' );
+is( Gideon->cache->ttl, 300, 'Dafault time to live in cache' );
 
 Gideon->register_store( 'my_virtual_store', $provider );
-Gideon->register_cache('Gideon::Cache');
+Gideon->register_cache('Gideon::Cache::Hash');
 
 my $results = Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
 my $first   = $results->first;
@@ -59,8 +59,8 @@ is( $results->records_found, 3,                       'Total results' );
 
 Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
 
-is( Gideon::Cache->hits,  1, 'One hit after running same search' );
-is( Gideon::Cache->count, 1, 'Still one key in the cache' );
+is( Gideon::Cache::Hash->hits,  1, 'One hit after running same search' );
+is( Gideon::Cache::Hash->count, 1, 'Still one key in the cache' );
 
 # Auxiliary test functions -----------------------------------------------------
 

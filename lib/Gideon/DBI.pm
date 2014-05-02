@@ -56,8 +56,8 @@ sub remove {
         $self->is_stored(0);
         $self->is_modified(0);
         
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear(ref $self);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear(ref $self);
         }
 
         return TRUE;
@@ -94,8 +94,8 @@ sub update {
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
         $sth->finish;
         
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear($class);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear($class);
         }
         
         return $rows;
@@ -131,8 +131,8 @@ sub remove_all {
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear($class);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear($class);
         }
 
         return $rows;
@@ -193,8 +193,8 @@ sub save {
         $self->is_stored(1);
         $self->is_modified(0);
         
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear(ref $self);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear(ref $self);
         }
 
         return $self;
@@ -258,9 +258,9 @@ sub find {
           
         my $obj;
 
-        if ( $class->cache_registered ) {
+        if ( $class->cache->is_registered ) {
             $cache_key = $class->generate_cache_key( 'find', $stmt, @bind );
-            if ( my $cached_obj = $class->cache_lookup($cache_key) ) {
+            if ( my $cached_obj = $class->cache->lookup($cache_key) ) {
                 $obj = $cached_obj;
                 return $obj;
             }
@@ -285,7 +285,7 @@ sub find {
         Gideon::Error::DBI::NotFound->throw('no results found ' . $class) unless $obj;
 
         if ($cache_key) {
-            $class->cache_store( $cache_key, $obj );
+            $class->cache->store( $cache_key, $obj );
         }
         
         return $obj;
@@ -332,9 +332,9 @@ sub find_all {
             conn    => $pool,
         );
 
-        if ( $class->cache_registered ) {
+        if ( $class->cache->is_registered ) {
             $cache_key = $class->generate_cache_key( 'fall', $stmt, @bind );
-            if ( my $cached_results = $class->cache_lookup($cache_key) ) {
+            if ( my $cached_results = $class->cache->lookup($cache_key) ) {
                 $results = $cached_results;
                 return wantarray ? $results->records : $results;
             }
@@ -359,7 +359,7 @@ sub find_all {
         );
 
         if ($cache_key) {
-            $class->cache_store( $cache_key, $results );
+            $class->cache->store( $cache_key, $results );
         }
 
         return wantarray ? $results->records : $results;
@@ -374,18 +374,6 @@ sub find_all {
 
 }
 
-sub cache_store {
-
-    my $self = shift;
-    my $key  = shift;
-    my $what = shift;
-    
-    my $class = (ref $self) ? ref $self : $self;
-
-    return Gideon->cache_store( $key, $what, $class );
-
-}
-
 sub generate_cache_key {
 
     my $self = shift;
@@ -394,9 +382,9 @@ sub generate_cache_key {
     my @args = @_;
     
     my $vals = join( '_', @args );
-    my $key = $self->signature_for_cache . $from . $stmt . $vals;    # uniqueness generated with sql query and filters
+    my $key = $self->cache->signature . $from . $stmt . $vals;    # uniqueness generated with sql query and filters
 
-    my $module = $self->get_cache_module;
+    my $module = $self->cache->get_module;
     return $module->digest($key);
 
 }
@@ -642,9 +630,9 @@ sub execute_and_array {
         $stmt = $class->_add_group_by( $stmt, $group );
     }
 
-    if ( $class->cache_registered ) {
+    if ( $class->cache->is_registered ) {
         $cache_key = $class->generate_cache_key( 'earr', $stmt, @bind );
-        $class->cache_lookup($cache_key);
+        $class->cache->lookup($cache_key);
     }
 
     my $sth  = $class->dbh()->prepare_cached($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
@@ -666,7 +654,7 @@ sub execute_and_array {
     $sth->finish;
 
     if ($cache_key) {
-        $class->cache_store( $cache_key, $results );
+        $class->cache->store( $cache_key, $results );
     }
 
     return $results;

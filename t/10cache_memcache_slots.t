@@ -36,7 +36,7 @@ my $driver = Example::Driver::MySQL->new(
 # setup ------------------------------------------------------------------------
 
 Gideon->register_store( 'mysql_server', $driver );
-Gideon->register_cache('Gideon::Cache::Memcache');
+Gideon->register_cache( 'Gideon::Cache::Memcache' );
 
 Gideon::Cache::Memcache->set_servers( ["127.0.0.1:$port"] );
 Gideon::Cache::Memcache->add_class_ttl('Example::Cache', 20);

@@ -16,7 +16,7 @@ else {
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Cache));
-use_ok(qw(Gideon::Cache));
+use_ok(qw(Gideon::Cache::Hash));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
@@ -29,21 +29,21 @@ my $driver = Example::Driver::MySQL->new(
 );
 
 Gideon->register_store( 'mysql_server', $driver );
-Gideon->register_cache( 'Gideon::Cache' );
-Gideon->set_cache_ttl( 86400 ); # one day
+Gideon->register_cache( 'Gideon::Cache::Hash' );
+Gideon->cache->ttl( 86400 ); # one day
 
 my $test_data = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first     = $test_data->first;
 
 is( $first->id, 5, 'Record from db using like' );
 
-is( Gideon->cache_ttl, 86400, 'Time to live in cache' );
-is( Gideon::Cache->count, 1, 'One key in the cache' );
-is( Gideon::Cache->hits, 0, 'No hits' );
+is( Gideon->cache->ttl, 86400, 'Time to live in cache' );
+is( Gideon::Cache::Hash->count, 1, 'One key in the cache' );
+is( Gideon::Cache::Hash->hits, 0, 'No hits' );
 
 my $more_data = Example::Cache->find_all( value => { like => '%test 6' } );
 
-my @list = Gideon::Cache->class_keys('Example::Cache'); 
+my @list = Gideon::Cache::Hash->class_keys('Example::Cache'); 
 
 is( scalar @list, 2, 'Keys for class' );
 
@@ -56,8 +56,8 @@ my $first_cached = $cached_data->first;
 
 is( $first_cached->id, 5, 'Record from cache' );
 
-is( Gideon::Cache->hits, 1, 'One hit after running same search' );
-is( Gideon::Cache->count, 3, 'Still one key in the cache' );
+is( Gideon::Cache::Hash->hits, 1, 'One hit after running same search' );
+is( Gideon::Cache::Hash->count, 3, 'Still one key in the cache' );
 
 my $cached_find_all  = Example::Cache->find_all( name => 'test 1' );
 my $cached_find = Example::Cache->find( name => 'test 1' );

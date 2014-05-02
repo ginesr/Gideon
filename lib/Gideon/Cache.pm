@@ -1,165 +1,84 @@
 package Gideon::Cache;
 
-use strict;
-use warnings;
-use autodie;
-use Digest::MD5;
-use 5.012_001;
+use Moose;
+use Gideon::Error;
 use Data::Dumper qw(Dumper);
+use MooseX::ClassAttribute;
 
-our $slot = '_DEFAULT_';
-our $_cache = { $slot => {} };
-our $_class_ttl = {};
-our $_class_keys = {};
+use constant CACHE_DEFAULT_TTL => 300; # default expire seconds
 
-my $hits = 0;
+has 'module' => ( is => 'rw', isa => 'Str' );
+has 'ttl' => ( is => 'rw', isa => 'Maybe[Num]', lazy => 1, default => CACHE_DEFAULT_TTL);
+has 'is_enabled' => ( is => 'rw', isa => 'Bool', default => 1 );
+class_has 'who' => ( is => 'rw', isa => 'Str' );
 
-sub digest {
+sub register {
     my $self = shift;
-    my $string = shift;
-    my $md5 = Digest::MD5->new;
-    $md5->add($string);
-    return $md5->hexdigest;
+    my $module = shift || die;
+    $self->module($module);
+    return 1;
 }
 
-sub get {
+sub is_registered {
     my $self = shift;
-    my $key  = shift;
-    $self->expire;
-    if ( !$self->detect($key) ) {
-        return;
-    }
-    if ( my $cached = $_cache->{$slot}->{$key}->{content} ) {
-        $hits++;
-        return $cached;
-    }
-    return;
+    return ($self->module) ? 1 : 0;
 }
 
-sub set {
-    
-    my $self     = shift;
-    my $key      = shift;
-    my $contents = shift;
-    my $ttl      = shift;
-    my $class    = shift;
-    
-    $_class_keys->{$class}->{$key} = 1;
-    $_cache->{$slot}->{$key}->{content} = $contents;
-    
-    if (not exists $_cache->{$slot}->{$key}->{ttl}) {
-        if (exists $_class_ttl->{$class} and $_class_ttl->{$class} > 0) {
-            $ttl = $_class_ttl->{$class}
-        }
-        $_cache->{$slot}->{$key}->{ttl} = $ttl;
-        $_cache->{$slot}->{$key}->{stamp} = time();
-    }
-    
-    return;
-}
-
-sub expire {
+sub store {
     
     my $self = shift;
-    my $now = time();
-
-    foreach my $k (keys %{ $_cache->{$slot} }) {
-        my $stamp = $_cache->{$slot}->{$k}->{stamp};
-        my $ttl = $_cache->{$slot}->{$k}->{ttl};
-        my $expire = $stamp + $ttl;
-        
-        if (!$stamp or !$ttl) {
-            warn "$slot $k no ttl defined to expire, will keep it forever";
-            next;
-        }
+    my $key = shift;
+    my $what = shift;
+    my $class = shift;
     
-        if ($expire < $now) {
-            $self->delete($k);
-        }
-    }
-    return $self;
+    return if $self->is_enabled == 0;
+    my $secs = $self->ttl;
+    
+    $class = $self->who if not $class;
+    
+    my $module = $self->get_module;
+    return $module->set( $key, $what, $secs, $class);
+
 }
 
 sub clear {
     my $self = shift;
     my $class = shift;
-
-    if (exists $_class_keys->{$class}) {
-        my @keys = $self->class_keys($class);
-        foreach (@keys) {
-            $self->delete($_)
-        }
-        delete $_class_keys->{$class};
-        return 1;
-    }
-    return 0;
+    return if $self->is_enabled == 0;
+    my $module = $self->get_module;
+    return $module->clear( $class );
 }
 
-sub class_keys {
-    my $self = shift;
-    my $class = shift;
-    my @list = ();
-    if (exists $_class_keys->{$class}) {
-        @list = keys $_class_keys->{$class};
-    }
-    return @list;
-}
-
-sub delete {
+sub lookup {
     my $self = shift;
     my $key = shift;
-    delete $_cache->{$slot}->{$key};
-    return 1
+    return if $self->is_enabled == 0;
+    my $module = $self->get_module;
+    return $module->get($key);
 }
 
-sub count {
+sub disable {
     my $self = shift;
-    return scalar keys %{ $_cache->{$slot} };
+    $self->is_enabled(0)
 }
 
-sub content {
+sub enable {
     my $self = shift;
-    return $_cache->{$slot};
+    $self->is_enabled(1)
 }
 
-sub hits {
+sub get_module {
     my $self = shift;
-    return $hits;
+    if ($self->is_registered) {
+        return $self->module
+    }
+    return;
 }
 
-sub detect {
+sub signature {
     my $self = shift;
-    my $key  = shift;
-    return exists $_cache->{$slot}->{$key} ? 1 : 0;
-}
-
-sub add_class_ttl {
-    my $self = shift;
-    my $class = shift || die 'no class specified';
-    my $ttl = shift || 1;
-    $_class_ttl->{$class} = $ttl;
-    return $self;
-}
-
-sub default_slot {
-    my $self = shift;
-    $slot = '_DEFAULT_';
-    return $self
-}
-
-sub set_slot {
-    my $self = shift;
-    $slot = shift;
-    return $self
-}
-
-sub get_slot {
-    return $slot;
-}
-
-sub set_servers {
-    my $self = shift;
-    return $self;
+    my $pkg = $self->who;
+    return $pkg . '_' . $pkg->storage->id;
 }
 
 1;

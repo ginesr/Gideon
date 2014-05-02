@@ -27,7 +27,6 @@ use_ok(qw(Gideon::Cache::Memcache));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
-
 # ------------------------------------------------------------------------------
 
 my $driver = Example::Driver::MySQL->new(
@@ -39,7 +38,7 @@ my $driver = Example::Driver::MySQL->new(
 # setup ------------------------------------------------------------------------
 
 Gideon->register_store( 'mysql_server', $driver );
-Gideon->register_cache('Gideon::Cache::Memcache');
+Gideon->register_cache( 'Gideon::Cache::Memcache' );
 
 Gideon::Cache::Memcache->set_servers( ["127.0.0.1:$port"] );
 

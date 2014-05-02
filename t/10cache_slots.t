@@ -16,7 +16,7 @@ else {
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Cache));
-use_ok(qw(Gideon::Cache));
+use_ok(qw(Gideon::Cache::Hash));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
@@ -29,47 +29,47 @@ my $driver = Example::Driver::MySQL->new(
 );
 
 Gideon->register_store( 'mysql_server', $driver );
-Gideon->register_cache( 'Gideon::Cache' );
+Gideon->register_cache( 'Gideon::Cache::Hash' );
 
-is( Gideon::Cache->count, 0, 'No keys in cache (default)' );
+is( Gideon::Cache::Hash->count, 0, 'No keys in cache (default)' );
 
-Gideon::Cache->add_class_ttl('Example::Cache', 20);
-Gideon::Cache->set_slot('TEST_1');
+Gideon::Cache::Hash->add_class_ttl('Example::Cache', 20);
+Gideon::Cache::Hash->set_slot('TEST_1');
 
 my $first_slot1 = Example::Cache->find_all( id => 1 )->first;
 is( $first_slot1->id, 1, 'Record from db' );
 
-is( Gideon::Cache->count, 1, 'One key stored in cache (slot 1)' );
-is( Gideon::Cache->hits, 0, 'No hits (slot 1)' );
+is( Gideon::Cache::Hash->count, 1, 'One key stored in cache (slot 1)' );
+is( Gideon::Cache::Hash->hits, 0, 'No hits (slot 1)' );
 
-Gideon::Cache->set_slot('TEST_2');
+Gideon::Cache::Hash->set_slot('TEST_2');
 
 my $first_slot2 = Example::Cache->find_all( id => 2 )->first;
 is( $first_slot2->id, 2, 'Record from db' );
-is( Gideon::Cache->count, 1, 'One key stored in cache (slot 2)' );
-is( Gideon::Cache->hits, 0, 'No hits (slot 2)' );
+is( Gideon::Cache::Hash->count, 1, 'One key stored in cache (slot 2)' );
+is( Gideon::Cache::Hash->hits, 0, 'No hits (slot 2)' );
 
 my $first_slot2_cached = Example::Cache->find_all( id => 2 )->first;
-is( Gideon::Cache->hits, 1, 'One hit to (slot 2)' );
+is( Gideon::Cache::Hash->hits, 1, 'One hit to (slot 2)' );
 
-Gideon::Cache->set_slot('TEST_1');
+Gideon::Cache::Hash->set_slot('TEST_1');
 
 my $first_slot1_cached = Example::Cache->find_all( id => 1 )->first;
-is( Gideon::Cache->hits, 2, 'Two hits (slot 1 + slot 2)' );
+is( Gideon::Cache::Hash->hits, 2, 'Two hits (slot 1 + slot 2)' );
 
 # clear one slot
 $first_slot1_cached->value('modified');
 $first_slot1_cached->save;
 
-is( Gideon::Cache->count, 0, 'Clear keys in cache (slot 1)' );
+is( Gideon::Cache::Hash->count, 0, 'Clear keys in cache (slot 1)' );
 
-Gideon::Cache->set_slot('TEST_2');
+Gideon::Cache::Hash->set_slot('TEST_2');
 
-is( Gideon::Cache->count, 1, 'Got keys count from cache (slot 2)' );
+is( Gideon::Cache::Hash->count, 1, 'Got keys count from cache (slot 2)' );
 
-Gideon::Cache->default_slot;
+Gideon::Cache::Hash->default_slot;
 
-is( Gideon::Cache->count, 0, 'No keys in cache (default is empty)' );
+is( Gideon::Cache::Hash->count, 0, 'No keys in cache (default is empty)' );
 
 # Auxiliary test functions -----------------------------------------------------
 

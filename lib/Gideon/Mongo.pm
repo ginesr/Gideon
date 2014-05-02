@@ -43,8 +43,8 @@ sub remove {
         $self->is_stored(0);
         $self->is_modified(0);
 
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear(ref $self);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear(ref $self);
         }        
 
         return TRUE;
@@ -74,8 +74,8 @@ sub remove_all {
         my $obj = $class->mongo_conn( $class->storage->origin() );
         my $all = $obj->remove($args);
 
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear($class);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear($class);
         }
 
         return $all;
@@ -132,8 +132,8 @@ sub save {
             
         }
 
-        if ( Gideon->cache_registered ) {
-            Gideon->cache_clear(ref $self);
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear(ref $self);
         }        
 
         return $self;
@@ -165,9 +165,9 @@ sub find {
         my $db     = $class->mongo_conn($table);
         my $fields = $class->metadata->get_attributes_from_meta();
 
-        if ( $class->cache_registered ) {
+        if ( $class->cache->is_registered ) {
             $cache_key = $class->generate_cache_key( 'find', $table, $args );
-            if ( my $cached_obj = $class->cache_lookup($cache_key) ) {
+            if ( my $cached_obj = $class->cache->lookup($cache_key) ) {
                 my $obj = $cached_obj;
                 return $obj;
             }
@@ -184,7 +184,7 @@ sub find {
             $obj->is_modified(0);
 
             if ($cache_key) {
-                $class->cache_store( $cache_key, $obj );
+                $class->cache->store( $cache_key, $obj );
             }
 
             return $obj;
@@ -220,9 +220,9 @@ sub find_all {
         my $results = Gideon::Mongo::Results->new(package => $class);
         my $all     = $obj->find($args);
 
-        if ( $class->cache_registered ) {
+        if ( $class->cache->is_registered ) {
             $cache_key = $class->generate_cache_key( 'fall', $store, $args );
-            if ( my $cached_results = $class->cache_lookup($cache_key) ) {
+            if ( my $cached_results = $class->cache->lookup($cache_key) ) {
                 $results = $cached_results;
                 return wantarray ? $results->records : $results;
             }
@@ -241,7 +241,7 @@ sub find_all {
             $results->add_record($obj);
         }
         if ($cache_key) {
-            $class->cache_store( $cache_key, $results );
+            $class->cache->store( $cache_key, $results );
         }
         return wantarray ? $results->records : $results;
 
@@ -286,18 +286,6 @@ sub increment_serial {
 
 }
 
-sub cache_store {
-
-    my $self = shift;
-    my $key  = shift;
-    my $what = shift;
-    
-    my $class = (ref $self) ? ref $self : $self;
-
-    return Gideon->cache_store( $key, $what, $class );
-
-}
-
 sub generate_cache_key {
 
     my $self = shift;
@@ -306,9 +294,9 @@ sub generate_cache_key {
     my $flds = shift;
     
     my $vals = join( '_', map { $flds->{$_} } keys %$flds );
-    my $key = $self->signature_for_cache . $from . $tabl . $vals;    # uniqueness generated with sql query and filters
+    my $key = $self->cache->signature . $from . $tabl . $vals;    # uniqueness generated with sql query and filters
 
-    my $module = $self->get_cache_module;
+    my $module = $self->cache->get_module;
     return $module->digest($key);
 
 }

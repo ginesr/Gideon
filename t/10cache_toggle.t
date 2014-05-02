@@ -16,7 +16,7 @@ else {
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Cache));
-use_ok(qw(Gideon::Cache));
+use_ok(qw(Gideon::Cache::Hash));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
@@ -29,21 +29,21 @@ my $driver = Example::Driver::MySQL->new(
 );
 
 Gideon->register_store( 'mysql_server', $driver );
-Gideon->register_cache( 'Gideon::Cache' );
+Gideon->register_cache( 'Gideon::Cache::Hash' );
 
-Example::Cache->disable_cache;
+Example::Cache->cache->disable;
 
 my $test_data = Example::Cache->find_all( value => { like => '%test 5' } );
 my $first     = $test_data->first;
 
 is( $first->id, 5, 'Record from db using like' );
 
-is( Gideon::Cache->count, 0, 'Cache disabled' );
-is( Gideon::Cache->hits, 0, 'No hits' );
+is( Gideon::Cache::Hash->count, 0, 'Cache disabled' );
+is( Gideon::Cache::Hash->hits, 0, 'No hits' );
 
 my $more_data = Example::Cache->find_all( value => { like => '%test 6' } );
 
-my @list = Gideon::Cache->class_keys('Example::Cache'); 
+my @list = Gideon::Cache::Hash->class_keys('Example::Cache'); 
 
 is( scalar @list, 0, 'Keys for class' );
 
@@ -53,8 +53,8 @@ my $cached_data = Example::Cache->find_all( value => { like => '%test 5' } );
 
 is( $cached_data->records_found, 0, 'No records found' );
 
-is( Gideon::Cache->hits, 0, 'No hits in cache' );
-is( Gideon::Cache->count, 0, 'Nothing on cache to count' );
+is( Gideon::Cache::Hash->hits, 0, 'No hits in cache' );
+is( Gideon::Cache::Hash->count, 0, 'Nothing on cache to count' );
 
 # Auxiliary test functions -----------------------------------------------------
 

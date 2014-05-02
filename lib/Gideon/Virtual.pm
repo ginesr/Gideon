@@ -36,9 +36,9 @@ sub find_all {
         $provider->results( Gideon::Virtual::Results->new( package => $class ) );
         $provider->class($class);
 
-        if ( $class->cache_registered ) {
+        if ( $class->cache->is_registered ) {
             $cache_key = $class->generate_cache_key( $destination, $args );
-            if ( my $cached_results = $class->cache_lookup($cache_key) ) {
+            if ( my $cached_results = $class->cache->lookup($cache_key) ) {
                 $provider->results($cached_results);
                 return wantarray ? $provider->results->records : $provider->results;
             }
@@ -47,7 +47,7 @@ sub find_all {
         my $results = $provider->execute( $destination, $args, $map );
 
         if ($cache_key) {
-            $class->cache_store( $cache_key, $results );
+            $class->cache->store( $cache_key, $results );
         }
 
         return wantarray ? $provider->results->records : $provider->results;
@@ -61,18 +61,6 @@ sub find_all {
 
 }
 
-sub cache_store {
-
-    my $self = shift;
-    my $key  = shift;
-    my $what = shift;
-
-    my $class = (ref $self) ? ref $self : $self;
-
-    return Gideon->cache_store( $key, $what, $class );
-
-}
-
 sub generate_cache_key {
 
     my $self = shift;
@@ -80,9 +68,9 @@ sub generate_cache_key {
     my $args = shift || {};
 
     my $vals = join '_', map { $_ . '-' . $args->{$_} } keys %{$args};
-    my $key = $self->signature_for_cache . $dest . $vals;    # uniqueness generated with sql query and filters
+    my $key = $self->cache->signature . $dest . $vals;    # uniqueness generated with sql query and filters
 
-    my $module = $self->get_cache_module;
+    my $module = $self->cache->get_module;
     return $module->digest($key);
 
 }
