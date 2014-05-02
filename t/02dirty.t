@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib 'xlib';
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -65,7 +65,13 @@ lives_ok(
 is( $country->is_modified, 0,           'Now is not modified anymore' );
 is( $country->is_stored,   1,           'And is stored' );
 
-my $persons = Example::Person->find_all( country => 'US', name => { like => '%joe%' } );
+my $persons;
+
+lives_ok(sub{
+  $persons = Example::Person->find_all( country => 'US', name => { like => '%joe%' } )},
+  'Find all'
+);
+
 my $first_person = $persons->get_record(0); 
 
 is( $first_person->is_modified, 0, 'From DB not changed' );

@@ -25,7 +25,6 @@ use_ok(qw(Example::Test));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
-
 # ------------------------------------------------------------------------------
 
 my $driver = Example::Driver::MySQL->new(

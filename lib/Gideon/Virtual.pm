@@ -29,8 +29,8 @@ sub find_all {
         my $order  = $config->{order_by} || [];
         my $limit  = $config->{limit} || '';
 
-        my $destination = $class->get_store_destination();
-        my $provider    = $class->get_store_args();
+        my $destination = $class->storage->origin();
+        my $provider    = $class->storage->args();
 
         $provider->supports($destination);
         $provider->results( Gideon::Virtual::Results->new( package => $class ) );

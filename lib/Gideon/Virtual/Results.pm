@@ -22,7 +22,7 @@ sub remove {
         }
 
         my $where       = $self->where;
-        my $destination = $self->package->get_store_destination();
+        my $destination = $self->package->storage->origin();
 
         # implement remove
         
@@ -42,7 +42,7 @@ sub update {
         }        
 
         my $where       = $self->where;
-        my $destination = $self->package->get_store_destination();
+        my $destination = $self->package->storage->origin();
 
         # implement update
 

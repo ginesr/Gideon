@@ -311,7 +311,7 @@ sub flush_to_disk {
 sub _from_store_ref {
 
     my $self = shift;
-    my $store = $self->get_store_args();
+    my $store = $self->storage->args();
 
     if ( ref( $store ) and $store->can('connect') ) {
         return $store->connect();

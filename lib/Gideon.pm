@@ -11,7 +11,7 @@ Gideon is intended to be an ORM completly written in Perl
 
 package Gideon;
 
-use strict;
+use Moose;
 use warnings;
 use Exporter qw(import);
 use Module::Load qw(load);
@@ -19,27 +19,23 @@ use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Scalar::Util qw(blessed looks_like_number);
 use Gideon::Error;
-use Moose;
-use Class::MOP::Attribute;
 use Hash::MultiValue;
 use 5.008_001;
 use JSON::XS;
 use Gideon::Meta;
+use MooseX::ClassAttribute;
+use Gideon::Store;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 $VERSION = eval $VERSION;
 
 our $EXCEPTION_DEBUG = 0;
 
 use constant CACHE_DEFAULT_TTL => 300; # default expire seconds
 
-my $__store = {};
 my $__relations = {};
-my $__stricts = {};
 my $__cache = undef;
 our $__obj_cache = 1;
-our %stores = ();
-our $__pool = undef;
 our $_cache_ttl = undef;
 
 use overload
@@ -48,7 +44,9 @@ use overload
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
 has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
-has '_metadata' => ( is => 'rw', isa => 'Gideon::Meta', lazy => 1, default => sub { my $self = shift; Gideon::Meta->new(package_name => $self->_get_pkg_name($self) ) } );
+
+class_has 'metadata' => ( is => 'rw', isa => 'Gideon::Meta', lazy => 1, default => sub { my $self = shift; Gideon::Meta->new } );
+class_has 'storage' => ( is => 'rw', isa => 'Gideon::Store', lazy => 1, default => sub { my $self = shift; Gideon::Store->new } );
 
 sub BUILD {
 
@@ -60,25 +58,22 @@ sub BUILD {
 }
 
 sub register_store {
-    my $class      = shift;
-    my $store_name = shift;
-    my @args       = @_;
-    die 'register store is a class method' if ref $class;
-    unless ( $class->store_registered($store_name,@args) ) {
-        $stores{$store_name} = $args[0];
-    }
-    if ( grep { /strict/ } @args ) {
-        $__stricts->{$store_name} = 1;
-    }
-    $class;    
-}
 
-sub transaction {
     my $class = shift;
-    my $store_name = shift;
-    my $ref = $stores{$store_name};
-    die "$store_name is not registered or name is invalid" if not $ref;
-    return $ref;
+    my $name = shift;
+    my @args = @_;
+
+    die 'register_store() is a class method' if blessed $class;
+    die 'do not call register_store() from your own class, use Gideon->register_store(...)' if $class ne __PACKAGE__;
+
+    my $strict = ( grep { /strict/ } @args ) ? 1 : 0;
+
+    return $class->storage->register(
+        name => $name,
+        args => $args[0],
+        strict => $strict
+    )
+
 }
 
 sub register_cache {
@@ -423,102 +418,8 @@ sub transform_filter_values {
     return scalar @values == 1 ? $values[0] : \@values;
 }
 
-sub get_store_id {
-    my $self  = shift;
-    my $id = $self->_store_info;
-    return $id;
-}
-
-sub get_store_destination {
-    my $self  = shift;
-    my ( $id, $dest ) = $self->_store_info;
-    die 'invalid store \'' .$id . '\' from class '. $self .', use Gideon->register(\'' . $id . '\', ... )' unless $stores{$id};
-    return $dest;
-}
-
-sub stores_for_foreign {
-
-    my $self = shift;
-    my $other = shift;
-    my @stores = ();
-
-    push @stores, $self->get_store_destination;
-    push @stores, $other->get_store_destination;
-    
-    return wantarray ? @stores : join ',', @stores;
-
-}
-
+sub stores_for_foreign {}
 sub columns_meta_for_foreign {}
-
-sub get_store_args {
-    
-    my $self  = shift;
-    my $node  = shift;
-
-    my $id    = $self->_store_info;
-    my $store = $stores{$id};
-    my $pkg   = $self->_get_pkg_name;
-
-    die 'invalid store \'' .$id . '\' from class '. $self .', use Gideon->register(\'' . $id . '\', ... )' unless $store;
-    
-    if ( ref($store) eq 'Gideon::Connection::Pool' ) {
-        return $self->get_store_from_pool( $store, $node );
-    }
-    if ($node and !defined $__pool->{$pkg}) {
-        die "can't use $node without pool configuration";
-    }
-    
-    return $store;
-}
-
-sub get_store_from_pool {
-    
-    my $self  = shift;
-    my $pool  = shift;
-    my $node  = shift;
-    
-    my $pkg = $self->_get_pkg_name;
-    
-    if ($node) {
-        return $pool->get($node);    
-    }
-    
-    die 'use select() to switch/choose from pool' unless defined $__pool->{$pkg};
-    return $pool->get( $__pool->{$pkg} );
-    
-}
-
-sub select {
-    
-    my $self = shift;
-    my $node = shift;
-    
-    if ( $self eq __PACKAGE__ ) {
-        Gideon::Error->throw('use select() from your class');
-    }
-    
-    my $id   = $self->_store_info;
-    my $pool = $stores{$id};
-    my $pkg  = $self->_get_pkg_name;
-
-    unless ( ref($pool) eq 'Gideon::Connection::Pool' ) {
-        Gideon::Error->throw('not a valid pool class defined');
-    }
-    unless ($pool->detect($node)) {
-        Gideon::Error->throw('invalid identifier ' .$node . ' is not in the pool');
-    }
-    
-    $__pool->{$pkg} = $node;
-    return 1;
-    
-}
-
-sub store($) {
-    my $store = shift || return undef;
-    my $caller = caller;
-    $__store->{$caller} = $store;
-}
 
 sub has_many($%) {
     my $foreign = shift || return undef;
@@ -550,17 +451,6 @@ sub as_hash {
     return { map { $_ => $self->$_ } keys %{ $self->metadata->get_columns_hash } };
 }
 
-sub store_registered {
-    my $class      = shift;
-    my $store_name = shift;
-    my @args       = @_;
-
-    if ( exists $__stricts->{$store_name} ) {
-        die 'store \''. $store_name .'\' is already registered' if exists $stores{$store_name};        
-    }
-    return;
-}
-
 sub cache_registered {
     my $class = shift;
     return ($__cache) ? 1 : 0;
@@ -568,8 +458,8 @@ sub cache_registered {
 
 sub signature_for_cache {
     my $class = shift;
-    my $pkg  = $class->_get_pkg_name;
-    my $id = $pkg . '_' . $class->get_store_id;
+    my $pkg = $class->_get_pkg_name;
+    my $id = $pkg . '_' . $class->storage->id;
     return $id;
 }
 
@@ -686,17 +576,29 @@ sub clone {
     return $cloned;
 }
 
-# Metadata----------------------------------------------------------------------
+# Stores -----------------------------------------------------------------------
 
-our $metadata = {};
+before 'storage' => sub {
+    my $self = shift;
+    Gideon::Store->who($self->_get_pkg_name);
+};
 
-sub metadata {
-    my $class = shift;
-    return $class->_metadata if blessed $class;
-    my $pkg = $class->_get_pkg_name;
-    $metadata->{$pkg} ||= Gideon::Meta->new( package_name => $pkg );
-    return $metadata->{$pkg};
+sub store($) {
+    my $store = shift || return undef;
+    __PACKAGE__->storage->add_package({ name => caller, store => $store });
 }
+
+sub transaction($) {
+    my $class = shift;
+    return __PACKAGE__->storage->transaction(shift)
+}
+
+# Metadata ---------------------------------------------------------------------
+
+before 'metadata' => sub {
+    my $self = shift;
+    Gideon::Meta->who($self->_get_pkg_name);
+};
 
 # Imports ----------------------------------------------------------------------
 
@@ -721,7 +623,6 @@ use warnings 'redefine';
 sub _init {
 
     my $self = shift;
-    my $args = shift;
     return;
 }
 
@@ -835,12 +736,6 @@ sub _get_pkg_name {
     my $class = shift;
     my $pkg  = ref($class) ? ref($class) : $class;
     return $pkg;    
-}
-
-sub _store_info {
-    my $self = shift;
-    my ( $id, $dest ) = split( /:/, $__store->{$self->_get_pkg_name} );
-    return wantarray ? ( $id, $dest ) : $id; 
 }
 
 __PACKAGE__->meta->make_immutable();

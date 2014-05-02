@@ -1,10 +1,10 @@
-package Basic::Gideon;
+package Basic::Bar;
 
 use Moose;
 use Gideon;
 
 extends qw(Gideon);
 
-store 'test:destination';
+store 'some:foo';
 
 __PACKAGE__->meta->make_immutable();

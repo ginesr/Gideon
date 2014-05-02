@@ -18,11 +18,12 @@ use Example::Driver::SQLite;
 use Example::Person;
 
 my $dir = getcwd;
-if ( $dir !~ /\/t/ ) { chdir('t') }
+if ( $dir !~ /\/Gideon/ ) { $dir .= "/Gideon" }
+if ( $dir !~ /\/t/ ) { $dir .= "/t" }
 
 # Prepare test data ------------------------------------------------------------
 
-my $dbh = DBI->connect( "dbi:SQLite:dbname=db/test.db", "", "" );
+my $dbh = DBI->connect( "dbi:SQLite:dbname=$dir/db/test.db", "", "" );
 
 $dbh->do("drop table IF EXISTS person");
 $dbh->do(
@@ -41,7 +42,7 @@ $dbh->do("insert into person (person_name,person_city,person_country,person_type
 
 # END Prepare test data --------------------------------------------------------
 
-Gideon->register_store( 'master', Example::Driver::SQLite->new( db => 'db/test.db' ) );
+Gideon->register_store( 'master', Example::Driver::SQLite->new( db => $dir . '/db/test.db' ) );
 
 my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
 my $first = $persons->first;

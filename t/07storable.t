@@ -12,7 +12,8 @@ use Example::Flat;
 use Test::Exception;
 
 my $dir = getcwd;
-if ( $dir !~ /\/t/ ) { chdir('t') }
+if ( $dir !~ /\/Gideon/ ) { $dir .= "/Gideon" }
+if ( $dir !~ /\/t/ ) { $dir .= "/t" }
 
 # Prepare test data ------------------------------------------------------------
 
@@ -24,12 +25,12 @@ my $table = {
       }
 };
 
-Storable::store $table, 'db/flat.db';
+Storable::store $table, $dir . '/db/flat.db';
 
 # ------------------------------------------------------------------------------
 
 Gideon->register_store( 'disk',
-    Example::Driver::Storable->new( db => 'db/flat.db' ), qw/strict/ );
+    Example::Driver::Storable->new( db => $dir . '/db/flat.db' ), qw/strict/ );
 
 my $flat = Example::Flat->new;
 $flat->value('is a new record!');

@@ -23,10 +23,10 @@ sub remove {
             return 0;
         }
 
-        my $where       = $self->where;
-        my $destination = $self->package->get_store_destination();
+        my $where  = $self->where;
+        my $origin = $self->package->storage->origin();
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $destination, $where );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $origin, $where );
 
         my $dbh  = $self->package->dbh( $self->conn );
         my $sth  = $dbh->prepare_cached($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
@@ -54,10 +54,10 @@ sub update {
             return 0;
         }
 
-        my $where       = $self->where;
-        my $destination = $self->package->get_store_destination();
+        my $where  = $self->where;
+        my $origin = $self->package->storage->origin();
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $destination, $args, $where );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $origin, $args, $where );
 
         my $dbh  = $self->package->dbh( $self->conn );
         my $sth  = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );

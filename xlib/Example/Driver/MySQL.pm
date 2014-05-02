@@ -1,11 +1,9 @@
-
 package Example::Driver::MySQL;
 
-use strict;
+use Moose;
 use warnings;
 use DBI;
 use Example::Error::Simple;
-use Moose;
 use DBD::mysql;
 
 extends 'Gideon::DB::Driver';
@@ -30,8 +28,12 @@ sub connect {
         return $dbh;
     }
     if ( my $dbh = DBI->connect( $self->connect_string, $self->username, $self->password,
-    { RaiseError => 0, PrintError => 0, AutoCommit => 1 }    
-     ) ) {
+        {
+            RaiseError => 0, 
+            PrintError => 0, 
+            AutoCommit => 1 
+        })
+    ){
         $_mysql_cache_dbh->{$self->cache_key} = $dbh;
         return $dbh;
     }
@@ -91,4 +93,4 @@ sub cache_key {
     return $string;
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

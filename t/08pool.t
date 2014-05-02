@@ -13,7 +13,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 18;
+    plan tests => 19;
 }
 
 use_ok(qw(Gideon::Connection::Pool));
@@ -50,28 +50,33 @@ $pool->push( 'node3', $driver_3 );
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
-
 # ------------------------------------------------------------------------------
 
 Gideon->register_store( 'mysql_server', $pool );
 
 throws_ok(
-    sub { Gideon->select('node1') },
-    qr/from your class/,
-    'Try to use select pool as class'
+    sub { Gideon->storage->select('node1') },
+    qr/\Quse select() from your own class\E/,
+    'Try to use select pool from base class'
 );
 
-throws_ok( sub { Gideon->get_store_from_pool('node1') },
-    qr/to switch/, 'Not selected yet' );
+throws_ok( sub { Gideon->storage->from_pool( $pool, 'node1') },
+    qr/\Quse from_pool() from your own class\E/, 'Not selected yet' );
 
 throws_ok(
-    sub { Example::Test->select('foo'); },
+    sub { Example::Test->storage->select('foo') },
     qr/invalid identifier/,
     'Invalid pool identifier'
 );
 
-Example::Test->select('node1');
-Example::Test2->select('node3');
+throws_ok(
+    sub { Example::Test->storage->last_used },
+    qr/your store is a connection pool but/,
+    'Try to use select pool from base class'
+);
+
+Example::Test->storage->select('node1');
+Example::Test2->storage->select('node3');
 
 throws_ok( sub { Example::Test2->find( id => 4 ) },
     'Example::Error::Simple', 'Tried to use conn from pool that failed' );
@@ -83,12 +88,12 @@ my $last      = $test_data->last;
 is( $first->name, 'rec 1', 'From mysql first record' );
 is( $last->name,  'rec 5', 'From mysql last record with limit' );
 
-Example::Test->select('node2');
+Example::Test->storage->select('node2');
 
 my $record = Example::Test->find( id => 4 );
 is( $record->name, 'rec 4', 'From mysql one record' );
 
-Example::Test->select('node3');
+Example::Test->storage->select('node3');
 
 throws_ok( sub { $record = Example::Test->find( id => 4 ) },
     'Example::Error::Simple', 'Tried to use conn from pool that failed' );
@@ -97,10 +102,10 @@ $record = Example::Test->find( id => 3, { conn => 'node1' } );
 
 is( $record->name, 'rec 3', 'Using node from param' );
 
-my $new_rec =
-  Example::Test->new( name => 'is brand new', value => 'some value' );
+my $new_rec = Example::Test->new( name => 'is brand new', value => 'some value' );
 $new_rec->conn('node1');  
 $new_rec->save();
+
 my $id = $new_rec->last_inserted_id();
 
 is( $id, 11, 'New record inserted' );

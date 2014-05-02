@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 21;
+plan tests => 23;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -42,12 +42,15 @@ my $last      = $test_data->last;
 is( $first->name, 'rec 1', 'From mysql first record' );
 is( $last->name,  'rec 5', 'From mysql last record with limit' );
 
+is( $first->storage->origin, 'gideon_t1', 'Get store destination' );
+is( Example::Test->storage->origin, 'gideon_t1', 'Get store destination' );
+
 my $record = Example::Test->find( id => 4 );
 is( $record->name, 'rec 4', 'From mysql one record' );
 
 throws_ok(
     sub { $record = Example::Test->find( id => 3, { conn => 'node1' } ) },
-    qr/can't use node1 without pool configuration/, 'Failed to use pool here' );
+    qr/can't user node1, either pool is not defined or node is invalid/, 'Failed to use pool here' );
 
 my $new_rec =
   Example::Test->new( name => 'is brand new', value => 'some value' );

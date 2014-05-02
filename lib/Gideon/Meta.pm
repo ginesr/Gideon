@@ -3,18 +3,19 @@ package Gideon::Meta;
 use Moose;
 use Gideon::Error;
 use Data::Dumper qw(Dumper);
+use MooseX::ClassAttribute;
 
-has 'package_name' => ( is => 'rw', isa => 'Str', required => 1 );
-has 'metadata_cache' => ( is => 'rw', isa => 'HashRef' );
+class_has 'who' => ( is => 'rw', isa => 'Str' );
+has 'metadata_cache' => ( is => 'rw', isa => 'HashRef', default => sub {{}} );
 
 sub check_meta {
 
     my $self      = shift;
-    my $meta      = $self->get_all_meta;
     my $attribute = shift;
+    my $meta      = $self->get_all_meta;
 
     unless ( exists $meta->{attributes}->{$attribute} ) {
-        Gideon::Error->throw('invalid meta data \'' . $attribute . '\' for class ' . $self->package_name);
+        Gideon::Error->throw("invalid meta data '$attribute' for class " . $self->who);
     }
 
     return $meta->{attributes}->{$attribute};    
@@ -191,10 +192,10 @@ sub get_columns_from_meta {
 sub get_all_meta {
 
     my $self       = shift;    
-    my $meta       = $self->package_name->meta;
+    my $meta       = $self->who->meta;
     my $cache_meta = {};
 
-    if (my $cached_data = $self->metadata_cache) {
+    if (my $cached_data = $self->metadata_cache->{$self->who}) {
         return $cached_data;
     }
 
@@ -226,12 +227,12 @@ sub get_all_meta {
             $meta_attr->{lazy} = 1;
         }
 
-        $cache_meta->{attributes}->{$name} = $meta_attr;
+        $cache_meta->{$self->who}->{attributes}->{$name} = $meta_attr;
     }
 
     $self->metadata_cache($cache_meta);
 
-    return $cache_meta;
+    return $cache_meta->{$self->who};
 }
 
 sub map_args_with_alias {
@@ -252,7 +253,7 @@ sub map_args_with_metadata {
     my $args   = shift;
     my $getter = shift;
     my $map    = {};
-    my $pkg    = $self->package_name;
+    my $pkg    = $self->who;
 
     foreach my $arg ( keys %{$args} ) {
         if ($arg eq '-or' and ref $args->{$arg} eq 'HASH' ) {
@@ -274,13 +275,6 @@ sub map_args_with_metadata {
 
     return $map
     
-}
-
-sub _get_pkg_name {
-    my $self = shift;
-    my $caller = shift;
-    my $pkg = ref($caller) ? ref($caller) : $caller;
-    return $pkg;    
 }
 
 __PACKAGE__->meta->make_immutable();

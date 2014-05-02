@@ -1,4 +1,3 @@
-
 package Example::Person;
 
 use strict;
@@ -29,4 +28,4 @@ has 'city'    => ( is => 'rw', isa => 'Str', column => 'person_city',    metacla
 has 'country' => ( is => 'rw', isa => 'Str', column => 'person_country', metaclass => 'Gideon' );
 has 'type'    => ( is => 'rw', isa => 'Num', column => 'person_type',    metaclass => 'Gideon' );
 
-1;
+__PACKAGE__->meta->make_immutable();

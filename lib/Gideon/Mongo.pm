@@ -36,7 +36,7 @@ sub remove {
             Gideon::Error::Simple->throw('can\'t remove() without mongo unique id');    
         }
 
-        my $obj = $self->mongo_conn( $self->get_store_destination() );
+        my $obj = $self->mongo_conn( $self->storage->origin() );
 
         $obj->remove( { "_id" => $self->_mongo_id }, 1 );
 
@@ -71,7 +71,7 @@ sub remove_all {
 
     try {
 
-        my $obj = $class->mongo_conn( $class->get_store_destination() );
+        my $obj = $class->mongo_conn( $class->storage->origin() );
         my $all = $obj->remove($args);
 
         if ( Gideon->cache_registered ) {
@@ -98,7 +98,7 @@ sub save {
 
     try {
 
-        my $table  = $self->get_store_destination();
+        my $table  = $self->storage->origin();
         my $obj    = $self->mongo_conn($table);
         my $fields = $self->metadata->get_attributes_from_meta();
 
@@ -161,7 +161,7 @@ sub find {
 
         my $cache_key;
 
-        my $table  = $class->get_store_destination();
+        my $table  = $class->storage->origin();
         my $db     = $class->mongo_conn($table);
         my $fields = $class->metadata->get_attributes_from_meta();
 
@@ -215,7 +215,7 @@ sub find_all {
     try {
 
         my $cache_key;
-        my $store   = $class->get_store_destination();
+        my $store   = $class->storage->origin();
         my $obj     = $class->mongo_conn( $store );
         my $results = Gideon::Mongo::Results->new(package => $class);
         my $all     = $obj->find($args);
@@ -256,7 +256,7 @@ sub mongo_conn {
 
     my $class   = shift;
     my $table   = shift;
-    my $db      = $class->get_store_id();
+    my $db      = $class->storage->id();
     my $db_conn = $class->_from_store_conn()->get_database($db);
 
     if ($table) {
@@ -372,7 +372,7 @@ sub remove_auto_columns_for_insert {
 sub _from_store_conn {
 
     my $class = shift;
-    my $store = $class->get_store_args();
+    my $store = $class->storage->args();
 
     if ( ref($store) eq 'MongoDB::Connection' ) {
         return $store;

@@ -46,7 +46,7 @@ sub remove {
         }
 
         my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->get_store_destination(), \%where );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->storage->origin(), \%where );
 
         my $pool = $self->conn;
         my $sth  = $self->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $self->dbh($pool)->errstr );
@@ -88,7 +88,7 @@ sub update {
         my $limit = $config->{limit} || '';
         my $pool  = $config->{conn} || '';
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $class->get_store_destination(), $where, undef, undef, $limit );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $class->storage->origin(), $where, undef, undef, $limit );
 
         my $sth = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
@@ -125,7 +125,7 @@ sub remove_all {
         my $limit = $config->{limit} || '';
         my $pool  = $config->{conn} || '';
 
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $class->get_store_destination(), $where, undef, undef, $limit );
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $class->storage->origin(), $where, undef, undef, $limit );
 
         my $sth = $class->dbh($pool)->prepare($stmt) or Gideon::Error::DBI->throw( $class->dbh($pool)->errstr );
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
@@ -173,10 +173,10 @@ sub save {
         my @bind = ();
 
         if ( $self->is_stored ) {
-            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $self->get_store_destination(), \%data, $where );
+            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $self->storage->origin(), \%data, $where );
         }
         else {
-            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->get_store_destination(), \%data );
+            ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'insert', $self->storage->origin(), \%data );
         }
 
         my $pool = $self->conn;
@@ -215,7 +215,7 @@ sub last_inserted_id {
     my $query = "select last_insert_id() as last";
     
     if ( $self->_is_sqlite ) {
-        my $t = $self->get_store_destination();
+        my $t = $self->storage->origin();
         $query = "SELECT ROWID as last from $t order by ROWID DESC limit 1";
     }
     
@@ -254,7 +254,7 @@ sub find {
         my $pool   = $config->{conn} || '';
 
         my ( $stmt, @bind ) =
-          Gideon::Filters::DBI->format( 'select', $class->get_store_destination(), $fields, $where, $class->add_table_to_order($order), $limit );
+          Gideon::Filters::DBI->format( 'select', $class->storage->origin(), $fields, $where, $class->add_table_to_order($order), $limit );
           
         my $obj;
 
@@ -322,7 +322,7 @@ sub find_all {
         my $limit  = $config->{limit} || '';
         my $pool   = $config->{conn} || '';
 
-        my $destination = $class->get_store_destination();
+        my $destination = $class->storage->origin();
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $destination, $fields, $where, $class->add_table_to_order($order), $limit );
 
@@ -404,7 +404,7 @@ sub generate_cache_key {
 sub add_table_to_order {
 
     my $class = shift;
-    my $table = $class->get_store_destination();
+    my $table = $class->storage->origin();
     my $sort  = shift;
 
     if ( ref($sort) eq 'ARRAY' ) {
@@ -436,7 +436,7 @@ sub where_stmt_from_args {
     my $args  = shift;
     
     my $map   = $class->metadata->map_args_with_column($args);
-    my $table = $class->get_store_destination();
+    my $table = $class->storage->origin();
     
     my %where = ();
     my @where = ();
@@ -472,7 +472,7 @@ sub get_column_with_table {
     my $class     = shift;
     my $attribute = shift;
 
-    my $table  = $class->get_store_destination();
+    my $table  = $class->storage->origin();
     my $column = $class->metadata->get_column_for_attribute($attribute) || warn "failed $class $attribute";
 
     return $table . '.' . $column;
@@ -481,7 +481,7 @@ sub get_column_with_table {
 sub add_table_to_where {
 
     my $class = shift;
-    my $table = $class->get_store_destination();
+    my $table = $class->storage->origin();
     my %where = @_;
 
     return map { $table . '.' . $_ => $where{$_} } sort keys %where;
@@ -490,7 +490,7 @@ sub add_table_to_where {
 sub get_columns_escaped_with_table {
 
     my $class = shift;
-    my $table = $class->get_store_destination();
+    my $table = $class->storage->origin();
 
     my @columns = $class->metadata->get_columns_from_meta();
     my @escaped = map { $table . '.' . $_ . ' as `' . $table . '.' . $_ . '`' } @columns;
@@ -501,7 +501,7 @@ sub get_columns_escaped_with_table {
 sub columns_with_table_as_list {
 
     my $class = shift;
-    my $table = $class->get_store_destination();
+    my $table = $class->storage->origin();
 
     my $columns = $class->metadata->get_columns_from_meta();
     my @columns = map { $table . '.' . $_ } @{$columns};
@@ -594,6 +594,19 @@ sub ne {
     my $class  = shift;
     my $string = shift;
     return $string;
+}
+
+sub stores_for_foreign {
+
+    my $self = shift;
+    my $other = shift;
+    my @stores = ();
+
+    push @stores, $self->storage->origin;
+    push @stores, $other->storage->origin;
+    
+    return wantarray ? @stores : join ',', @stores;
+
 }
 
 sub columns_meta_for_foreign {
@@ -702,7 +715,7 @@ sub function {
         my $where = $class->where_stmt_from_args($args);
         my $pool  = $config->{conn} || '';
         my $fields = $class->_function_to_query($function,$column);
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->get_store_destination(), $fields, $where, undef, undef);
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->storage->origin(), $fields, $where, undef, undef);
 
         my $num = 0;
         my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
@@ -736,7 +749,7 @@ sub _from_store_dbh {
     if ( ref($self) and defined $self->__dbh() ) { return $self->__dbh() }
 
     my $dbh;
-    my $store = $self->get_store_args($pool);
+    my $store = $self->storage->args($pool);
 
     if ( ref($store) eq 'DBI::db' ) {
         $dbh = $store;
