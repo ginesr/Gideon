@@ -1,11 +1,9 @@
-
 package Gideon::DB::Driver::MySQL;
 
-use strict;
+use Moose;
 use warnings;
 use Gideon::Error;
 use DBI;
-use Moose;
 
 extends 'Gideon::DB::Driver';
 

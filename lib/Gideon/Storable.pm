@@ -110,7 +110,7 @@ sub gte {
 sub find_all {
     
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
@@ -118,7 +118,7 @@ sub find_all {
 
     try {
         
-        $args = Gideon::Filters::Storable->format( $class->filter_rules($args) );
+        $args = Gideon::Filters::Storable->format( $class->params->normalize($args) );
         
         my $results = Gideon::Storable::Results->new(package => $class);
         
@@ -151,7 +151,7 @@ sub find_all {
 sub find {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
@@ -159,7 +159,7 @@ sub find {
 
     try {
         
-        $args = Gideon::Filters::Storable->format( $class->filter_rules($args) );
+        $args = Gideon::Filters::Storable->format( $class->params->normalize($args) );
         
         if ( my $found = $class->search_in_hash($args) ) {
 

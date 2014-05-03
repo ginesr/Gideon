@@ -1,9 +1,7 @@
-
 package Gideon::DB::Driver;
 
-use strict;
-use warnings;
 use Moose;
+use warnings;
 use DBI;
 use Gideon::Error::Simple;
 

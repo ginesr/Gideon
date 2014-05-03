@@ -79,7 +79,7 @@ sub update {
         Gideon::Error->throw('update() is a static method');
     }
 
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     try {
 
@@ -112,7 +112,7 @@ sub update_all {}
 sub remove_all {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('remove_all() is a static method');
@@ -234,13 +234,13 @@ sub last_inserted_id {
 sub find {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
     
-    $args = $class->filter_rules($args);
+    $args = $class->params->normalize($args);
 
     try {
         
@@ -303,13 +303,13 @@ sub find {
 sub find_all {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
 
-    $args = $class->filter_rules($args);
+    $args = $class->params->normalize($args);
 
     try {
 
@@ -695,8 +695,8 @@ sub function {
         $column = $attr
     }
 
-    my ( $args, $config ) = $class->decode_params(@_);
-    $args = $class->filter_rules($args);
+    my ( $args, $config ) = $class->params->decode(@_);
+    $args = $class->params->normalize($args);
     
     try {
         

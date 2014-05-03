@@ -8,13 +8,13 @@ use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use SQL::Abstract;
 
-my ( $args, $config ) = Gideon->decode_params(
+my ( $args, $config ) = Gideon->params->decode(
     foo  => { ne   => 'bar' },                    # produces and ...
     name => { like => 'that', ne => 'this' },    # produces "and" ..
     name => { lt   => 1 }                         # ends with "or"
 );
 
-$args = Gideon->filter_rules( $args, 'skip_meta_check' );
+$args = Gideon->params->normalize( $args, 'skip_meta_check' );
 
 my $sql    = SQL::Abstract->new();
 my $fields = ['test'];

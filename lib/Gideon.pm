@@ -26,6 +26,7 @@ use Gideon::Meta;
 use MooseX::ClassAttribute;
 use Gideon::Store;
 use Gideon::Cache;
+use Gideon::Params;
 
 our $VERSION = '0.03';
 $VERSION = eval $VERSION;
@@ -34,7 +35,7 @@ our $EXCEPTION_DEBUG = 0;
 
 my $__relations = {};
 use overload
-    '""' => \&strigify,
+    '""' => \&as_string,
     fallback => 1;
 
 has 'is_modified' => ( is => 'rw', isa => 'Bool', default => 0);
@@ -43,15 +44,7 @@ has 'is_stored' => ( is => 'rw', isa => 'Bool', default => 0, lazy => 1 );
 class_has 'metadata' => ( is => 'rw', isa => 'Gideon::Meta', lazy => 1, default => sub { my $self = shift; Gideon::Meta->new } );
 class_has 'storage' => ( is => 'rw', isa => 'Gideon::Store', lazy => 1, default => sub { my $self = shift; Gideon::Store->new } );
 class_has 'cache' => ( is => 'rw', isa => 'Gideon::Cache', lazy => 1, default => sub { my $self = shift; Gideon::Cache->new } );
-
-sub BUILD {
-
-    my $self = shift;
-    my @args  = @_;
-
-    $self->_init(@args);
-
-}
+class_has 'params' => ( is => 'rw', isa => 'Gideon::Params', lazy => 1, default => sub { my $self = shift; Gideon::Params->new } );
 
 sub register_store {
 
@@ -84,67 +77,17 @@ sub register_cache {
 
 }
 
-sub find {
-    my $class = shift;
-    # overload in subclass
-}
+# overload in subclass if applicable--------------------------------------------
 
-sub find_all {
-    my $class = shift;
-    # overload in subclass
-}
+sub find {}
+sub find_all {}
+sub save {}
+sub remove {}
+sub update {}
+sub remove_all {}
+sub update_all {}
 
-sub save {
-    my $class = shift;
-    # overload in subclass
-}
-
-sub remove {
-    my $class = shift;
-    # overload in subclass
-}
-
-sub update {
-    my $class = shift;
-    # overload in subclass
-}
-
-sub remove_all {
-    my $class = shift;
-    # overload in subclass    
-}
-
-sub update_all {
-    my $class = shift;
-    # overload in subclass    
-}
-
-sub filter_rules {
-
-    my $class   = shift;
-    my $args    = shift;
-    my $options = shift || '';
-
-    foreach my $attribute ( keys %{$args} ) {
-        if ($attribute eq '-or' and ref $args->{$attribute} eq 'HASH' ) {
-            my @attributes = ();
-            push @attributes, map { $_ } keys %{ $args->{$attribute} };
-            foreach (@attributes) {
-                $class->metadata->check_meta($_);
-                my $value_filtered = $class->trans_filters( $args->{$attribute}->{$_} );
-                $args->{$attribute}->{$_} = $value_filtered
-            }    
-        }
-        else {
-            $class->metadata->check_meta($attribute) unless $options =~ /skip_meta_check/;
-            my $value_filtered = $class->trans_filters( $args->{$attribute} );
-            $args->{$attribute} = $value_filtered
-        }
-    }
-
-    return $args;
-
-}
+# ------------------------------------------------------------------------------
 
 sub stringify_fields {
     
@@ -231,137 +174,6 @@ sub eq {
     return '=' . $string;
 }
 
-sub validate_order_by {
-
-    my $class   = shift;
-    my $config  = shift;
-    my $options = shift || '';
-
-    if ( ref($config) eq 'ARRAY' ) {
-        $config = $class->_transform_sort_by_from_array( $config, $options );
-    }
-    if ( ref($config) eq 'HASH' ) {
-        $config = $class->_transform_sort_by_from_hash( $config, $options );
-    }
-    unless ( ref($config) ) {
-        $class->metadata->check_meta($config) unless $options =~ /skip_meta_check/;
-        $config = $class->metadata->get_column_for_attribute($config);
-    }
-
-    return $config;
-
-}
-
-sub check_for_config_in_params {
-    
-    my $class = shift;
-    my @args  = @_;
-    
-    # func( one => 1, { options => 1 } )
-    if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
-        return 1;
-    }
-    # func( undef, {} )
-    if ( scalar(@args) == 2 and !defined $args[0] and ref( $args[-1] ) eq 'HASH' ) {
-        return 1;
-    }
-    if ( scalar(@args) == 1 and ref( $args[-1] ) eq 'HASH' ) {
-        return 1;
-    }
-        
-    return;
-}
-
-sub decode_params {
-
-    my $class  = shift;
-    my @args   = @_;
-    my $args   = {};
-    my $config = {};
-
-    # check if there are options passed, last argument as hashref
-    if ( $class->check_for_config_in_params(@args) ) {
-        $config = pop @args;
-        if ( exists $config->{order_by} ) {
-            $config->{order_by} = $class->validate_order_by( $config->{order_by} );
-        }
-    }
-
-    unless ( defined $args[0] ) {
-        @args = (); # passing undef in params trigger warnings
-    }
-
-    my $hash = Hash::MultiValue->new(@args);
-    $args = {@args};
-
-    foreach ( keys %{$args} ) {
-        my @all = $hash->get_all($_);
-        if ( scalar(@all) > 1 ) {
-            $args->{$_} = \@all;
-        }
-    }
-
-    return wantarray ? ( $args, $config ) : $args;
-
-}
-
-sub trans_filters {
-
-    my $class  = shift;
-    my $filter = shift;
-
-    my @filters = ();
-
-    unless ( ref($filter) ) {
-        return $filter;
-    }
-
-    if ( ref($filter) eq 'ARRAY' ) {
-        my @multi = ();
-        foreach ( @{$filter} ) {
-            my @pairs = ();
-            if ( !ref( $_ ) ) {
-                push @multi, $_;
-                next;
-            }
-            my @filters = $class->_transform_filter( $_, @filters );
-            foreach my $f (@filters) {
-                foreach my $h ( keys %{$f} ) {
-                    push @pairs, ( $h, $f->{$h} );
-                }
-            }
-            push @multi, {@pairs};
-        }
-        @filters = @multi;
-    }
-
-    if ( ref($filter) eq 'HASH' ) {
-        @filters = $class->_transform_filter( $filter, @filters );
-    }
-
-    return scalar @filters == 1 ? $filters[0] : \@filters;
-
-}
-
-sub transform_filter_values {
-
-    my $class  = shift;
-    my $type   = shift;
-    my $values = shift;
-
-    my @values = ();
-
-    if ( ref $values eq 'ARRAY' ) {
-        foreach my $filter_value ( @{$values} ) {
-            push @values, $class->$type($filter_value);
-        }
-    } else {
-        push @values, $class->$type($values);
-    }
-
-    return scalar @values == 1 ? $values[0] : \@values;
-}
-
 sub stores_for_foreign {}
 sub columns_meta_for_foreign {}
 
@@ -395,7 +207,7 @@ sub as_hash {
     return { map { $_ => $self->$_ } keys %{ $self->metadata->get_columns_hash } };
 }
 
-sub strigify {
+sub as_string {
 
     my $self = shift;
 
@@ -517,6 +329,13 @@ sub transaction($) {
     return __PACKAGE__->storage->transaction(shift)
 }
 
+# Params------------------------------------------------------------------------
+
+before 'params' => sub {
+    my $self = shift;
+    Gideon::Params->who($self->_get_pkg_name);
+};
+
 # Cache ------------------------------------------------------------------------
 
 before 'cache' => sub {
@@ -551,122 +370,9 @@ use warnings 'redefine';
 
 # Private ----------------------------------------------------------------------
 
-sub _init {
-
-    my $self = shift;
-    return;
-}
-
-sub _transform_sort_by_from_array {
-
-    my $class     = shift;
-    my $config    = shift;
-    my $options   = shift;
-    my $flattened = [];
-
-    foreach my $clause ( @{$config} ) {
-        if ( ref($clause) eq 'HASH' ) {
-            my $flat = $class->_transform_sort_by_from_hash( $clause, $options );
-            push @{$flattened}, $flat;
-        } else {
-            $class->metadata->check_meta($clause) unless $options =~ /skip_meta_check/;
-            push @{$flattened}, $class->metadata->get_column_for_attribute($clause);
-        }
-    }
-
-    return $flattened;
-
-}
-
-sub _transform_sort_by_from_hash {
-
-    my $class   = shift;
-    my $config  = shift;
-    my $options = shift;
-
-    my $flattened = [];
-
-    foreach my $clause ( keys %{$config} ) {
-
-        my $direction = '';
-
-        if ( $clause eq 'desc' ) {
-            $direction = '-desc';
-        }
-        if ( $clause eq 'asc' ) {
-            $direction = '-asc';
-        }
-
-        if ( ref( $config->{$clause} ) eq 'ARRAY' ) {
-
-            my $columns = [];
-
-            foreach ( @{ $config->{$clause} } ) {
-                my $attr = $_;
-                $class->metadata->check_meta($attr) unless $options =~ /skip_meta_check/;
-                my $column = $class->metadata->get_column_for_attribute($attr);
-                push @{$columns}, $column;
-            }
-
-            push @{$flattened}, { $direction => $columns };
-
-        } else {
-
-            my $attr = $config->{$clause};
-            $class->metadata->check_meta($attr) unless $options =~ /skip_meta_check/;
-            my $column = $class->metadata->get_column_for_attribute($attr);
-            push @{$flattened}, { $direction => $column };
-
-        }
-    }
-
-    return $flattened;
-
-}
-
-sub _transform_filter {
-
-    my $class   = shift;
-    my $filter  = shift;
-    my @filters = @_;
-
-    my %map = (
-        'like'  => '-like',
-        'nlike' => '-not_like',
-        'eq'    => '=',
-        'gt'    => '>',
-        'lt'    => '<',
-        'gte'   => '>=',
-        'lte'   => '<=',
-        'ne'    => '!=',
-    );
-    
-    my $hash = {};
-
-    foreach my $filter_type ( keys %{$filter} ) {
-        if (   $filter_type eq 'like'
-            or $filter_type eq 'gt'
-            or $filter_type eq 'eq'
-            or $filter_type eq 'lt'
-            or $filter_type eq 'ne'
-            or $filter_type eq 'gte'
-            or $filter_type eq 'lte'
-            or $filter_type eq 'nlike' ) {
-                
-            $hash->{ $map{$filter_type} } = $class->transform_filter_values( $filter_type, $filter->{$filter_type} );
-
-        } else {
-            Gideon::Error->throw( $filter_type . ' is not a valid filter' );
-        }
-    }
-    push @filters, $hash;
-    return @filters;
-}
-
 sub _get_pkg_name {
     my $class = shift;
-    my $pkg  = ref($class) ? ref($class) : $class;
-    return $pkg;    
+    return ref($class) ? ref($class) : $class;
 }
 
 __PACKAGE__->meta->make_immutable();

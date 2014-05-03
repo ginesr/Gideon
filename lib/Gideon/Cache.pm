@@ -81,4 +81,4 @@ sub signature {
     return $pkg . '_' . $pkg->storage->id;
 }
 
-1;
+__PACKAGE__->meta->make_immutable();

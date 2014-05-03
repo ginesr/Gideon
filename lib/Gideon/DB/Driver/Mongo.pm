@@ -1,11 +1,9 @@
-
 package Gideon::DB::Driver::Mongo;
 
-use strict;
+use Moose;
 use warnings;
 use Gideon::Error::Simple;
 use MongoDB;
-use Moose;
 
 extends 'Gideon::DB::Driver';
 
@@ -17,5 +15,3 @@ sub connect {
 }
 
 __PACKAGE__->meta->make_immutable();
-
-1;

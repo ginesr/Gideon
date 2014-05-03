@@ -61,13 +61,13 @@ sub update_all {}
 sub remove_all {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('remove_all() is a static method');
     }
 
-    $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
+    $args = Gideon::Filters::Mongo->format( $class->params->normalize($args) );
 
     try {
 
@@ -149,13 +149,13 @@ sub save {
 sub find {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
     
-    $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
+    $args = Gideon::Filters::Mongo->format( $class->params->normalize($args) );
     
     try {
 
@@ -204,13 +204,13 @@ sub find_all {
 
     my $class = shift;
     
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
 
-    $args = Gideon::Filters::Mongo->format( $class->filter_rules($args) );
+    $args = Gideon::Filters::Mongo->format( $class->params->normalize($args) );
     
     try {
 

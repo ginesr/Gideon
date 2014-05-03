@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 23;
+plan tests => 25;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -56,23 +56,23 @@ my $new_rec =
   Example::Test->new( name => 'is brand new', value => 'some value' );
 $new_rec->save();
 
-is( $new_rec->id, 11, 'New record inserted' );
+is( $new_rec->id, 12, 'New record inserted' );
 
 my $id = $new_rec->last_inserted_id();
 
-is( $id, 11, 'Last id from db' );
+is( $id, 12, 'Last id from db' );
 
 throws_ok(sub { my $not_found = Example::Test->find( id => 9999 ) }, 'Gideon::Error::DBI::NotFound');
 
-my $find_again = Example::Test->find( id => 11 );
+my $find_again = Example::Test->find( id => 12 );
 
-is( $find_again->id, 11, 'Again last id from db' );
+is( $find_again->id, 12, 'Again last id from db' );
 is( $find_again->name, 'is brand new', 'Again name from db' );
 
 $find_again->name('not so new');
 $find_again->save();
 
-is( $find_again->id, 11, 'Again after save' );
+is( $find_again->id, 12, 'Again after save' );
 
 my $test_all = Example::Test->find_all;
 my $hash = $test_all->as_hash('id');
@@ -84,13 +84,17 @@ is( $hash->{3}->name, 'rec 3', 'From hash name 3' );
 dies_ok(sub{my $invalid = Example::TestInvalid->find_all},'Invalid class attribute');
 
 my $all = Example::Test->find_all;
-is($all->record_count,11,'All count');
+is($all->record_count,12,'All count');
 
 my $no_result = Example::Test->find_all(name=>'foo');
 is($no_result->record_count,0,'No results using find_all()');
 
 throws_ok(sub { Example::Test->find(name=>'foo') },'Gideon::Error::DBI::NotFound','No results exception using find()');
 throws_ok(sub { Example::Test->find(name=>'foo') },qr/no results found Example::Test/,'No results text');
+
+my $godzilla =  Example::Test->find( name => { like => '%odzil%'} );
+is( $godzilla->id, 11, 'With like id from db' );
+is( $godzilla->name, 'Godzilla', 'With like from db' );
 
 # Auxiliary test functions -----------------------------------------------------
 
@@ -109,6 +113,8 @@ qq~create table gideon_t1 (id int not null auto_increment, name varchar(20), val
         $dbh->do( "insert into gideon_t1 (name,value) values(?,?)",
             undef, "rec $_", "value of $_" );
     }
+    $dbh->do( "insert into gideon_t1 (name,value) values(?,?)",
+        undef, "Godzilla", "10000" );
 
 }
 

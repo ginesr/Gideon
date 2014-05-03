@@ -11,11 +11,10 @@ Map connections to more than one host
 
 package Gideon::Connection::Pool;
 
-use strict;
+use Moose;
 use warnings;
 use Data::Dumper qw(Dumper);
 use Gideon::Error;
-use Moose;
 use Hash::MultiValue;
 use 5.008_001;
 
@@ -71,5 +70,3 @@ sub push {
 }
 
 __PACKAGE__->meta->make_immutable();
-
-1;

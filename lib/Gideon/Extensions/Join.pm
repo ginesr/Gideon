@@ -18,7 +18,7 @@ sub join_with {
     }
 
     my $relations = $package->get_relations;
-    my ( $args, $config ) = $package->decode_params(@_);
+    my ( $args, $config ) = $package->params->decode(@_);
 
     if ( $relations->{params}->{type} eq 'DBI' ) {
         return $class->_execute_dbi_join( $package, $args, $config, $relations->{foreign}, $relations->{params}->{join_on} );

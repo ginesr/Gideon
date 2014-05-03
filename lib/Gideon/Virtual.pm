@@ -12,13 +12,13 @@ extends 'Gideon';
 sub find_all {
 
     my $class = shift;
-    my ( $args, $config ) = $class->decode_params(@_);
+    my ( $args, $config ) = $class->params->decode(@_);
 
     if ( ref($class) ) {
         Gideon::Error->throw('find() is a static method');
     }
 
-    $args = $class->filter_rules($args);
+    $args = $class->params->normalize($args);
 
     try {
 

@@ -15,7 +15,7 @@ with 'Gideon::Results';
 sub remove {
 
     my $self = shift;
-    my ( $args, $config ) = $self->package->decode_params(@_);
+    my ( $args, $config ) = $self->package->params->decode(@_);
 
     try {
 
@@ -46,7 +46,7 @@ sub remove {
 sub update {
 
     my $self = shift;
-    my ( $args, $config ) = $self->package->decode_params(@_);
+    my ( $args, $config ) = $self->package->params->decode(@_);
 
     try {
 

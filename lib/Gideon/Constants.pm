@@ -1,4 +1,3 @@
-
 package Gideon::Constants;
 
 use strict;
