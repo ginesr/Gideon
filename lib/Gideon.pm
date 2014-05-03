@@ -13,14 +13,12 @@ package Gideon;
 
 use Moose;
 use warnings;
+use 5.008_001;
 use Exporter qw(import);
-use Module::Load qw(load);
 use Data::Dumper qw(Dumper);
 use Carp qw(cluck);
 use Scalar::Util qw(blessed looks_like_number);
 use Gideon::Error;
-use Hash::MultiValue;
-use 5.008_001;
 use JSON::XS;
 use Gideon::Meta;
 use MooseX::ClassAttribute;
@@ -33,7 +31,6 @@ $VERSION = eval $VERSION;
 
 our $EXCEPTION_DEBUG = 0;
 
-my $__relations = {};
 use overload
     '""' => \&as_string,
     fallback => 1;
@@ -176,31 +173,6 @@ sub eq {
 
 sub stores_for_foreign {}
 sub columns_meta_for_foreign {}
-
-sub has_many($%) {
-    my $foreign = shift || return undef;
-    my $params = {@_};
-    my $caller = caller;
-
-    $__relations->{$caller}{foreign} = $foreign;
-    load($foreign);
-    load(Gideon::Extensions::Join);
-    $__relations->{$caller}{params} = $params;
-
-    die if not $params->{predicate};
-
-    $caller->meta->add_method(
-        $params->{predicate} => sub {
-            return Gideon::Extensions::Join->join_with(@_)
-        }
-    )
-}
-
-sub get_relations {
-    my $self = shift;
-    my $pkg = $self->_get_pkg_name;
-    return $__relations->{$pkg};
-}
 
 sub as_hash {
     my $self = shift;
@@ -361,7 +333,6 @@ sub import {
     my $caller = caller;
 
     *{"${caller}::store"} = \&store;
-    *{"${caller}::has_many"} = \&has_many;
 
 }
 
