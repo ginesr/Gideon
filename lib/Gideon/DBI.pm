@@ -1,6 +1,6 @@
 package Gideon::DBI;
 
-use strict;
+use Moose;
 use warnings;
 use Gideon::Error;
 use Gideon::Error::Simple;
@@ -14,7 +14,7 @@ use Try::Tiny;
 use DBI 1.60;
 use Carp qw(cluck carp croak);
 use Data::Dumper qw(Dumper);
-use Moose;
+use Gideon::Meta::Attribute::DBI;
 
 our $VERSION = '0.02';
 our $DBI_DEBUG = 0;

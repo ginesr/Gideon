@@ -1,9 +1,7 @@
-
 package Example::Virtual::Provider;
 
-use strict;
-use warnings;
 use Moose;
+use warnings;
 use Try::Tiny;
 use Carp qw(croak);
 use Data::Dumper qw(Dumper);

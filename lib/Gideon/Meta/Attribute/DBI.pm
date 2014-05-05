@@ -1,4 +1,3 @@
-
 package Gideon::Meta::Attribute::DBI;
  
 use Moose;

@@ -17,17 +17,18 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 13;
+plan tests => 19;
 
 use_ok(qw(Gideon::Virtual));
 use_ok(qw(Gideon::Virtual::Provider));
 use_ok(qw(Gideon::DB::Driver::MySQL));
+use_ok(qw(Example::Virtual::Person));
 use_ok(qw(Example::Virtual::PersonJoinAddress));
+use_ok(qw(Example::Virtual::Address));
 use_ok(qw(Example::Virtual::Provider));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
-
 # ------------------------------------------------------------------------------
 
 my $driver = Gideon::DB::Driver::MySQL->new(
@@ -39,7 +40,16 @@ my $driver = Gideon::DB::Driver::MySQL->new(
 my $provider = Example::Virtual::Provider->new;
 $provider->driver($driver);
 
-Gideon->register_store( 'my_virtual_store', $provider );
+Gideon->register_store( 'mysql', $driver );
+Gideon->register_store( 'virtual', $provider );
+
+my $person  = Example::Virtual::Person->find( id => 1 );
+is( $person->name, 'person 1', 'First person record name' );
+is( $person->address(0)->address, 'person1 first address', 'First address for person 1' );
+
+my $address  = Example::Virtual::Address->find( id => 1 );
+is( $address->address, 'person1 first address', 'First address record name' );
+is( $address->person->id, 1, 'First address person id' );
 
 my $results = Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
 my $first   = $results->first;
@@ -64,19 +74,19 @@ sub prepare_test_data {
     #standard mysql install has test db and test user, try to use that
     my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
 
-    my $create_t1 = qq~create table gideon_virtual_name (id int not null auto_increment, name varchar(20), value text, primary key (id), key (name))~;
+    my $create_t1 = qq~create table gideon_virtual_person (id int not null auto_increment, name varchar(20), value text, primary key (id), key (name))~;
 
     my $create_t2 =
       qq~create table gideon_virtual_address (id int not null auto_increment, person_id int not null, address text, primary key (id), key (person_id))~;
 
-    $dbh->do('drop table if exists gideon_virtual_name');
+    $dbh->do('drop table if exists gideon_virtual_person');
     $dbh->do('drop table if exists gideon_virtual_address');
 
     $dbh->do($create_t1);
     $dbh->do($create_t2);
 
     for ( 1 .. 10 ) {
-        $dbh->do( "insert into gideon_virtual_name (name,value) values(?,?)", undef, "person $_", "value of $_" );
+        $dbh->do( "insert into gideon_virtual_person (name,value) values(?,?)", undef, "person $_", "value of $_" );
     }
 
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 1, "person1 first address" );

@@ -6,6 +6,7 @@ use Moose;
 use Gideon::Error;
 use Carp qw(cluck carp croak);
 use Gideon::Virtual::Results;
+use Gideon::Meta::Attribute::Virtual;
 
 extends 'Gideon';
 
