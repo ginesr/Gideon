@@ -5,7 +5,6 @@ use strict;
 use Try::Tiny;
 use Test::More;
 use Data::Dumper qw(Dumper);
-use Cwd;
 use DBI;
 use Test::Exception;
 
@@ -17,18 +16,18 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 14;
+plan tests => 16;
 
 use_ok(qw(Gideon::Virtual));
 use_ok(qw(Gideon::Virtual::Provider));
 use_ok(qw(Gideon::DB::Driver::MySQL));
 use_ok(qw(Gideon::Cache::Hash));
+use_ok(qw(Example::Virtual::Person));
 use_ok(qw(Example::Virtual::PersonJoinAddress));
 use_ok(qw(Example::Virtual::Provider));
 
 # Prepare test data ------------------------------------------------------------
 prepare_test_data();
-
 # ------------------------------------------------------------------------------
 
 my $driver = Gideon::DB::Driver::MySQL->new(
@@ -42,8 +41,9 @@ $provider->driver($driver);
 
 is( Gideon->cache->ttl, 300, 'Dafault time to live in cache' );
 
-Gideon->register_store( 'my_virtual_store', $provider );
-Gideon->register_cache('Gideon::Cache::Hash');
+Gideon->register_store( 'mysql', $driver );
+Gideon->register_store( 'virtual', $provider );
+Gideon->register_cache( 'Gideon::Cache::Hash' );
 
 my $results = Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
 my $first   = $results->first;
@@ -56,6 +56,9 @@ is( $last->address,          'person1 third address', 'From join last record add
 is( $results->records_found, 3,                       'Total results' );
 
 #warn Dumper(Gideon::Cache->content);
+empty_tables();
+
+throws_ok(sub{Example::Virtual::Person->find(id=>1)},'Gideon::Error::DBI::NotFound','No records');
 
 Example::Virtual::PersonJoinAddress->find_all( person_id => 1 );
 
@@ -69,19 +72,18 @@ sub prepare_test_data {
     #standard mysql install has test db and test user, try to use that
     my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
 
-    my $create_t1 = qq~create table gideon_virtual_name (id int not null auto_increment, name varchar(20), value text, primary key (id), key (name))~;
+    my $create_t1 = qq~create table gideon_virtual_person (id int not null auto_increment, name varchar(20), value text, primary key (id), key (name))~;
 
     my $create_t2 =
       qq~create table gideon_virtual_address (id int not null auto_increment, person_id int not null, address text, primary key (id), key (person_id))~;
 
-    $dbh->do('drop table if exists gideon_virtual_name');
-    $dbh->do('drop table if exists gideon_virtual_address');
+    drop_tables();
 
     $dbh->do($create_t1);
     $dbh->do($create_t2);
 
     for ( 1 .. 10 ) {
-        $dbh->do( "insert into gideon_virtual_name (name,value) values(?,?)", undef, "person $_", "value of $_" );
+        $dbh->do( "insert into gideon_virtual_person (name,value) values(?,?)", undef, "person $_", "value of $_" );
     }
 
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 1, "person1 first address" );
@@ -91,6 +93,18 @@ sub prepare_test_data {
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 5, "person5 other address" );
     $dbh->do( "insert into gideon_virtual_address (person_id,address) values(?,?)", undef, 7, "person7 first address" );
     
+}
+
+sub drop_tables {
+    my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
+    $dbh->do('drop table if exists gideon_virtual_person');
+    $dbh->do('drop table if exists gideon_virtual_address');
+}
+
+sub empty_tables {
+    my $dbh = DBI->connect( "dbi:mysql:database=test;host=;port=", "test", "" );
+    $dbh->do('truncate table gideon_virtual_person');
+    $dbh->do('truncate table gideon_virtual_address');
 }
 
 sub mysql_not_installed {

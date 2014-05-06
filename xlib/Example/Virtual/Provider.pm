@@ -33,7 +33,8 @@ virtual_store 'person_with_address' => sub {
     }
 
     my $stmt = 'select n.name,n.id as person_id, a.id as address_id, a.address 
-    from gideon_virtual_name n, gideon_virtual_address a where n.id = a.person_id';
+    from gideon_virtual_person n, gideon_virtual_address a 
+    where n.id = a.person_id';
     
     if (scalar @filters > 0) {
         $stmt .= ' and ';

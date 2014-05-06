@@ -1,8 +1,7 @@
 package Gideon::Virtual;
 
-use strict;
-use warnings;
 use Moose;
+use warnings;
 use Gideon::Error;
 use Carp qw(cluck carp croak);
 use Gideon::Virtual::Results;
@@ -58,8 +57,7 @@ sub find_all {
         my $e = shift;
         cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
         croak $e;
-    };
-
+    }
 }
 
 sub generate_cache_key {
@@ -69,7 +67,8 @@ sub generate_cache_key {
     my $args = shift || {};
 
     my $vals = join '_', map { $_ . '-' . $args->{$_} } keys %{$args};
-    my $key = $self->cache->signature . $dest . $vals;    # uniqueness generated with sql query and filters
+    # uniqueness generated with sql query and filters
+    my $key = $self->cache->signature . $dest . $vals;
 
     my $module = $self->cache->get_module;
     return $module->digest($key);
@@ -83,7 +82,7 @@ sub map_meta_with_row {
     my $map   = {};
 
     foreach my $r ( keys %{$row} ) {
-        my ( $table, $col ) = split( /\./, $r );
+        my ( $table, $col ) = split /\./, $r;
         my $attribute = $class->metadata->get_attribute_for_column($col);
         next unless $attribute;
         $map->{$attribute} = $r;
