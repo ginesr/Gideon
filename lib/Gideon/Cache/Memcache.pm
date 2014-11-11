@@ -3,7 +3,7 @@ package Gideon::Cache::Memcache;
 use strict;
 use warnings;
 use autodie;
-use Digest::MD5;
+use Digest::SHA1;
 use 5.012_001;
 use Data::Dumper qw(Dumper);
 use Cache::Memcached;
@@ -20,12 +20,12 @@ my $memd;
 my $hits = 0;
 
 sub get {
-    
+
     my $self = shift;
     my $key  = shift;
-    
+
     my $slot_plus_key = $slot . '_' . $key;
-    
+
     if ( my $cached = $memd->get($slot_plus_key) ) {
         $hits++;
         return $cached;
@@ -34,24 +34,25 @@ sub get {
 }
 
 sub set {
-    
+
     my $self     = shift;
     my $key      = shift;
     my $contents = shift;
     my $ttl      = shift;
     my $class    = shift;
-    
+
     my $class_keys = $self->_get_class_cache;
     $class_keys->{$class}->{$key} = 1;
-    
+
     if (exists $_class_ttl->{$class} and $_class_ttl->{$class} > 0) {
         $ttl = $_class_ttl->{$class}
     }
-    
+
     $self->_update_class_cache($class_keys);
-    
+
     my $slot_plus_key = $slot . '_' . $key;
-    $memd->set($slot_plus_key, $contents, $ttl);    
+
+    $memd->set($slot_plus_key, $contents, $ttl);
     return;
 }
 
@@ -65,12 +66,12 @@ sub delete {
 sub clear {
     my $self = shift;
     my $class = shift;
-    
+
     my $class_keys = $self->_get_class_cache;
 
     if (exists $class_keys->{$class}) {
         my @keys = $self->class_keys($class);
-        foreach my $k (@keys) { 
+        foreach my $k (@keys) {
             my $found = $self->delete($k);
             if (!$found) {
                 #warn "$k not found in cache"
@@ -88,15 +89,16 @@ sub clear {
 sub digest {
     my $self = shift;
     my $string = shift;
-    my $md5 = Digest::MD5->new;
-    $md5->add($string);
-    return $md5->hexdigest;
+    my $sha1 = Digest::SHA1->new;
+    $sha1->add($string);
+    my $hash = $sha1->hexdigest;
+    return $hash;
 }
 
 sub start {
     my $self = shift;
     my $ref = shift;
-    
+
     if (ref $ref eq 'ARRAY') {
         # reconnect with new servers
         $memd = $self->_connect;
@@ -149,13 +151,13 @@ sub hits {
 }
 
 sub class_keys {
-    
+
     my $self = shift;
     my $class = shift;
-    
+
     my @list = ();
     my $class_keys = $self->_get_class_cache;
-    
+
     if (exists $class_keys->{$class}) {
         @list = keys $class_keys->{$class};
     }
@@ -199,7 +201,9 @@ sub _connect {
 
 sub _get_class_cache {
     my $self = shift;
-    return $memd->get('__gdn_priv_class_cache');
+    my $classes = $memd->get('__gdn_priv_class_cache');
+    #warn Dumper($classes);
+    return $classes;
 }
 
 sub _update_class_cache {

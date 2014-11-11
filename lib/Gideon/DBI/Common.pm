@@ -16,10 +16,10 @@ sub execute_one_with_bind_columns {
 }
 
 sub execute_with_bind_columns {
-    
+
     my $self  = shift;
     my $args  = {@_};
-    
+
     my $dbh = $args->{'dbh'} || Gideon::Error->throw('missing db handler');
     my $stmt = $args->{'query'} || '';
     my $bind = $args->{'bind'} || [];
@@ -29,10 +29,10 @@ sub execute_with_bind_columns {
 
     my @bind = map { $_ } @{ $bind };
     $self->debug($debug,'Query', $stmt);
-    
+
     my $sth = $dbh->prepare_cached($stmt) or Gideon::Error::DBI->throw( "failed in prepare " . $dbh->errstr );
     $self->debug($debug,'Binding',\@bind);
-    
+
     my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => "failed while executing " . ( $sth->errstr ? $sth->errstr : 'no errstr returned' ), stmt => $stmt, params => \@bind );
     my %row;
 
@@ -45,7 +45,7 @@ sub execute_with_bind_columns {
     }
     $sth->finish;
     return $rows;
-    
+
 }
 
 sub finish {
@@ -57,16 +57,16 @@ sub finish {
 }
 
 sub debug {
-    
+
     my $self = shift;
     my $flag = shift;
     my $where = shift;
     my $val = shift;
-    
+
     return unless defined $flag;
-    
+
     warn $where . ": " . (ref($val) ? Dumper($val) : $val);
-    
+
 }
 
 1;
