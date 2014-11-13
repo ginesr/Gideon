@@ -106,9 +106,7 @@ my $new_rec = Example::Test->new( name => 'is brand new', value => 'some value' 
 $new_rec->conn('node1');  
 $new_rec->save();
 
-my $id = $new_rec->last_inserted_id();
-
-is( $id, 11, 'New record inserted' );
+is( $new_rec->id, 11, 'New record inserted' );
 
 my $nw_record = Example::Test->find( id => 11, { conn => 'node2' } );
 $nw_record->name('not so new now');
