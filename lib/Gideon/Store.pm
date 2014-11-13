@@ -69,7 +69,7 @@ sub args {
         }
     }
     if ($node) {
-        Gideon::Error->throw("can't user $node, either pool is not defined or node is invalid")
+        Gideon::Error->throw("can't use $node, either pool is not defined or node is invalid")
     }
 
     return $args;

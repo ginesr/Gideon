@@ -107,7 +107,44 @@ sub update {
     }
 }
 
-sub update_all {}
+sub update_all {
+
+    my $class = shift;
+    my ( $args, $config ) = $class->params->decode(@_);
+
+    if ( ref($class) ) {
+        Gideon::Error->throw('update_all() is a static method');
+    }
+    if (not %$args) {
+        Gideon::Error->throw('update_all() called without arguments');
+    }
+
+    try {
+
+        my $map   = $class->metadata->map_args_with_column($args);
+        my $where = $class->where_stmt_from_args($args);
+        my $limit = $config->{limit} || '';
+        my $pool  = $config->{conn} || '';
+
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $class->storage->origin(), $where, undef, undef, $limit );
+
+        my $dbh = $class->dbh($pool,1);
+        my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
+        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
+        $sth->finish;
+
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear($class);
+        }
+
+        return $rows;
+
+    }
+    catch {
+        croak shift;
+    }
+    
+}
 
 sub remove_all {
 

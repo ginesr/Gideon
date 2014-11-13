@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib 'xlib';
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Example::Country;
@@ -33,7 +33,11 @@ my $mock_session = DBD::Mock::Session->new(
         bound_params => ['UY','AR'],
         results => [[],[]]
     },
-    
+    {
+        statement => 'UPDATE country SET `country`.`country_iso` = ?',
+        bound_params => ['AR'],
+        results => [[],[],[]]        
+    }
 );
 $dbh->{mock_session} = $mock_session;
 
@@ -52,3 +56,7 @@ is( $rec->name, 'Argentina', 'First record using results object' );
 $rows = Example::Country->find_all( iso => 'AR' )->update( iso => 'UY' );
 
 is( $rows, 1, 'One row updated from results' );
+
+$rows = Example::Country->update_all( iso => 'AR' );
+
+is( $rows, 2, 'Rows updated from results' );

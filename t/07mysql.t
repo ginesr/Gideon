@@ -17,7 +17,7 @@ if ( mysql_cant_connect() ) {
     plan skip_all => 'Can\'t connect to local mysql using `test` user & db';
 }
 
-plan tests => 25;
+plan tests => 29;
 
 use_ok(qw(Example::Driver::MySQL));
 use_ok(qw(Example::Test));
@@ -50,7 +50,7 @@ is( $record->name, 'rec 4', 'From mysql one record' );
 
 throws_ok(
     sub { $record = Example::Test->find( id => 3, { conn => 'node1' } ) },
-    qr/can't user node1, either pool is not defined or node is invalid/, 'Failed to use pool here' );
+    qr/can't use node1, either pool is not defined or node is invalid/, 'Failed to use pool here' );
 
 my $new_rec =
   Example::Test->new( name => 'is brand new', value => 'some value' );
@@ -58,7 +58,7 @@ $new_rec->save();
 
 is( $new_rec->id, 12, 'New record inserted' );
 
-my $id = $new_rec->last_inserted_id();
+my $id = $new_rec->last_inserted_id($driver->connect);
 
 is( $id, 12, 'Last id from db' );
 
@@ -95,6 +95,15 @@ throws_ok(sub { Example::Test->find(name=>'foo') },qr/no results found Example::
 my $godzilla =  Example::Test->find( name => { like => '%odzil%'} );
 is( $godzilla->id, 11, 'With like id from db' );
 is( $godzilla->name, 'Godzilla', 'With like from db' );
+is( $godzilla->value, '10000', 'Godzilla value' );
+
+throws_ok(sub { Example::Test->update_all(); }, 'Gideon::Error');
+
+my $rows = Example::Test->update_all(value=>'all');
+is( $rows, 12, 'Update all records' );
+
+my $godzilla2 = Example::Test->find( name => 'Godzilla' );
+is( $godzilla2->value, 'all', 'After update_all()' );
 
 # Auxiliary test functions -----------------------------------------------------
 
