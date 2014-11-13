@@ -33,14 +33,16 @@ sub remove {
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear($self->package);
+        }
+
         return $rows
 
-    }
-    catch {
+    } catch {
         my $e = shift;
         Gideon::Error::DBI::Results->throw($e);
-    };
-
+    }
 }
 
 sub update {
@@ -64,13 +66,16 @@ sub update {
         my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
         $sth->finish;
 
+        if ( Gideon->cache->is_registered ) {
+            Gideon->cache->clear($self->package);
+        }
+
         return $rows
 
-    }
-    catch {
+    } catch {
         my $e = shift;
         Gideon::Error::DBI::Results->throw($e);
-    };
+    }
 }
 
 __PACKAGE__->meta->make_immutable();
