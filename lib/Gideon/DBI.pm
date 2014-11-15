@@ -155,6 +155,8 @@ sub remove_all {
         Gideon::Error->throw('remove_all() is a static method');
     }
 
+    $args = $class->params->normalize($args);
+
     try {
 
         my $map   = $class->metadata->map_args_with_column($args);

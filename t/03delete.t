@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib 'xlib';
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -79,7 +79,12 @@ my $mock_session = DBD::Mock::Session->new(
         statement => 'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( person.person_type = ? )',
         bound_params => [30],
         results => []
-    },    
+    },
+    {
+        statement => 'DELETE FROM person WHERE ( ( `person`.`person_country` = ? AND `person`.`person_type` >= ? ) )',
+        bound_params => ['AR',30],
+        results => [ [],[],[],[],[] ],
+    }
 );
 $dbh->{mock_session} = $mock_session;
 
@@ -132,3 +137,6 @@ is( $rows, 3, 'Two arguments remove within results' );
 
 $rows = Example::Person->find_all( type => 30 )->remove();
 is( $rows, 0, 'Nothing to delete' );
+
+$rows = Example::Person->remove( country => 'AR', type => { gte => 30 } );
+is( $rows, 4, 'Remove as class method calls remove_all()' );
