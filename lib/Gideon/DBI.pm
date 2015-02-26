@@ -143,7 +143,7 @@ sub update_all {
     catch {
         croak shift;
     }
-    
+
 }
 
 sub remove_all {
@@ -398,6 +398,11 @@ sub find_all {
             }
         );
 
+        if ($limit) {
+            my $count = $class->count_results($stmt,\@bind);
+            $results->total($count);
+        }
+
         if ($cache_key) {
             $class->cache->store( $cache_key, $results );
         }
@@ -646,6 +651,30 @@ sub columns_meta_for_foreign {
 
     return wantarray ? @fields : join ',', @fields;
 
+}
+
+sub count_results {
+
+    my $class = shift;
+    my $stmt = shift;
+    my $bind = shift;
+
+    return 0 unless $stmt;
+
+    # hack
+    $stmt =~ s/SELECT(.*)FROM(.*)/SELECT COUNT(1) as total FROM $2/;
+    $stmt =~ s/(.*)limit.*/$1/;
+
+    my $sth  = $class->dbh()->prepare_cached($stmt) or Gideon::Error::DBI->throw( $class->dbh->errstr );
+    my $rows = $sth->execute(@{$bind}) or Gideon::Error::DBI->throw( $sth->errstr );
+    my %row  = ();
+
+    $sth->bind_columns( \( @row{ @{ $sth->{NAME_lc} } } ) );
+
+    $sth->fetch;
+    $sth->finish;
+
+    return $row{total}+0;
 }
 
 sub execute_and_array {

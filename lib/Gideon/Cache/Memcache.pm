@@ -78,9 +78,9 @@ sub clear {
             }
             else {
                 delete $class_keys->{$class}->{$k};
+                $self->_update_class_cache($class_keys);
             }
-        }
-        $self->_update_class_cache($class_keys);
+        }        
         return 1;
     }
     return 0;

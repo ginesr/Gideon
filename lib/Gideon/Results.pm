@@ -16,7 +16,7 @@ has 'results' => (
         is_empty       => 'is_empty',
         filter_records => 'grep',
         clear_results  => 'clear',
-        count_records  => 'count',        
+        count_records  => 'count',
         uniq_records   => 'uniq',
         sort_records   => 'sort',
         find_record    => 'first',
@@ -34,6 +34,7 @@ has 'results' => (
 has 'package' => ( is => 'rw', isa => 'Str' );
 has 'conn'    => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'where'   => ( is => 'rw' );
+has 'total'   => ( is => 'rw', isa => 'Num' );
 
 sub first {
     my $self = shift;
@@ -48,12 +49,12 @@ sub distinct {
 
     my $self     = shift;
     my $property = shift;
-    
+
     if ($property) {
         # TODO: validate property
         return $self->distinct_property($property)
     }
-    
+
     my @uniq = $self->uniq_records;
     my $pkg = ref $self;
     my $results = $pkg->new(
@@ -63,8 +64,8 @@ sub distinct {
     );
     $results->results(\@uniq);
 
-    return $results;    
-    
+    return $results;
+
 }
 
 sub distinct_property {
@@ -81,7 +82,7 @@ sub distinct_property {
         }
     }
     my @uniq = uniq @filtered;
-    return wantarray ? @uniq : [@uniq];    
+    return wantarray ? @uniq : [@uniq];
 }
 
 sub map {

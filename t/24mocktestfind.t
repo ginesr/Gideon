@@ -30,7 +30,7 @@ $mock->mock( $results );
 
 Gideon->register_store( 'master', $mock );
 
-my @persons = Example::Person->find_all( country => 'US', name => { like => 'joe' }, { order_by => { desc => 'name' }, limit => 10 } );
+my @persons = Example::Person->find_all( country => 'US', name => { like => 'joe' }, { order_by => { desc => 'name' } } );
 
 is( $persons[0]->name,    'Joe Something', 'Person 1 name using find' );
 is( $persons[1]->country, 'UY',            'Person 2 country using find' );

@@ -18,7 +18,7 @@ has '_packages' => ( is => 'rw', traits => ['Array'], isa => 'ArrayRef[HashRef]'
 class_has 'who' => ( is => 'rw', isa => 'Str' );
 
 sub register {
-    
+
     my $self = shift;
     my $params = {
         name => undef,
@@ -85,14 +85,14 @@ sub by_name_get_args {
 }
 
 sub select {
-    
+
     my $self = shift;
     my $node = shift;
-    
+
     if ( $self->who eq __PACKAGE__ or $self->who eq 'Gideon' ) {
         Gideon::Error->throw('use select() from your own class');
     }
-    
+
     my $id   = $self->id;
     my $pool = $self->by_name_get_args( $id );
     my $pkg  = $self->who;
@@ -103,7 +103,7 @@ sub select {
 
     # switch to requested node if exists
     return $self->from_pool($pool,$node);
-    
+
 }
 
 sub last_used {
@@ -150,7 +150,7 @@ sub from_pool {
 }
 
 sub transaction {
-    
+
     my $self = shift;
     my $store = shift || die;
     my $pkg = $self->who;
@@ -165,7 +165,7 @@ sub transaction {
 sub origin {
 
     my $self = shift;
-    
+
     die 'cannot identify who is calling me' if not $self->who;
     my $found = $self->find_package( sub { $_->{name} eq $self->who } );
     die 'invalid class' if not $found;
@@ -181,7 +181,7 @@ sub origin {
 
 sub check_store {
 
-    my $self = shift;    
+    my $self = shift;
     my $id = $self->id;
     my $origin = $self->origin;
     die 'invalid store \'' .$id . '\' from class '. $self->who .', use Gideon->register(\'' . $id . '\', ... )' unless exists $self->stores->{ $id };
@@ -207,12 +207,12 @@ sub id {
 }
 
 sub is_store_registered {
-    
+
     my $self = shift;
     my $name = shift || die 'invalid name';
 
     if ( exists $self->stores->{ $name } ) {
-        die 'store \''. $name .'\' is already registered' 
+        die 'store \''. $name .'\' is already registered'
             if $self->stores->{ $name }->{strict} == 1;
     }
 

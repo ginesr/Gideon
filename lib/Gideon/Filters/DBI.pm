@@ -13,21 +13,21 @@ sub format {
     my $class  = shift;
     my $action = shift || 'select';
     my $table  = shift;
-    my $fields = shift || {};
+    my $fields = shift || [];
     my $where  = shift;
     my $order  = shift;
     my $limit  = shift || '';
 
     my ($sql,@bind) = $class->build_statment($action,$table,$fields,$where,$order);
-    
+
     $sql = $class->add_limit_in_sql($sql,$limit);
-    
+
     return wantarray ? ($sql,@bind) : $sql;
 
 }
 
 sub build_statment {
-    
+
     my ($class,$action,$table,$fields,$where,$order) = @_;
     my $sql = SQL::Abstract->new;
 
@@ -58,7 +58,7 @@ sub escape_field_names {
     my $class = shift;
     my $fields  = shift;
     foreach (keys %{$fields}) {
-        my $mylsq_escaped = join '.', map { MYSQL_ESCAPE . $_ . MYSQL_ESCAPE } split /\./, $_; 
+        my $mylsq_escaped = join '.', map { MYSQL_ESCAPE . $_ . MYSQL_ESCAPE } split /\./, $_;
         $fields->{$mylsq_escaped} = $fields->{$_};
         delete $fields->{$_};
     }

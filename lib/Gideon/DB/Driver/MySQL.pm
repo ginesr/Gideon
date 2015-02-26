@@ -40,7 +40,7 @@ sub connect {
 
 sub connect_isolated {
     my $self = shift;
-    
+
     if ($self->isolated) {
         return $self->isolated
     }
@@ -72,11 +72,11 @@ sub is_cached {
 }
 
 sub connect_string {
-    
+
     my $self = shift;
     my $host = $self->host || '';
     my $port = $self->port || '';
-    
+
     my $string = sprintf 'DBI:mysql:database=%s;host=%s;port=%s', $self->db, $host, $port;
     return $string;
 }

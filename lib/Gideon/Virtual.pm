@@ -1,7 +1,6 @@
 package Gideon::Virtual;
 
 use Moose;
-use warnings;
 use Gideon::Error;
 use Carp qw(cluck carp croak);
 use Gideon::Virtual::Results;
@@ -66,7 +65,7 @@ sub generate_cache_key {
     my $dest = shift;
     my $args = shift || {};
 
-    my $vals = join '_', map { $_ . '-' . $args->{$_} } keys %{$args};
+    my $vals = join '_', map { $_ . '-' . $args->{$_} } sort keys %{$args};
     # uniqueness generated with sql query and filters
     my $key = $self->cache->signature . $dest . $vals;
 

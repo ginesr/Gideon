@@ -12,7 +12,7 @@ my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
         statement =>
-          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( ( person.person_country = ? AND person.person_name LIKE ? ) ) ORDER BY person.person_name DESC limit 10',
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( ( person.person_country = ? AND person.person_name LIKE ? ) ) ORDER BY person.person_name DESC',
         bound_params => [ 'US', '%joe%' ],
         results =>
           [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], [ 1, 'AR', 'Joe Something' ], [ 2, 'UY', 'Joe That' ], [ 3, 'AR', 'Joe' ], ]
@@ -30,6 +30,10 @@ my $mock_session = DBD::Mock::Session->new(
         results      => [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], [ 1, 'US', 'Foo' ], [ 2, 'US', 'Bar' ] ]
     },
     {
+        statement => 'SELECT COUNT(1) as total FROM  person WHERE ( person.person_country = ? ) ORDER BY person.person_name DESC ',
+        results      => [['total'],[1]]
+    },
+    {
         statement =>
           'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( person.person_type > ? )',
         bound_params => [0],
@@ -42,7 +46,10 @@ $dbh->{mock_session} = $mock_session;
 
 Gideon->register_store( 'master', $dbh );
 
-my @persons = Example::Person->find_all( country => 'US', name => { like => '%joe%' }, { order_by => { desc => 'name' }, limit => 10 } );
+my @persons = Example::Person->find_all( 
+    country => 'US', name => { like => '%joe%' }, 
+    { order_by => { desc => 'name' } } 
+);
 
 is( $persons[0]->name,    'Joe Something', 'Person 1 name using find' );
 is( $persons[1]->country, 'UY',            'Person 2 country using find' );
@@ -54,7 +61,10 @@ is( $record->name,    'Joe', 'Person name using restore' );
 is( $record->country, 'AR',  'Person country using restore' );
 is( $record->id,      123,   'Person ID using restore' );
 
-my $persons = Example::Person->find_all( country => 'US', { order_by => { desc => 'name' }, limit => 10 } );
+my $persons = Example::Person->find_all( 
+    country => 'US', 
+    { order_by => { desc => 'name' }, limit => 10 }
+);
 my $first = $persons->first;
 
 is( $persons->has_no_records, 0,   'Not empty! has_no_records()' );

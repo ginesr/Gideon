@@ -27,7 +27,7 @@ my $persons = Example::Person->find_all(
     name    => { like => 'joe' },
     {
         order_by => { desc => 'name' },
-        limit    => 10
+        #limit    => 10
     }
 );
 
