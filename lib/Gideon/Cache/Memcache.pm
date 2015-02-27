@@ -24,7 +24,7 @@ sub get {
     my $self = shift;
     my $key  = shift;
 
-    my $slot_plus_key = $slot . '_' . $key;
+    my $slot_plus_key = $slot.$key;
 
     if ( my $cached = $memd->get($slot_plus_key) ) {
         $hits++;
@@ -39,51 +39,45 @@ sub set {
     my $key      = shift;
     my $contents = shift;
     my $ttl      = shift;
-    my $class    = shift;
+    my $class    = shift || '';
 
+    my $namespace = $self->get_slot.$class;
     my $class_keys = $self->_get_class_cache;
-    $class_keys->{$class}->{$key} = 1;
+    $class_keys->{$namespace}->{$key} = 1;
+    $self->_update_class_cache($class_keys);
 
     if (exists $_class_ttl->{$class} and $_class_ttl->{$class} > 0) {
         $ttl = $_class_ttl->{$class}
     }
 
-    $self->_update_class_cache($class_keys);
+    my $slot_plus_key = $slot.$key;
+    return $memd->set($slot_plus_key, $contents, $ttl);
 
-    my $slot_plus_key = $slot . '_' . $key;
-
-    $memd->set($slot_plus_key, $contents, $ttl);
-    return;
 }
 
 sub delete {
     my $self = shift;
     my $key = shift;
-    my $slot_plus_key = $slot . '_' . $key;
+    my $slot_plus_key = $slot.$key;
     return $memd->delete($slot_plus_key);
 }
 
 sub clear {
+
     my $self = shift;
-    my $class = shift;
+    my $class = shift || die;
 
-    my $class_keys = $self->_get_class_cache;
+    my @keys = $self->class_keys($class);
 
-    if (exists $class_keys->{$class}) {
-        my @keys = $self->class_keys($class);
-        foreach my $k (@keys) {
-            my $found = $self->delete($k);
-            if (!$found) {
-                #warn "$k not found in cache"
-            }
-            else {
-                delete $class_keys->{$class}->{$k};
-                $self->_update_class_cache($class_keys);
-            }
-        }        
-        return 1;
+    $self->_delete_class_cache($class);
+
+    foreach my $k (@keys) {
+        my $found = $self->delete($k);
+        if (!$found) {
+            warn "$class $k not found in cache" if MEMCACHE_DEBUG
+        }
     }
-    return 0;
+
 }
 
 sub digest {
@@ -156,10 +150,11 @@ sub class_keys {
     my $class = shift;
 
     my @list = ();
+    my $namespace = $self->get_slot.$class;
     my $class_keys = $self->_get_class_cache;
 
-    if (exists $class_keys->{$class}) {
-        @list = keys $class_keys->{$class};
+    if (exists $class_keys->{$namespace}) {
+        @list = keys $class_keys->{$namespace};
     }
     return @list;
 }
@@ -185,7 +180,7 @@ sub set_slot {
 }
 
 sub get_slot {
-    return $slot;
+    return $slot
 }
 
 # private ----------------------------------------------------------------------
@@ -202,8 +197,18 @@ sub _connect {
 sub _get_class_cache {
     my $self = shift;
     my $classes = $memd->get('__gdn_priv_class_cache');
-    #warn Dumper($classes);
+    #warn Dumper($classes) if MEMCACHE_DEBUG;
     return $classes;
+}
+
+sub _delete_class_cache {
+    my $self = shift;
+    my $class = shift || die;
+    my $namespace = $self->get_slot.$class;
+    warn "Delete $namespace from cache" if MEMCACHE_DEBUG;
+    my $classes = $self->_get_class_cache;
+    delete $classes->{$namespace};
+    return $self->_update_class_cache($classes);
 }
 
 sub _update_class_cache {
