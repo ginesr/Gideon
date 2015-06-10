@@ -7,9 +7,12 @@ use Digest::SHA1;
 use 5.012_001;
 use Data::Dumper qw(Dumper);
 use Cache::Memcached;
+use Time::HiRes qw(usleep);
 
 use constant MEMCACHE_DEBUG => 0;
 use constant COMPRESS_TRESH => 10_000;
+use constant LOCK_TIMEOUT => 10; # secs
+use constant LOCK_RETRY_WAIT => 100; #milisecs
 
 our $slot    = '_DEFAULT_';
 our $servers = ["127.0.0.1:11211"];
@@ -41,10 +44,22 @@ sub set {
     my $ttl      = shift;
     my $class    = shift || '';
 
+    if (my $pid = $memd->get("__gdn_priv_lock")) {
+        warn "$pid is locking ..." if MEMCACHE_DEBUG;
+        usleep LOCK_RETRY_WAIT;
+        return $self->set(@_);
+    }
+
+    # avoid race condition when multiple set() is called
+    $memd->set("__gdn_priv_lock",$$,LOCK_TIMEOUT);
+
     my $namespace = $self->get_slot.$class;
     my $class_keys = $self->_get_class_cache;
     $class_keys->{$namespace}->{$key} = 1;
     $self->_update_class_cache($class_keys);
+
+    # done deleting keys for this class
+    $memd->delete("__gdn_priv_lock");
 
     if (exists $_class_ttl->{$class} and $_class_ttl->{$class} > 0) {
         $ttl = $_class_ttl->{$class}
@@ -67,8 +82,16 @@ sub clear {
     my $self = shift;
     my $class = shift || die;
 
-    my @keys = $self->class_keys($class);
+    if (my $pid = $memd->get("__gdn_priv_lock")) {
+        warn "$pid is locking ..."  if MEMCACHE_DEBUG;
+        usleep LOCK_RETRY_WAIT;
+        return $self->clear($class);
+    }
 
+    # avoid race condition when multiple clear() is called
+    $memd->set("__gdn_priv_lock",$$,LOCK_TIMEOUT);
+
+    my @keys = $self->class_keys($class);
     $self->_delete_class_cache($class);
 
     foreach my $k (@keys) {
@@ -77,6 +100,10 @@ sub clear {
             warn "$class $k not found in cache" if MEMCACHE_DEBUG
         }
     }
+
+    # done deleting keys for this class
+    $memd->delete("__gdn_priv_lock");
+    return;
 
 }
 
