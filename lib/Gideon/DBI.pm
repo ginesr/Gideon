@@ -18,6 +18,7 @@ use Gideon::Meta::Attribute::DBI;
 
 our $VERSION = '0.02';
 our $DBI_DEBUG = 0;
+our $map_cache = {};
 
 use constant FALSE => undef;
 use constant TRUE => 1;
@@ -366,19 +367,19 @@ sub find_all {
 
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $destination, $fields, $where, $class->add_table_to_order($order), $limit );
 
+        if ( $class->cache->is_registered ) {
+            $cache_key = $class->generate_cache_key( 'fall', $stmt, @bind );
+            if ( my $cached_results = $class->cache->lookup($cache_key) ) {
+                my $results = $cached_results;
+                return wantarray ? $results->records : $results;
+            }
+        }
+
         my $results = Gideon::DBI::Results->new(
             package => $class,
             where   => $where,
             conn    => $pool,
         );
-
-        if ( $class->cache->is_registered ) {
-            $cache_key = $class->generate_cache_key( 'fall', $stmt, @bind );
-            if ( my $cached_results = $class->cache->lookup($cache_key) ) {
-                $results = $cached_results;
-                return wantarray ? $results->records : $results;
-            }
-        }
 
         my $rows = Gideon::DBI::Common->execute_with_bind_columns(
             'dbh'   => $class->dbh($pool,1),
@@ -388,9 +389,8 @@ sub find_all {
 
                 my $row = shift;
                 my @construct_args = $class->args_for_new_object($row);
-                my $obj            = $class->new(@construct_args);
+                my $obj            = $class->new(@construct_args, is_stored=>1);
 
-                $obj->is_stored(1);
                 $obj->is_modified(0);
 
                 $results->add_record($obj);
@@ -547,12 +547,18 @@ sub map_meta_with_row {
     my $row   = shift;
     my $map   = {};
 
+    if (exists $map_cache->{$class}) {
+        return $map_cache->{$class};
+    }
+
     foreach my $r ( keys %{$row} ) {
         my ( $table, $col ) = split( /\./, $r );
         my $attribute = $class->metadata->get_attribute_for_column($col);
         next unless $attribute;
         $map->{$attribute} = $r;
     }
+
+    $map_cache->{$class} = $map;
 
     return $map;
 
@@ -862,7 +868,7 @@ sub args_for_new_object {
     my $row   = shift;
 
     my $map = $class->map_meta_with_row($row);
-    return map { $_ => $row->{ $map->{$_} } } ( keys %{$map} );
+    return map { $_ => $row->{ $map->{$_} } } ( sort keys %{$map} );
 
 }
 
@@ -872,7 +878,7 @@ sub args_with_db_values {
     my $construct_args = shift;
     my $row            = shift;
 
-    return map { $_ => $row->{ $construct_args->{$_} } } ( keys %{$construct_args} );
+    return map { $_ => $row->{ $construct_args->{$_} } } ( sort keys %{$construct_args} );
 
 }
 
@@ -1005,3 +1011,5 @@ sub _is_sqlite {
 }
 
 __PACKAGE__->meta->make_immutable();
+no Moose;
+1;

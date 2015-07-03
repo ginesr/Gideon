@@ -69,10 +69,10 @@ sub normalize {
 }
 
 sub check_for_config {
-    
+
     my $class = shift;
     my @args  = @_;
-    
+
     # func( one => 1, { options => 1 } )
     if ( ( scalar(@args) % 2 ) != 0 and ref( $args[-1] ) eq 'HASH' ) {
         return 1;
@@ -84,7 +84,7 @@ sub check_for_config {
     if ( scalar(@args) == 1 and ref( $args[-1] ) eq 'HASH' ) {
         return 1;
     }
-        
+
     return;
 }
 
@@ -232,7 +232,7 @@ sub _tranform_operator {
         'lte'   => '<=',
         'ne'    => '!=',
     );
-    
+
     my $hash = {};
 
     foreach my $filter_type ( keys %{$filter} ) {
@@ -244,7 +244,7 @@ sub _tranform_operator {
             or $filter_type eq 'gte'
             or $filter_type eq 'lte'
             or $filter_type eq 'nlike' ) {
-                
+
             $hash->{ $operator_map{$filter_type} } = $class->_values_thru_filter( $filter_type, $filter->{$filter_type} );
 
         } else {
@@ -277,3 +277,5 @@ sub _values_thru_filter {
 }
 
 __PACKAGE__->meta->make_immutable();
+no Moose;
+1;

@@ -16,7 +16,7 @@ if ( mysql_not_installed() ) {
     plan skip_all => 'MySQL driver not installed';
 }
 else {
-    plan tests => 16;
+    plan tests => 17;
 }
 
 use_ok(qw(Example::Driver::MySQL));
@@ -58,7 +58,8 @@ Gideon::Cache::Memcache->set_slot('TEST_2');
 my $first_slot2 = Example::Cache->find_all( id => 2 )->first;
 is( $first_slot2->id, 2, 'Record from db' );
 
-is( Gideon::Cache::Memcache->count, 2, 'Two keys stored in cache (slot 1 + slot 2)' );
+is( Gideon::Cache::Memcache->slot_count, 3, '3 slots now (2 plus default)' );
+is( Gideon::Cache::Memcache->count, 1, 'One keys stored in cache (slot 2)' );
 is( Gideon::Cache::Memcache->hits, 0, 'No hits (slot 2)' );
 
 # clear db ---------------------------------------------------------------------
@@ -79,7 +80,7 @@ is( Gideon::Cache::Memcache->hits, 2, 'Two hits (slot 1 + slot 2)' );
 $first_slot1_cached->value('modified');
 $first_slot1_cached->save;
 
-is( Gideon::Cache::Memcache->count, 1, 'Clear keys in cache (slot 1 none, one key remains in slot 2)' );
+is( Gideon::Cache::Memcache->count, 0, 'Clear keys in cache (slot 1 none, one key remains in slot 2)' );
 
 Gideon::Cache::Memcache->set_slot('TEST_2');
 

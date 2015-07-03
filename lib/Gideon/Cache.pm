@@ -5,7 +5,7 @@ use Gideon::Error;
 use Data::Dumper qw(Dumper);
 use MooseX::ClassAttribute;
 
-use constant CACHE_DEFAULT_TTL => 300; # default expire seconds
+use constant CACHE_DEFAULT_TTL => 600; # default expire seconds
 
 has 'module' => ( is => 'rw', isa => 'Str' );
 has 'ttl' => ( is => 'rw', isa => 'Maybe[Num]', lazy => 1, default => CACHE_DEFAULT_TTL);
@@ -25,17 +25,17 @@ sub is_registered {
 }
 
 sub store {
-    
+
     my $self = shift;
     my $key = shift;
     my $what = shift;
     my $class = shift;
-    
+
     return if $self->is_enabled == 0;
     my $secs = $self->ttl;
-    
+
     $class = $self->who if not $class;
-    
+
     my $module = $self->get_module;
     return $module->set( $key, $what, $secs, $class);
 
@@ -82,3 +82,5 @@ sub signature {
 }
 
 __PACKAGE__->meta->make_immutable();
+no Moose;
+1;

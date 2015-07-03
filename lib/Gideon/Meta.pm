@@ -18,7 +18,7 @@ sub check_meta {
         Gideon::Error->throw("invalid meta data '$attribute' for class " . $self->who);
     }
 
-    return $meta->{attributes}->{$attribute};    
+    return $meta->{attributes}->{$attribute};
 }
 
 sub get_alias_for_attribute {
@@ -34,7 +34,7 @@ sub get_column_for_attribute {
 }
 
 sub get_value_for_attribute_key {
-    
+
     my $self      = shift;
     my $attribute = shift;
     my $key       = shift;
@@ -46,7 +46,7 @@ sub get_value_for_attribute_key {
         }
     }
     return;
-    
+
 }
 
 sub get_key_columns_hash {
@@ -141,7 +141,7 @@ sub get_primary_key_hash {
     }
 
     return scalar keys %{$hash} == 1 ? $hash : undef;
-    
+
 }
 
 sub get_serial_attr_hash {
@@ -191,7 +191,7 @@ sub get_columns_from_meta {
 
 sub get_all_meta {
 
-    my $self       = shift;    
+    my $self       = shift;
     my $meta       = $self->who->meta;
     my $cache_meta = {};
 
@@ -248,7 +248,7 @@ sub map_args_with_column {
 }
 
 sub map_args_with_metadata {
-    
+
     my $self   = shift;
     my $args   = shift;
     my $getter = shift;
@@ -274,7 +274,9 @@ sub map_args_with_metadata {
     }
 
     return $map
-    
+
 }
 
 __PACKAGE__->meta->make_immutable();
+no Moose;
+1;

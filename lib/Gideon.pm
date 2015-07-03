@@ -7,7 +7,7 @@ Gideon - Datamapper written in Perl
 
 Gideon is intended to be an ORM completly written in Perl
 
-=cut 
+=cut
 
 package Gideon;
 
@@ -87,17 +87,17 @@ sub update_all {}
 # ------------------------------------------------------------------------------
 
 sub stringify_fields {
-    
+
     my $self = shift;
     my $fields = shift;
     my @fields = ();
-    
+
     # when binding parameters try to stringify objects using to_string method
     # then fallback to whatever overload is defined
     # useful when undef is needed to convert object into string
-    
+
     my @stringify = ('to_string');
-    
+
     foreach my $f (sort keys %{$fields}) {
         my $str = $self->$f;
         if (ref($self->$f) and blessed($self->$f)) {
@@ -119,7 +119,7 @@ sub stringify_fields {
         }
         push @fields, $fields->{$f} => $str
     }
-    
+
     return @fields
 }
 
@@ -263,10 +263,10 @@ sub clone {
             splice(@attrs, $indexes[0], 1);
         }
     }
-    
+
     my $class = ref $self;
     my %params = ();
-    
+
     foreach my $attr (@attrs) {
         if (blessed($self->$attr)) {
             if ($self->can('clone')) {
@@ -347,6 +347,8 @@ sub _get_pkg_name {
 }
 
 __PACKAGE__->meta->make_immutable();
+no Moose;
+1;
 
 __END__
 
