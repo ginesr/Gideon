@@ -14,93 +14,93 @@ my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? )',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name LIKE ? )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name LIKE ? )',
         bound_params => ['arg%'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name LIKE ? AND country.country_name >= ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_name LIKE ? AND country.country_name >= ? ) )',
         bound_params => [ 'arg%', 'AR' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? OR country.country_name LIKE ? ) AND country.country_name >= ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( ( country.country_name LIKE ? OR country.country_name LIKE ? ) AND country.country_name >= ? ) )',
         bound_params => [ 'arg%', 'ent%', 'AR' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name < ? )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name < ? )',
         bound_params => [1],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name <= ? OR country.country_name > ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_name <= ? OR country.country_name > ? ) )',
         bound_params => [ 1, 20 ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( ( country.country_name LIKE ? AND country.country_name <= ? ) OR country.country_name > ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( ( country.country_name LIKE ? AND country.country_name <= ? ) OR country.country_name > ? ) )',
         bound_params => [ 'Afr%', 1, 20 ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AF', 'Africa' ] ]
 
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name = ? OR country.country_name = ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_name = ? OR country.country_name = ? ) )',
         bound_params => [ 'Argentina', 'Uruguay' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ], [ 'UY', 'Uruguay' ] ]
 
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name = ? OR country.country_name = ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_name = ? OR country.country_name = ? ) )',
         bound_params => [ 'Argentina', 'Uruguay' ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ], [ 'UY', 'Uruguay' ] ]
 
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name != ? )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name != ? )',
         bound_params => [ 'Argentina'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'UY', 'Uruguay' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name NOT LIKE ? )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name NOT LIKE ? )',
         bound_params => [ 'Argentina%'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'UY', 'Uruguay' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name NOT LIKE ? )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name NOT LIKE ? )',
         bound_params => [ '%Argentina%'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'UY', 'Uruguay' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_iso = ? AND country.country_name = ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_iso = ? AND country.country_name = ? ) )',
         bound_params => [ 'AR', 'Argentina'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_iso = ? OR country.country_name = ? ) )',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_iso = ? OR country.country_name = ? ) )',
         bound_params => [ 'AR', 'AR'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]
     },    
     {
-        statement => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( ( country.country_name = ? AND ( country.country_iso = ? OR country.country_name != ? ) ) )',
+        statement => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( ( country.country_name = ? AND ( country.country_iso = ? OR country.country_name != ? ) ) )',
         bound_params => [ 'arg', 'AR', 'AR'  ],
         results => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'ARGENTINA' ] ]        
     }

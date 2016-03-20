@@ -14,13 +14,13 @@ use_ok(qw(Example::Person));
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
-        statement    => 'INSERT INTO country ( `country_iso`, `country_name`) VALUES ( ?, ? )',
+        statement    => 'INSERT INTO `country` ( `country_iso`, `country_name`) VALUES ( ?, ? )',
         bound_params => [ undef, 'Argentina' ],
         results      => [[]]
     },
     {
         statement =>
-          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( ( person.person_country = ? AND person.person_name LIKE ? ) )',
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( ( person.person_country = ? AND person.person_name LIKE ? ) )',
         bound_params => [ 'US', '%joe%' ],
         results =>
           [ 
@@ -31,7 +31,7 @@ my $mock_session = DBD::Mock::Session->new(
           ]
     },
     {
-        statement    => 'UPDATE person SET `person_city` = ?, `person_country` = ?, `person_id` = ?, `person_name` = ?, `person_type` = ? WHERE ( person_id = ? )',
+        statement    => 'UPDATE `person` SET `person_city` = ?, `person_country` = ?, `person_id` = ?, `person_name` = ?, `person_type` = ? WHERE ( person_id = ? )',
         bound_params => [ undef, 'AR', 1, 'Bill', '', 1 ],
         results      => [[]]
     },

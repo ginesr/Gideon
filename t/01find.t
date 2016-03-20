@@ -2,7 +2,7 @@
 
 use lib 'xlib';
 use strict;
-use Test::More tests => 14;
+use Test::More tests => 16;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 
@@ -12,31 +12,37 @@ my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
         statement =>
-          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( ( person.person_country = ? AND person.person_name LIKE ? ) ) ORDER BY person.person_name DESC',
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( ( person.person_country = ? AND person.person_name LIKE ? ) ) ORDER BY person.person_name DESC',
         bound_params => [ 'US', '%joe%' ],
         results =>
           [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], [ 1, 'AR', 'Joe Something' ], [ 2, 'UY', 'Joe That' ], [ 3, 'AR', 'Joe' ], ]
     },
     {
         statement =>
-          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( person.person_id = ? )',
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( person.person_id = ? )',
         bound_params => [123],
         results      => [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], [ 123, 'AR', 'Joe' ] ]
     },
     {
         statement =>
-          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( person.person_country = ? ) ORDER BY person.person_name DESC limit 10',
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( person.person_country = ? ) ORDER BY person.person_name DESC limit 10',
         bound_params => ['US'],
         results      => [ [ 'person.person_id', 'person.person_country', 'person.person_name' ], [ 1, 'US', 'Foo' ], [ 2, 'US', 'Bar' ] ]
     },
     {
-        statement => 'SELECT COUNT(1) as total FROM  person WHERE ( person.person_country = ? ) ORDER BY person.person_name DESC ',
+        statement => 'SELECT COUNT(1) as total FROM  `person` WHERE ( person.person_country = ? ) ORDER BY person.person_name DESC ',
         results      => [['total'],[1]]
     },
     {
         statement =>
-          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM person WHERE ( person.person_type > ? )',
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( person.person_type > ? )',
         bound_params => [0],
+        results      => [],
+    },
+    {
+        statement =>
+          'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( person.person_type IN ( ?, ? ) )',
+        bound_params => [1,2],
         results      => [],
     }
 );
@@ -77,3 +83,8 @@ $persons = Example::Person->find_all( type => { gt => 0 } );
 
 is( $persons->has_no_records, 1, 'Is empty!' );
 is( $persons->records_found,  0, 'Total results' );
+
+my $persons_in = Example::Person->find_all( type => { in => [1,2] } );
+
+is( $persons_in->has_no_records, 1, 'Is empty!' );
+is( $persons_in->records_found,  0, 'Total results' );
