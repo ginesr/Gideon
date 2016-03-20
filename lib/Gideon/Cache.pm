@@ -8,7 +8,7 @@ use MooseX::ClassAttribute;
 use constant CACHE_DEFAULT_TTL => 600; # default expire seconds
 
 has 'module' => ( is => 'rw', isa => 'Str' );
-has 'ttl' => ( is => 'rw', isa => 'Maybe[Num]', lazy => 1, default => CACHE_DEFAULT_TTL);
+class_has 'ttl' => ( is => 'rw', isa => 'Maybe[Num]', lazy => 1, default => CACHE_DEFAULT_TTL);
 has 'is_enabled' => ( is => 'rw', isa => 'Bool', default => 1 );
 class_has 'who' => ( is => 'rw', isa => 'Str' );
 

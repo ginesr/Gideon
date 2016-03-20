@@ -135,6 +135,12 @@ sub nlike {
     return $string;
 }
 
+sub in {
+    my $class = shift;
+    my $string = shift || "";
+    return $string;
+}
+
 sub gte {
     my $class = shift;
     my $string = shift || "";

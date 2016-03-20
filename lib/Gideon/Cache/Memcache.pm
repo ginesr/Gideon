@@ -3,7 +3,7 @@ package Gideon::Cache::Memcache;
 use strict;
 use warnings;
 use autodie;
-use Digest::SHA1;
+use Digest::SHA2;
 use 5.012_001;
 use Data::Dumper qw(Dumper);
 use Cache::Memcached;
@@ -113,7 +113,7 @@ sub clear {
 sub digest {
     my $self = shift;
     my $string = shift;
-    my $sha1 = Digest::SHA1->new;
+    my $sha1 = Digest::SHA2->new;
     $sha1->add($string);
     my $hash = $sha1->hexdigest;
     return $hash;

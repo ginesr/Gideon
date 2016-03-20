@@ -18,6 +18,8 @@ sub format {
     my $order  = shift;
     my $limit  = shift || '';
 
+    $table =  MYSQL_ESCAPE . $table . MYSQL_ESCAPE;
+
     my ($sql,@bind) = $class->build_statment($action,$table,$fields,$where,$order);
 
     $sql = $class->add_limit_in_sql($sql,$limit);

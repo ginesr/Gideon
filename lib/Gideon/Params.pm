@@ -223,6 +223,7 @@ sub _tranform_operator {
     my @filters = @_;
 
     my %operator_map = (
+        'in'    => '-in',
         'like'  => '-like',
         'nlike' => '-not_like',
         'eq'    => '=',
@@ -243,7 +244,9 @@ sub _tranform_operator {
             or $filter_type eq 'ne'
             or $filter_type eq 'gte'
             or $filter_type eq 'lte'
-            or $filter_type eq 'nlike' ) {
+            or $filter_type eq 'nlike'
+            or $filter_type eq 'in'
+             ) {
 
             $hash->{ $operator_map{$filter_type} } = $class->_values_thru_filter( $filter_type, $filter->{$filter_type} );
 
