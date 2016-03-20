@@ -774,23 +774,57 @@ sub function {
         my $where = $class->where_stmt_from_args($args);
         my $pool  = $config->{conn} || '';
         my $fields = $class->_function_to_query($function,$column);
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->storage->origin(), $fields, $where, undef, undef);
+        my @groups = ();
 
-        my $num = 0;
-        my $rows = Gideon::DBI::Common->execute_one_with_bind_columns(
+        if ($config->{group_by} and ref($config->{group_by}) eq 'ARRAY') {
+            $fields = [ $fields ];
+            foreach my $g (@{ $config->{group_by} }) {
+                if (!ref($g)) {
+                    push @groups, "`$g`";
+                    push @$fields, "`$g`";
+                }
+                if (ref($g) eq 'HASH') {
+                    my ($k,$v) = %$g;
+                    $k = "`$k`";
+                    $v =~ s/\Q?\E/$k/;
+                    push @groups, $v;
+                    push @$fields, "$v as $k";
+                }
+            }
+        }
+
+        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'select', $class->storage->origin, $fields, $where, undef, undef);
+
+        if ($config->{group_by}) {
+            $stmt .= " GROUP BY " . join ',', @groups;
+        }
+
+        my @results = ();
+        my $rows = Gideon::DBI::Common->execute_with_bind_columns(
             'dbh'   => $class->dbh($pool,1),
             'debug' => $DBI_DEBUG,
             'query' => $stmt,
             'bind'  => [@bind],
             'block' => sub {
                 my $row = shift;
-                $num = $row->{$function} || 0;
+                my $num = $row->{$function} || 0;
+                if (scalar keys %{$row} > 1) {
+                    push @results, { map { $_ => $row->{$_} } keys %{$row} }
+                } else {
+                    push @results, $num
+                }
             }
         );
-        return $num;
 
-    }
-    catch {
+        if (wantarray) {
+            return @results
+        }
+        if (scalar @results == 0) {
+            return 0;
+        }
+        return $results[0];
+
+    } catch {
         my $e = shift;
         cluck ref($e) if $Gideon::EXCEPTION_DEBUG;
         croak "Error calling function ($function) for attribute '$attr', " . $e;
