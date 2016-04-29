@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib 'xlib';
-use Test::More tests => 4;
+use Test::More tests => 3;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Example::Country;
@@ -11,11 +11,11 @@ use Test::Exception;
 
 my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
-    {
-        statement    => 'UPDATE `country` SET `country`.`country_iso` = ?',
-        bound_params => ['AR'],
-        results      => [ [], [] ]
-    },
+    #{
+    #    statement    => 'UPDATE `country` SET `country`.`country_iso` = ?',
+    #    bound_params => ['AR'],
+    #    results      => [ [], [] ]
+    #},
     {
         statement =>
           'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_iso = ? )',
@@ -45,18 +45,13 @@ $dbh->{mock_session} = $mock_session;
 
 Gideon->register_store( 'master', $dbh );
 
-my $rows = Example::Country->update( iso => 'AR' );
-is( $rows, 1, 'One row updated' );
+throws_ok( sub {my $rows = Example::Country->update( iso => 'AR' )}, 'Gideon::Error');
 
 my $results = Example::Country->find_all( iso => 'AR' );
 my $rec = $results->first;
 
 is( $rec->name, 'Argentina', 'First record using results object' );
 
-$rows = Example::Country->find_all( iso => 'AR' )->update( iso => 'UY' );
+my $results2 = Example::Country->find_all( iso => 'AR' )->update( iso => 'UY' );
 
-is( $rows, 1, 'One row updated from results' );
-
-$rows = Example::Country->update_all( iso => 'AR' );
-
-is( $rows, 2, 'Rows updated from results' );
+is( $results2->changed, 1, 'One row updated from results' );

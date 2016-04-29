@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use lib 'xlib';
-use Test::More tests => 15;
+use Test::More tests => 14;
 use Data::Dumper qw(Dumper);
 use DBD::Mock;
 use Test::Exception;
@@ -40,12 +40,6 @@ my $mock_session = DBD::Mock::Session->new(
             [ 'currency.currency_name', 'currency.currency_symbol' ],
             [ 'Dollar',                 'USD' ]
         ]
-    },
-    {
-        statement =>
-          'DELETE FROM `person` WHERE ( `person`.`person_country` = ? ) limit 10',
-        bound_params => ['AR'],
-        results      => [ [], [], [] ],
     },
     {
         statement =>
@@ -88,16 +82,6 @@ my $mock_session = DBD::Mock::Session->new(
         statement => 'SELECT person.person_city as `person.person_city`, person.person_country as `person.person_country`, person.person_id as `person.person_id`, person.person_name as `person.person_name`, person.person_type as `person.person_type` FROM `person` WHERE ( person.person_type = ? )',
         bound_params => [30],
         results => []
-    },
-    {
-        statement => 'DELETE FROM `person` WHERE ( ( `person`.`person_country` = ? AND `person`.`person_type` >= ? ) )',
-        bound_params => ['AR',30],
-        results => [ [],[],[],[],[] ],
-    },
-    {
-        statement => 'DELETE FROM `person` WHERE ( ( `person`.`person_country` = ? AND `person`.`person_type` >= ? ) )',
-        bound_params => ['AR',100],
-        results => [ [],[],[],[],[],[] ],
     }
 );
 $dbh->{mock_session} = $mock_session;
@@ -131,9 +115,6 @@ throws_ok(
     'Can\'t delete without keys'
 );
 
-my $rows_deleted = Example::Person->remove( country => 'AR', { limit => 10 } );
-is( $rows_deleted, 2, 'Remove all records matching criteria' );
-
 throws_ok(
     sub {
         my $rec = Example::Currency->new;
@@ -143,17 +124,14 @@ throws_ok(
     'Can\'t call remove all as instance method'
 );
 
-my $rows = Example::Person->find_all( country => 'AR' )->remove();
-is( $rows, 2, 'Two row removed from results' );
+my $results1 = Example::Person->find_all( country => 'AR' )->remove();
+is( $results1->changed, 2, 'Two row removed from results' );
 
-$rows = Example::Person->find_all( country => 'AR', type => { gt => 30 } )->remove();
-is( $rows, 3, 'Two arguments remove within results' );
+my $results2 = Example::Person->find_all( country => 'AR', type => { gt => 30 } )->remove();
+is( $results2->changed, 3, 'Two arguments remove within results' );
 
-$rows = Example::Person->find_all( type => 30 )->remove();
-is( $rows, 0, 'Nothing to delete' );
+my $results3 = Example::Person->find_all( type => 30 )->remove();
+is( $results3->changed, 0, 'Nothing to delete' );
 
-$rows = Example::Person->remove( country => 'AR', type => { gte => 30 } );
-is( $rows, 4, 'Remove as class method calls remove_all()' );
-
-$rows = Example::Person->remove_all( country => 'AR', type => { gte => 100 } );
-is( $rows, 5, 'Remove with remove_all()' );
+throws_ok(sub{Example::Person->remove( country => 'AR', type => { gte => 30 } )},'Gideon::Error');
+throws_ok(sub{Example::Person->remove_all( country => 'AR', type => { gte => 100 } )},'Gideon::Error');

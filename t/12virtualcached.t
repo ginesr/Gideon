@@ -39,7 +39,7 @@ my $driver = Gideon::DB::Driver::MySQL->new(
 my $provider = Example::Virtual::Provider->new;
 $provider->driver($driver);
 
-is( Gideon->cache->ttl, 300, 'Dafault time to live in cache' );
+is( Gideon->cache->ttl, 600, 'Dafault time to live in cache' );
 
 Gideon->register_store( 'mysql', $driver );
 Gideon->register_store( 'virtual', $provider );

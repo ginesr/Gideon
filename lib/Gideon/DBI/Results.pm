@@ -1,10 +1,7 @@
 package Gideon::DBI::Results;
 
-use strict;
-use warnings;
-use Data::Dumper qw(Dumper);
-use Try::Tiny;
 use Moose;
+use Try::Tiny;
 use Gideon::Filters::DBI;
 use Gideon::Error::DBI;
 use Gideon::Error::DBI::Results;
@@ -20,7 +17,8 @@ sub remove {
     try {
 
         if ( $self->has_no_records ) {
-            return 0;
+            $self->changed(0);
+            return $self;
         }
 
         my $where  = $self->where;
@@ -36,8 +34,14 @@ sub remove {
         if ( Gideon->cache->is_registered ) {
             Gideon->cache->clear($self->package);
         }
-
-        return $rows
+        $self->changed($rows);
+        my $fields = $self->package->metadata->get_key_columns_hash();
+        foreach my $r ($self->records){
+            foreach (keys %{$fields}) {
+                $self->package->track_delete_action($r->$_);
+            }
+        }
+        return $self
 
     } catch {
         my $e = shift;
@@ -53,7 +57,8 @@ sub update {
     try {
 
         if ( $self->has_no_records ) {
-            return 0;
+            $self->changed(0);
+            return $self;
         }
 
         my $where  = $self->where;
@@ -69,8 +74,14 @@ sub update {
         if ( Gideon->cache->is_registered ) {
             Gideon->cache->clear($self->package);
         }
-
-        return $rows
+        $self->changed($rows);
+        my $fields = $self->package->metadata->get_key_columns_hash();
+        foreach my $r ($self->records){
+            foreach (keys %{$fields}) {
+                $self->package->track_update_action($r->$_);
+            }
+        }
+        return $self
 
     } catch {
         my $e = shift;
@@ -79,3 +90,5 @@ sub update {
 }
 
 __PACKAGE__->meta->make_immutable();
+no Moose;
+1;

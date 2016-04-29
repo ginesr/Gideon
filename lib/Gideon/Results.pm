@@ -35,6 +35,7 @@ has 'package' => ( is => 'rw', isa => 'Str' );
 has 'conn'    => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'where'   => ( is => 'rw' );
 has 'total'   => ( is => 'rw', isa => 'Num' );
+has 'changed' => ( is => 'rw', isa => 'Num' );
 
 sub first {
     my $self = shift;

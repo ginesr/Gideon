@@ -30,6 +30,8 @@ our $VERSION = '0.03';
 $VERSION = eval $VERSION;
 
 our $EXCEPTION_DEBUG = 0;
+our $ACTIONS = {};
+my  $ACTION_CB;
 
 use overload
     '""' => \&as_string,
@@ -290,6 +292,25 @@ sub clone {
     return $cloned;
 }
 
+sub action_callback($) {
+    my $self = shift;
+    $ACTION_CB = shift || die;
+}
+
+sub track_insert_action { shift->_add_action('INSERT',@_) }
+sub track_update_action { shift->_add_action('UPDATE',@_) }
+sub track_delete_action { shift->_add_action('DELETE',@_) }
+
+sub _add_action {
+    my $self = shift;
+    my $action = shift;
+    my $id = shift || 0;
+    my $class = $$.'/'.$self->_get_pkg_name;
+    if (looks_like_number($id)) {$id+=0}
+    $ACTIONS->{$class} = [] unless exists $ACTIONS->{$class};
+    push @{ $ACTIONS->{$class} }, [$action,$id];
+}
+
 # Stores -----------------------------------------------------------------------
 
 before 'storage' => sub {
@@ -350,6 +371,18 @@ use warnings 'redefine';
 sub _get_pkg_name {
     my $class = shift;
     return ref($class) ? ref($class) : $class;
+}
+
+sub DEMOLISH {
+    my $self = shift;
+    my $pkg = $self->_get_pkg_name;
+    my $class = $$.'/'.$pkg;
+    #warn "DEMOLISH $class";
+    if (exists $ACTIONS->{$class}) {
+        my $json = encode_json({pid=>$$,class=>$pkg,actions=>$ACTIONS->{$class}});
+        $ACTION_CB->($json) if ($ACTION_CB && ref($ACTION_CB) eq 'CODE');
+        delete $ACTIONS->{$class};
+    }
 }
 
 __PACKAGE__->meta->make_immutable();

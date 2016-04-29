@@ -14,42 +14,42 @@ my $dbh = DBI->connect( 'DBI:Mock:', '', '' ) or die 'Cannot create handle';
 my $mock_session = DBD::Mock::Session->new(
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_iso',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_iso',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_iso, country.country_name',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_iso, country.country_name',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_name DESC',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_name DESC',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_name DESC, country.country_iso DESC',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_name DESC, country.country_iso DESC',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_iso ASC, country.country_name DESC',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_iso ASC, country.country_name DESC',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
         statement =>
-          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_iso ASC, country.country_name ASC, country.country_name DESC',
+          'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_iso ASC, country.country_name ASC, country.country_name DESC',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]
     },
     {
-        statement => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM country WHERE ( country.country_name = ? ) ORDER BY country.country_name DESC, country.country_iso ASC, country.country_name ASC',
+        statement => 'SELECT country.country_iso as `country.country_iso`, country.country_name as `country.country_name` FROM `country` WHERE ( country.country_name = ? ) ORDER BY country.country_name DESC, country.country_iso ASC, country.country_name ASC',
         bound_params => ['arg'],
         results      => [ [ 'country.country_iso', 'country.country_name' ], [ 'AR', 'Argentina' ] ]        
     }

@@ -178,7 +178,7 @@ sub _sorting_from_hash {
 
     my $flattened = [];
 
-    foreach my $clause ( keys %{$config} ) {
+    foreach my $clause ( sort keys %{$config} ) {
 
         my $direction = '';
 

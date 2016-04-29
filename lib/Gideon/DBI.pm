@@ -32,20 +32,20 @@ sub remove {
     my $self = shift;
 
     unless ( ref($self) ) {
-        return $self->remove_all(@_);
+        Gideon::Error->throw('remove() is not a static method');
     }
 
     return FALSE unless $self->is_stored;
 
     try {
 
-        my $fields = $self->metadata->get_key_columns_hash();
+        my $keys = $self->metadata->get_key_columns_hash();
 
-        if ( scalar( keys %{$fields} ) == 0 ) {
+        if ( scalar( keys %{$keys} ) == 0 ) {
             Gideon::Error->throw('can\'t delete without table primary key');
         }
 
-        my %where = map { $fields->{$_} => $self->$_ } sort keys %{$fields};
+        my %where = map { $keys->{$_} => $self->$_ } sort keys %{$keys};
         my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $self->storage->origin(), \%where );
 
         my $pool = $self->conn;
@@ -60,7 +60,9 @@ sub remove {
         if ( Gideon->cache->is_registered ) {
             Gideon->cache->clear(ref $self);
         }
-
+        foreach (keys %{$keys}) {
+            $self->track_delete_action($self->$_);
+        }
         return TRUE;
 
     }
@@ -80,30 +82,10 @@ sub update {
         Gideon::Error->throw('update() is a static method');
     }
 
-    my ( $args, $config ) = $class->params->decode(@_);
-
     try {
-
-        my $map   = $class->metadata->map_args_with_column($args);
-        my $where = $class->where_stmt_from_args($args);
-        my $limit = $config->{limit} || '';
-        my $pool  = $config->{conn} || '';
-
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $class->storage->origin(), $where, undef, undef, $limit );
-
-        my $dbh = $class->dbh($pool,1);
-        my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( msg => $sth->errstr, stmt => $stmt, params => \@bind );
-        $sth->finish;
-
-        if ( Gideon->cache->is_registered ) {
-            Gideon->cache->clear($class);
-        }
-
-        return $rows;
-
-    }
-    catch {
+        # deprecated, use ->find_all()->update
+        Gideon::Error->throw('update_all() is deprecated');        
+    } catch {
         croak shift;
     }
 }
@@ -116,32 +98,11 @@ sub update_all {
     if ( ref($class) ) {
         Gideon::Error->throw('update_all() is a static method');
     }
-    if (not %$args) {
-        Gideon::Error->throw('update_all() called without arguments');
-    }
 
     try {
-
-        my $map   = $class->metadata->map_args_with_column($args);
-        my $where = $class->where_stmt_from_args($args);
-        my $limit = $config->{limit} || '';
-        my $pool  = $config->{conn} || '';
-
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'update', $class->storage->origin(), $where, undef, undef, $limit );
-
-        my $dbh = $class->dbh($pool,1);
-        my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
-        $sth->finish;
-
-        if ( Gideon->cache->is_registered ) {
-            Gideon->cache->clear($class);
-        }
-
-        return $rows;
-
-    }
-    catch {
+        # deprecated, use ->find_all()->update
+        Gideon::Error->throw('update_all() is deprecated');
+    } catch {
         croak shift;
     }
 
@@ -156,30 +117,10 @@ sub remove_all {
         Gideon::Error->throw('remove_all() is a static method');
     }
 
-    $args = $class->params->normalize($args);
-
     try {
-
-        my $map   = $class->metadata->map_args_with_column($args);
-        my $where = $class->where_stmt_from_args($args);
-        my $limit = $config->{limit} || '';
-        my $pool  = $config->{conn} || '';
-
-        my ( $stmt, @bind ) = Gideon::Filters::DBI->format( 'delete', $class->storage->origin(), $where, undef, undef, $limit );
-
-        my $dbh = $class->dbh($pool,1);
-        my $sth = $dbh->prepare($stmt) or Gideon::Error::DBI->throw( $dbh->errstr );
-        my $rows = $sth->execute(@bind) or Gideon::Error::DBI->throw( $sth->errstr );
-        $sth->finish;
-
-        if ( Gideon->cache->is_registered ) {
-            Gideon->cache->clear($class);
-        }
-
-        return $rows;
-
-    }
-    catch {
+        # deprecated, use ->find_all()->remove
+        Gideon::Error->throw('remove_all() is deprecated');
+    } catch {
         croak shift;
     }
 }
@@ -198,12 +139,11 @@ sub save {
 
         my $where  = {};
         my $fields = $self->metadata->get_columns_hash();
+        my $keys = $self->metadata->get_key_columns_hash();
 
         if ( $self->is_stored ) {
             $where = $self->get_key_columns_for_update();
-        }
-        else {
-
+        } else {
             # remove auto increment columns for insert
             $self->remove_auto_columns_for_insert($fields);
         }
@@ -229,6 +169,11 @@ sub save {
             my $last_id = $self->last_inserted_id($dbh);
             my $serial_attribute = ( map { $_ } keys %{$serial} )[0];
             $self->$serial_attribute($last_id);
+        }
+
+        foreach (keys %{$keys}) {
+            my $action = $self->is_stored ? 'track_update_action' : 'track_insert_action';
+            $self->$action($self->$_);
         }
 
         $self->is_stored(1);

@@ -34,6 +34,9 @@ my $driver = Example::Driver::MySQL->new(
 );
 
 Gideon->register_store( 'mysql_server', $driver );
+Gideon->action_callback(sub {
+    warn shift;
+});
 
 my $test_data = Example::Test->find_all( undef, { limit => 5 } );
 my $first     = $test_data->first;
@@ -99,11 +102,14 @@ is( $godzilla->value, '10000', 'Godzilla value' );
 
 throws_ok(sub { Example::Test->update_all(); }, 'Gideon::Error');
 
-my $rows = Example::Test->update_all(value=>'all');
-is( $rows, 12, 'Update all records' );
+my $results = Example::Test->find_all(value=>'10000')->update(value=>'all');
+is( $results->changed, 1, 'Update all records' );
 
 my $godzilla2 = Example::Test->find( name => 'Godzilla' );
 is( $godzilla2->value, 'all', 'After update_all()' );
+
+my $godzilla3 = Example::Test->find( id => $godzilla2->id );
+$godzilla3->remove;
 
 # Auxiliary test functions -----------------------------------------------------
 
