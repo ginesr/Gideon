@@ -27,6 +27,29 @@ extends 'Gideon';
 
 has 'conn' => ( is => 'rw', isa => 'Maybe[Str]' );
 
+sub transaction {
+
+    my $self = shift;
+    my $code = shift;
+
+    if ( ref($self) ) {
+        Gideon::Error->throw('transaction() is a static method');
+    }
+
+    my $driver = $self->storage->transaction;
+    # TODO: request isolated connection and disconnect after
+
+    try {
+        $driver->begin_work;
+        $code->();
+        $driver->commit;
+    } catch {
+        my $err = shift;
+        warn __PACKAGE__ . " failed transaction $err";
+        $driver->rollback;
+    }
+}
+
 sub remove {
 
     my $self = shift;
@@ -84,7 +107,7 @@ sub update {
 
     try {
         # deprecated, use ->find_all()->update
-        Gideon::Error->throw('update_all() is deprecated');        
+        Gideon::Error->throw('update_all() is deprecated');
     } catch {
         croak shift;
     }
@@ -967,6 +990,7 @@ sub _function_to_query {
         'SUM' => 'sum(%s) as %s',
         'COUNT' => 'count(%s) as %s',
         'COUNT_DISTINCT' => 'count(distinct(%s)) as %s',
+        'DISTINCT' => 'distinct(%s) as `%s`'
     };
 
     Gideon::Error->throw("invalid function called ($function)") unless exists $map->{uc($function)};

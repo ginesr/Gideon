@@ -5,13 +5,10 @@ use warnings;
 use base 'Gideon::Cache::Memcache';
 use Cache::Memcached::Fast;
 
-use constant COMPRESS_TRESH => 10_000;
-
 sub _connect {
     my $self = shift;
     return new Cache::Memcached::Fast {
-        'servers'            => $self->get_servers,
-        'compress_threshold' => COMPRESS_TRESH,
+        'servers' => $self->get_servers
     };
 }
 

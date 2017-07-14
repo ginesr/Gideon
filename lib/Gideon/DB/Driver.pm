@@ -6,14 +6,14 @@ use DBI;
 use Gideon::Error::Simple;
 
 sub connect {
-    
+
     my $self = shift;
     my $dbi_string = $self->get_dbi_string( $self->type() );
-    
+
     unless ( my $dbh = DBI->connect( $dbi_string , "", "" ) ) {
         Gideon::Error::Simple->throw($DBI::errstr);
     }
-    
+
 }
 
 sub connect_isolated {
@@ -22,19 +22,24 @@ sub connect_isolated {
 }
 
 sub get_dbi_string {
-    
+
     my $self = shift;
     my $type = shift;
-    
+
     if ($type eq 'SQLITE') {
         return 'dbi:SQLite:dbname=' . $self->db;
     }
-    
+
 }
 
 sub begin_work {
     my $self = shift;
-    $self->connect_isolated->begin_work;
+    $self->connect_isolated;
+    if (!$self->isolated) {
+        warn "called begin_work() when no trasaction is running";
+        return $self;
+    }
+    $self->isolated->begin_work;
     return $self->isolated;
 }
 

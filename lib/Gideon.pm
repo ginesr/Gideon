@@ -98,7 +98,7 @@ sub stringify_fields {
     # then fallback to whatever overload is defined
     # useful when undef is needed to convert object into string
 
-    my @stringify = ('to_string');
+    my @stringify = ('to_dbi_string','to_string');
 
     foreach my $f (sort keys %{$fields}) {
         my $str = $self->$f;

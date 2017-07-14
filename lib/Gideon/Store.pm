@@ -152,7 +152,7 @@ sub from_pool {
 sub transaction {
 
     my $self = shift;
-    my $store = shift || die;
+    my $store = shift || $self->id;
     my $pkg = $self->who;
     # TODO: support pools
     if (my $args = $self->by_name_get_args( $store )) {

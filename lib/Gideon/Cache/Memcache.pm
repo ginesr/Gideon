@@ -7,9 +7,10 @@ use Digest::SHA2;
 use 5.012_001;
 use Data::Dumper qw(Dumper);
 use Cache::Memcached;
-use Time::HiRes qw(usleep);
+use Time::HiRes qw(usleep gettimeofday tv_interval);
 
 use constant MEMCACHE_DEBUG => 0;
+use constant MEMCACHE_LOCK_DEBUG => 0;
 use constant COMPRESS_TRESH => 10_000;
 use constant LOCK_TIMEOUT => 10; # secs
 use constant LOCK_RETRY_WAIT => 100; #milisecs
@@ -31,10 +32,42 @@ sub get {
     my $slot_plus_key = $slot.$key;
 
     if ( my $cached = $memd->get($slot_plus_key) ) {
-        $hits++;
+        if(ref($cached) eq 'Gideon::DBI::Results') {
+            # check if result set is still valid
+            if (my $belongs = ref($cached->first)) {
+                my $t0 = [gettimeofday];
+                my $found = 0;
+                # esto se puede poner lento si son muchas keys por cada clase
+                foreach ($self->class_keys($belongs)) {
+                    if ($_ eq $key) {
+                        $found = 1;
+                        last
+                    }
+                }
+                my $elapsed = tv_interval( $t0 );
+                unless ( $found ) {
+                    warn __PACKAGE__ . " $key is not valid took $elapsed secs";
+                    $self->delete($slot_plus_key);
+                    return;
+                }
+                if ($elapsed > 0.400) {
+                    warn __PACKAGE__ . " check took $elapsed $belongs"
+                }
+            }
+        }
+        $self->increment_hits;
         return $cached;
     }
     return;
+}
+
+sub increment_hits {
+    my $self = shift;
+    return unless $memd;
+    if ($memd->incr('__gdn_priv_hits')) {
+    } else {
+        $memd->set('__gdn_priv_hits',1);
+    }
 }
 
 sub set {
@@ -46,7 +79,7 @@ sub set {
     my $class    = shift || '__invalid__';
 
     if (my $pid = $self->_get_class_lock($class)) {
-        warn "set $pid is locking $class ..." if MEMCACHE_DEBUG;
+        warn "set $pid is locking $class ..." if MEMCACHE_LOCK_DEBUG;
         usleep LOCK_RETRY_WAIT;
         return $self->set($key,$contents,$ttl,$class);
     }
@@ -85,7 +118,7 @@ sub clear {
     my $class = shift || die;
 
     if (my $pid = $self->_get_class_lock($class)) {
-        warn "clear $pid is locking ... $class" if MEMCACHE_DEBUG;
+        warn "clear $pid is locking ... $class" if MEMCACHE_LOCK_DEBUG;
         usleep LOCK_RETRY_WAIT;
         return $self->clear($class);
     }
@@ -102,7 +135,7 @@ sub clear {
     foreach my $k (@keys) {
         my $found = $self->delete($k);
         if (!$found) {
-            warn "$class $k not found in cache" if MEMCACHE_DEBUG
+            warn "$class $k not found" if MEMCACHE_LOCK_DEBUG
         }
     }
 
@@ -137,8 +170,11 @@ sub start {
 }
 
 sub get_servers {
-    my $self = shift;
     return $servers;
+}
+
+sub memd {
+    return $memd;
 }
 
 sub set_servers {
@@ -158,7 +194,7 @@ sub count {
 
     foreach my $class (keys %{$class_stats->{$slot}}) {
         if (my $class_keys = $self->_get_class_cache($class)) {
-            push @list, keys $class_keys;
+            push @list, keys %{$class_keys};
         }
     }
     #warn Dumper($class_stats);
@@ -177,7 +213,9 @@ sub content {
 
 sub hits {
     my $self = shift;
-    return $hits;
+    return unless $memd;
+    return $memd->get('__gdn_priv_hits')||0;
+    #return $hits;
 }
 
 sub class_keys {
@@ -187,7 +225,9 @@ sub class_keys {
     my @list = ();
 
     if (my $class_keys = $self->_get_class_cache($class)) {
-        @list = keys $class_keys;
+        if (ref $class_keys eq 'HASH') {
+            @list = keys %{$class_keys};
+        }
     }
 
     return @list;
@@ -220,18 +260,18 @@ sub get_slot {
 # private ----------------------------------------------------------------------
 
 sub _connect {
-    my $self = shift;
-    return new Cache::Memcached {
-        'servers'            => $servers,
-        'debug'              => MEMCACHE_DEBUG,
-        'compress_threshold' => COMPRESS_TRESH,
-    };
+    return Cache::Memcached->new({
+        'servers' => $servers,
+        'debug'   => MEMCACHE_DEBUG,
+    })
 }
 
 sub _get_class_lock {
     my $self = shift;
     my $class = shift || die;
     my $namespace = $self->_class_namespace($class);
+    return unless $memd;
+    warn $namespace if MEMCACHE_LOCK_DEBUG;
     return $memd->get("__gdn_priv_lock_$namespace");
 }
 
@@ -253,6 +293,7 @@ sub _get_class_cache {
     my $self = shift;
     my $class = shift || die;
     my $namespace = $self->_class_namespace($class);
+    return unless $memd;
     my $keys_in_class = $memd->get("__gdn_priv_class_cache_$namespace");
     #warn Dumper($keys_in_class);# if MEMCACHE_DEBUG;
     return $keys_in_class;
